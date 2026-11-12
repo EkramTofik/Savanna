@@ -1,4 +1,5 @@
 // Contract C6: GET /v1/<path>  ->  contracts/fixtures/v1/<path>.json
+// Static media: GET /media/<file>  ->  contracts/fixtures/media/<file>
 import express from "express";
 import cors from "cors";
 import fs from "node:fs";
@@ -7,6 +8,7 @@ import path from "node:path";
 const root = path.resolve("contracts/fixtures");
 const app = express();
 app.use(cors());
+app.use("/media", express.static(path.join(root, "media"))); // supports Range requests (seeking)
 app.get("/v1/*", (req, res) => {
   const file = path.resolve(root, "." + req.path + ".json");
   if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) {
