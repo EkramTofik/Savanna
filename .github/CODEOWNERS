@@ -1,14 +1,13 @@
-# Replace @member1..@member4 with real GitHub usernames. One owner per folder.
-/packages/components/src/player/             @member1
-/packages/components/src/sign-window/        @member2
-/packages/components/src/audio-description/  @member2
-/packages/components/src/offline/            @member2
-/apps/api/src/routes/pack.ts                 @member2
-/packages/components/src/job-card/           @member3
-/packages/components/src/credential/         @member3
-/apps/api/src/routes/jobs.ts                 @member3
-/apps/api/src/routes/credentials.ts          @member3
-/apps/api/src/routes/verify.ts               @member3
-/apps/api/prisma/schema/career.prisma        @member3
-/contracts/                                  @member1 @member2 @member3 @member4
-*                                            @member4
+/packages/components/src/player/             @Ruthareda
+/packages/components/src/sign-window/        @EkramTofik
+/packages/components/src/audio-description/  @EkramTofik
+/packages/components/src/offline/            @EkramTofik
+/apps/api/src/routes/pack.ts                 @EkramTofik
+/packages/components/src/job-card/           @hareg28
+/packages/components/src/credential/         @hareg28
+/apps/api/src/routes/jobs.ts                 @hareg28
+/apps/api/src/routes/credentials.ts          @hareg28
+/apps/api/src/routes/verify.ts               @hareg28
+/apps/api/prisma/schema/career.prisma        @hareg28
+/contracts/                                  @Ruthareda @EkramTofik @hareg28 @bit-suan
+*                                            @bit-suan
