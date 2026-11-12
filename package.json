@@ -1,0 +1,13 @@
+{
+  "name": "savanna-access-kit",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "mock": "node contracts/mock/server.js",
+    "format": "prettier --write ."
+  },
+  "dependencies": { "cors": "^2.8.5", "express": "^4.21.2" },
+  "devDependencies": { "@types/node": "^22.10.0", "prettier": "^3.4.2", "tsx": "^4.19.2", "typescript": "^5.7.2" }
+}
