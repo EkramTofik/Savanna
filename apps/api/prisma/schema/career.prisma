@@ -1,0 +1,29 @@
+// Member 3 — Career Gateway models (FR-J*, FR-C*).
+// If Prisma multi-file schema is unavailable, merge these models into schema.prisma
+// without editing other members' models.
+
+model Job {
+  id             String    @id
+  title          String
+  employer       String
+  location       String
+  remote         Boolean
+  payText        String?
+  validThrough   DateTime?
+  description    Json // { en, am } plus optional requirements[]
+  audioSummary   Json // { en: { url, transcript }, am: { url, transcript } }
+  applyUrl       String
+  employmentType String    @default("FULL_TIME")
+}
+
+model Credential {
+  id            String   @id // 128-bit random hex
+  recipientRef  String // pseudonymous, never raw email
+  achievement   String
+  issuedAt      DateTime
+  status        String // valid | revoked | expired
+  proof         Json?
+  validFrom     DateTime
+  expiresAt     DateTime?
+  recipientName String?
+}
