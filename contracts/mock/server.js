@@ -12,7 +12,10 @@ app.use("/media", express.static(path.join(root, "media"))); // supports Range r
 app.get("/v1/*", (req, res) => {
   const file = path.resolve(root, "." + req.path + ".json");
   if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) {
-    return res.status(404).type("application/problem+json").json({ title: "Not found", status: 404 });
+    return res
+      .status(404)
+      .type("application/problem+json")
+      .json({ title: "Not found", status: 404 });
   }
   res.json(JSON.parse(fs.readFileSync(file, "utf8")));
 });
