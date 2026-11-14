@@ -2,12 +2,7 @@ import { randomBytes } from "node:crypto";
 import { Router } from "express";
 import { z } from "zod";
 import type { CareerCtx, CredentialRecord } from "./career-types.js";
-import {
-  effectiveStatus,
-  problem,
-  requirePublishable,
-  requireSecret,
-} from "./career-lib.js";
+import { effectiveStatus, problem, requirePublishable, requireSecret } from "./career-lib.js";
 import { toOpenBadge } from "./open-badges.js";
 
 const issueBody = z.object({

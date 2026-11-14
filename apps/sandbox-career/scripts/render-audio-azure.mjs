@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(here, "../media/jobs");
 const fixtures = path.join(here, "../../../contracts/fixtures/v1");
-const jobIds = JSON.parse(await readFile(path.join(fixtures, "jobs.json"), "utf8")).jobs.map((entry) => entry.id);
+const jobIds = JSON.parse(await readFile(path.join(fixtures, "jobs.json"), "utf8")).jobs.map(
+  (entry) => entry.id,
+);
 
 // Azure Speech neural voices. Amharic is not shipped by Windows SAPI, so this is
 // the only route that produces a real Amharic read of the summaries.
@@ -22,7 +24,7 @@ if (!key || !region) {
     "AZURE_SPEECH_KEY / AZURE_SPEECH_REGION are not set, so no audio was generated.\n" +
       "Existing WAVs were left untouched (the card still shows the full transcript).\n" +
       "Set both and re-run, e.g.:\n" +
-      '  AZURE_SPEECH_KEY=xxx AZURE_SPEECH_REGION=eastus node scripts/render-audio-azure.mjs',
+      "  AZURE_SPEECH_KEY=xxx AZURE_SPEECH_REGION=eastus node scripts/render-audio-azure.mjs",
   );
   process.exit(1);
 }
@@ -75,7 +77,9 @@ for (const id of jobIds) {
 
     const audio = Buffer.from(await res.arrayBuffer());
     if (audio.subarray(0, 4).toString("ascii") !== "RIFF") {
-      console.error(`Azure returned ${audio.length} bytes that are not a WAV for ${id}-${lang}: skipped.`);
+      console.error(
+        `Azure returned ${audio.length} bytes that are not a WAV for ${id}-${lang}: skipped.`,
+      );
       failed = true;
       continue;
     }

@@ -12,10 +12,7 @@ function statusLabel(status: string): string {
   return "Expired";
 }
 
-export async function verifyPageHtml(
-  record: CredentialRecord,
-  ctx: CareerCtx,
-): Promise<string> {
+export async function verifyPageHtml(record: CredentialRecord, ctx: CareerCtx): Promise<string> {
   const status = effectiveStatus(record);
   const url = `${ctx.publicBaseUrl}/verify/${record.id}`;
   const qr = await QRCode.toString(url, { type: "svg", margin: 1, width: 160 });

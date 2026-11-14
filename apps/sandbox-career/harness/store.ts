@@ -21,7 +21,10 @@ export async function createStore() {
   const seed = await readJson<CredentialRecord>(path.join(fixtures, "credentials", "C-7.json"));
   let credentials: Record<string, CredentialRecord> = { [seed.id]: seed };
   try {
-    credentials = { ...credentials, ...(await readJson<Record<string, CredentialRecord>>(credFile)) };
+    credentials = {
+      ...credentials,
+      ...(await readJson<Record<string, CredentialRecord>>(credFile)),
+    };
   } catch {
     /* first run */
   }

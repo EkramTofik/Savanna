@@ -30,7 +30,9 @@ before(async () => {
 after(() => child?.kill());
 
 test("JobPosting JSON-LD", async () => {
-  const res = await fetch(`${BASE}/v1/jobs/J-9.jsonld`, { headers: { "X-Savanna-Key": "pk_live_demo" } });
+  const res = await fetch(`${BASE}/v1/jobs/J-9.jsonld`, {
+    headers: { "X-Savanna-Key": "pk_live_demo" },
+  });
   const body = await res.json();
   assert.equal(res.status, 200);
   assert.equal(body["@type"], "JobPosting");
@@ -42,7 +44,10 @@ test("issue fetch revoke", async () => {
   const issued = await fetch(`${BASE}/v1/credentials`, {
     method: "POST",
     headers: { "X-Savanna-Key": "sk_live_demo", "Content-Type": "application/json" },
-    body: JSON.stringify({ recipientRef: "urn:savanna:learner:test-revoke", achievement: "Test Badge" }),
+    body: JSON.stringify({
+      recipientRef: "urn:savanna:learner:test-revoke",
+      achievement: "Test Badge",
+    }),
   });
   assert.equal(issued.status, 201);
   const badge = await issued.json();

@@ -1,4 +1,4 @@
-import { LitElement, css, html, nothing } from "lit";
+import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { createRef, ref } from "lit/directives/ref.js";
 import am from "./i18n/am.json";
@@ -154,17 +154,32 @@ export class SavannaJobCard extends LitElement {
   @state() private live = "";
 
   private audioRef = createRef<HTMLAudioElement>();
+  private request?: AbortController;
+  private hasLoaded = false;
 
   connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener("savanna:lang-change", this.onLang);
-    void this.load();
+    if (this.hasLoaded) void this.load();
   }
 
   disconnectedCallback(): void {
     window.removeEventListener("savanna:lang-change", this.onLang);
+    this.request?.abort();
     this.audioRef.value?.pause();
     super.disconnectedCallback();
+  }
+
+  protected updated(changed: PropertyValues<this>): void {
+    if (
+      !this.hasLoaded ||
+      changed.has("job") ||
+      changed.has("api") ||
+      changed.has("apiKey")
+    ) {
+      this.hasLoaded = true;
+      void this.load();
+    }
   }
 
   private onLang = (ev: Event) => {
@@ -186,6 +201,9 @@ export class SavannaJobCard extends LitElement {
   }
 
   private async load(): Promise<void> {
+    this.request?.abort();
+    const request = new AbortController();
+    this.request = request;
     this.error = false;
     this.data = null;
     if (!this.job) return;
@@ -193,21 +211,30 @@ export class SavannaJobCard extends LitElement {
       const url = `${this.apiRoot()}/v1/jobs/${encodeURIComponent(this.job)}`;
       const res = await fetch(url, {
         headers: { "X-Savanna-Key": this.apiKey },
+        signal: request.signal,
       });
-      if (!res.ok) throw new Error("bad");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.data = (await res.json()) as JobPayload;
       writeJobsPrefs({ lastJobId: this.job });
       this.injectJsonLd();
       this.dispatchEvent(
-        new CustomEvent("savanna:ready", { bubbles: true, composed: true, detail: { job: this.job } }),
+        new CustomEvent("savanna:ready", {
+          bubbles: true,
+          composed: true,
+          detail: { job: this.job },
+        }),
       );
-    } catch {
+    } catch (error) {
+      if (request.signal.aborted) return;
       this.error = true;
       this.dispatchEvent(
         new CustomEvent("savanna:error", {
           bubbles: true,
           composed: true,
-          detail: { job: this.job },
+          detail: {
+            job: this.job,
+            message: error instanceof Error ? error.message : "Unable to load job",
+          },
         }),
       );
     }
@@ -273,12 +300,12 @@ export class SavannaJobCard extends LitElement {
 
   private formatDate(iso?: string | null): string {
     if (!iso) return "—";
-    // Built for Ethiopia: Amharic dates use the Ethiopian (Ge'ez) calendar.
     const locale = this.activeLang() === "am" ? "am-ET-u-ca-ethiopic" : "en-GB";
     return new Intl.DateTimeFormat(locale, {
       day: "numeric",
       month: "long",
       year: "numeric",
+      timeZone: "UTC",
     }).format(new Date(iso));
   }
 
@@ -294,7 +321,8 @@ export class SavannaJobCard extends LitElement {
     }
     const lang = this.activeLang();
     const desc = this.data.description[lang] ?? this.data.description.en;
-    const reqs = this.data.description.requirements?.[lang] ?? this.data.description.requirements?.en ?? [];
+    const reqs =
+      this.data.description.requirements?.[lang] ?? this.data.description.requirements?.en ?? [];
     const audio = this.audio();
     const prefs = readJobsPrefs();
     return html`
@@ -306,19 +334,26 @@ export class SavannaJobCard extends LitElement {
             <dt>${this.t("job.employer")}</dt>
             <dd>${this.data.employer}</dd>
             <dt>${this.t("job.location")}</dt>
-            <dd>${this.data.location}${this.data.remote ? ` (${this.t("job.remote")})` : nothing}</dd>
-            ${this.data.payText
-              ? html`<dt>${this.t("job.pay")}</dt><dd>${this.data.payText}</dd>`
-              : nothing}
+            <dd>
+              ${this.data.location}${this.data.remote ? ` (${this.t("job.remote")})` : nothing}
+            </dd>
+            ${
+              this.data.payText
+                ? html`<dt>${this.t("job.pay")}</dt>
+                    <dd>${this.data.payText}</dd>`
+                : nothing
+            }
             <dt>${this.t("job.deadline")}</dt>
             <dd>${this.formatDate(this.data.validThrough)}</dd>
           </dl>
-          ${reqs.length
-            ? html`<h3>${this.t("job.requirements")}</h3>
-                <ul>
-                  ${reqs.map((item) => html`<li>${item}</li>`)}
-                </ul>`
-            : nothing}
+          ${
+            reqs.length
+              ? html`<h3>${this.t("job.requirements")}</h3>
+                  <ul>
+                    ${reqs.map((item) => html`<li>${item}</li>`)}
+                  </ul>`
+              : nothing
+          }
           <div class="row">
             <button
               type="button"
@@ -348,7 +383,6 @@ export class SavannaJobCard extends LitElement {
       </div>
     `;
   }
-
 }
 
 declare global {

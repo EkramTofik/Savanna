@@ -12,5 +12,10 @@
     "types": ["node"],
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
-  "include": ["./**/*.ts", "../../packages/components/src/job-card/**/*.ts", "../../packages/components/src/credential/**/*.ts", "../../apps/api/src/routes/**/*.ts"]
+  "include": [
+    "./**/*.ts",
+    "../../packages/components/src/job-card/**/*.ts",
+    "../../packages/components/src/credential/**/*.ts",
+    "../../apps/api/src/routes/**/*.ts"
+  ]
 }

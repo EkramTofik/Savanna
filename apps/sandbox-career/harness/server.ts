@@ -90,15 +90,17 @@ registerJobs(app, ctx);
 registerCredentials(app, ctx);
 registerVerify(app, ctx);
 
-app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error(err);
-  res.status(500).type("application/problem+json").json({
-    type: "about:blank",
-    title: "Server error",
-    status: 500,
-    detail: "The career API hit an unexpected error.",
-  });
-});
+app.use(
+  (err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error(err);
+    res.status(500).type("application/problem+json").json({
+      type: "about:blank",
+      title: "Server error",
+      status: 500,
+      detail: "The career API hit an unexpected error.",
+    });
+  },
+);
 
 app.listen(port, () => {
   console.log(`Career harness on ${publicBaseUrl}`);

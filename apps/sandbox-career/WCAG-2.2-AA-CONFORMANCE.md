@@ -1,18 +1,18 @@
 # WCAG 2.2 AA conformance report — Career Gateway (Member 3)
 
-Required submission artifact (deck slides 14 and 16: *"your team submits a WCAG 2.2 AA
-conformance report with the code"*). Scope is the Career Gateway slice only:
+Required submission artifact (deck slides 14 and 16: _"your team submits a WCAG 2.2 AA
+conformance report with the code"_). Scope is the Career Gateway slice only:
 `<savanna-job-card>`, `<savanna-credential>`, the `/verify/{id}` page, the apply form,
 the JSON-LD APIs and the certificate PDF. It does **not** cover the player, lessons or
 the host page shell (those are other members' surfaces).
 
-| | |
-| --- | --- |
-| Product | Savanna Access Kit — Career Gateway |
-| Target | WCAG 2.2 Level AA |
+|           |                                                                                            |
+| --------- | ------------------------------------------------------------------------------------------ |
+| Product   | Savanna Access Kit — Career Gateway                                                        |
+| Target    | WCAG 2.2 Level AA                                                                          |
 | Evaluated | 14 November 2026 (automated + source review); manual screen-reader/PDF pass on 15 November |
-| Evaluator | Member 3 (self-assessment) |
-| Contact | see the Telegram group `t.me/AccessibilityHackathon2026` |
+| Evaluator | Member 3 (self-assessment)                                                                 |
+| Contact   | see the Telegram group `t.me/AccessibilityHackathon2026`                                   |
 
 ## How to reproduce
 
@@ -40,42 +40,42 @@ npm install && npm test          # Playwright + axe-core: axe, 320 px, 200%/400%
 
 ## Conformance by criterion (in-scope surfaces)
 
-| SC | Level | Status | Note |
-| -- | ----- | ------ | ---- |
-| 1.1.1 Non-text Content | A | Supports | QR SVG has `role="img"` + "QR code linking to …" |
-| 1.2.1 Audio-only (Prerecorded) | A | Supports | Audio summary has an equivalent transcript on the card |
-| 1.2.2/1.2.3 Captions, Audio Description | A | Not applicable | No video in this slice |
-| 1.3.1 Info and Relationships | A | Supports | `<article>`, heading, `<dl>` facts, `<ul>` requirements |
-| 1.3.2 Meaningful Sequence | A | Supports | Reading order matches visual order |
-| 1.3.4 Orientation | AA | Supports | No orientation lock |
-| 1.3.5 Identify Input Purpose | AA | Supports | `autocomplete` on apply form fields |
-| 1.4.1 Use of Color | A | Supports | Status is text ("Valid"/"Revoked"/"Expired"), not colour alone |
-| 1.4.3 Contrast (Minimum) | AA | Supports | Measured ratios above, all ≥ 4.5:1 |
-| 1.4.4 Resize Text | AA | Supports | rem-based type; 200%/400% zoom tested |
-| 1.4.10 Reflow | AA | Supports | 320 px, no horizontal scroll |
-| 1.4.11 Non-text Contrast | AA | Supports | Focus outline and borders ≥ 3:1 on their backgrounds |
-| 1.4.12 Text Spacing | AA | Supports | No fixed heights that clip; `overflow-wrap: anywhere` |
-| 1.4.13 Content on Hover or Focus | AA | Supports | Only the native `<details>` disclosure is used |
-| 2.1.1 Keyboard | A | Supports | All actions reachable by keyboard |
-| 2.1.2 No Keyboard Trap | A | Supports | No focus traps |
-| 2.2.1 Timing Adjustable | A | Supports | Apply form has no time limit ("There is no time limit on this form") |
-| 2.2.2 Pause, Stop, Hide | A | Supports | Audio has a stop control and never autoplays |
-| 2.4.2 Page Titled | A | Supports | Verify page and apply page have descriptive titles |
-| 2.4.3 Focus Order | A | Supports | Logical tab order |
-| 2.4.4 Link Purpose (In Context) | A | Supports | Descriptive link text |
-| 2.4.6 Headings and Labels | AA | Supports | |
-| 2.4.7 Focus Visible | AA | Supports | 3 px outline, 2–3 px offset |
-| 2.4.11 Focus Not Obscured (Minimum) | AA | Supports | No sticky/overlay elements cover the focused control |
-| 2.5.3 Label in Name | A | Supports | Visible labels match accessible names |
-| 2.5.8 Target Size (Minimum) | AA | Supports | Targets are 44 × 44 px (above the 24 px minimum) |
-| 3.1.1 Language of Page | A | Supports | `lang="en"` on pages, `lang` per component |
-| 3.1.2 Language of Parts | AA | Supports | Amharic content marked `lang="am"` |
-| 3.2.6 Consistent Help | A | Supports | Help/verify links sit in a consistent place |
-| 3.3.1 Error Identification | A | Supports | Apply form shows a text error summary and moves focus |
-| 3.3.2 Labels or Instructions | A | Supports | Every field has a visible `<label>` |
-| 3.3.7 Redundant Entry | A | Supports | Single-step form, no re-entry |
-| 4.1.2 Name, Role, Value | A | Supports | Buttons/links carry name, role and state (`aria-pressed`) |
-| 4.1.3 Status Messages | AA | Supports | `role="status"` live regions announce play/stop and copy |
+| SC                                      | Level | Status         | Note                                                                 |
+| --------------------------------------- | ----- | -------------- | -------------------------------------------------------------------- |
+| 1.1.1 Non-text Content                  | A     | Supports       | QR SVG has `role="img"` + "QR code linking to …"                     |
+| 1.2.1 Audio-only (Prerecorded)          | A     | Supports       | Audio summary has an equivalent transcript on the card               |
+| 1.2.2/1.2.3 Captions, Audio Description | A     | Not applicable | No video in this slice                                               |
+| 1.3.1 Info and Relationships            | A     | Supports       | `<article>`, heading, `<dl>` facts, `<ul>` requirements              |
+| 1.3.2 Meaningful Sequence               | A     | Supports       | Reading order matches visual order                                   |
+| 1.3.4 Orientation                       | AA    | Supports       | No orientation lock                                                  |
+| 1.3.5 Identify Input Purpose            | AA    | Supports       | `autocomplete` on apply form fields                                  |
+| 1.4.1 Use of Color                      | A     | Supports       | Status is text ("Valid"/"Revoked"/"Expired"), not colour alone       |
+| 1.4.3 Contrast (Minimum)                | AA    | Supports       | Measured ratios above, all ≥ 4.5:1                                   |
+| 1.4.4 Resize Text                       | AA    | Supports       | rem-based type; 200%/400% zoom tested                                |
+| 1.4.10 Reflow                           | AA    | Supports       | 320 px, no horizontal scroll                                         |
+| 1.4.11 Non-text Contrast                | AA    | Supports       | Focus outline and borders ≥ 3:1 on their backgrounds                 |
+| 1.4.12 Text Spacing                     | AA    | Supports       | No fixed heights that clip; `overflow-wrap: anywhere`                |
+| 1.4.13 Content on Hover or Focus        | AA    | Supports       | Only the native `<details>` disclosure is used                       |
+| 2.1.1 Keyboard                          | A     | Supports       | All actions reachable by keyboard                                    |
+| 2.1.2 No Keyboard Trap                  | A     | Supports       | No focus traps                                                       |
+| 2.2.1 Timing Adjustable                 | A     | Supports       | Apply form has no time limit ("There is no time limit on this form") |
+| 2.2.2 Pause, Stop, Hide                 | A     | Supports       | Audio has a stop control and never autoplays                         |
+| 2.4.2 Page Titled                       | A     | Supports       | Verify page and apply page have descriptive titles                   |
+| 2.4.3 Focus Order                       | A     | Supports       | Logical tab order                                                    |
+| 2.4.4 Link Purpose (In Context)         | A     | Supports       | Descriptive link text                                                |
+| 2.4.6 Headings and Labels               | AA    | Supports       |                                                                      |
+| 2.4.7 Focus Visible                     | AA    | Supports       | 3 px outline, 2–3 px offset                                          |
+| 2.4.11 Focus Not Obscured (Minimum)     | AA    | Supports       | No sticky/overlay elements cover the focused control                 |
+| 2.5.3 Label in Name                     | A     | Supports       | Visible labels match accessible names                                |
+| 2.5.8 Target Size (Minimum)             | AA    | Supports       | Targets are 44 × 44 px (above the 24 px minimum)                     |
+| 3.1.1 Language of Page                  | A     | Supports       | `lang="en"` on pages, `lang` per component                           |
+| 3.1.2 Language of Parts                 | AA    | Supports       | Amharic content marked `lang="am"`                                   |
+| 3.2.6 Consistent Help                   | A     | Supports       | Help/verify links sit in a consistent place                          |
+| 3.3.1 Error Identification              | A     | Supports       | Apply form shows a text error summary and moves focus                |
+| 3.3.2 Labels or Instructions            | A     | Supports       | Every field has a visible `<label>`                                  |
+| 3.3.7 Redundant Entry                   | A     | Supports       | Single-step form, no re-entry                                        |
+| 4.1.2 Name, Role, Value                 | A     | Supports       | Buttons/links carry name, role and state (`aria-pressed`)            |
+| 4.1.3 Status Messages                   | AA    | Supports       | `role="status"` live regions announce play/stop and copy             |
 
 ## Not yet evaluated (manual pass on 15 November)
 

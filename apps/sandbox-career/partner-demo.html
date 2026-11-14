@@ -9,7 +9,9 @@
         max-width: 42rem;
         margin: 0 auto;
         padding: 1rem;
-        font: 1.125rem/1.5 system-ui, sans-serif;
+        font:
+          1.125rem/1.5 system-ui,
+          sans-serif;
       }
       savanna-job-card,
       savanna-credential {
@@ -32,6 +34,8 @@
       api-key="pk_live_demo"
       lang="en"
     ></savanna-credential>
-    <script type="module" src="/dist/savanna-career.v1.js"></script>
+    <script type="module">
+      await import(`/dist/savanna-career.v1.js?build=${Date.now()}`);
+    </script>
   </body>
 </html>

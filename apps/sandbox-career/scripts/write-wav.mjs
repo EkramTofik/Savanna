@@ -6,7 +6,9 @@ import { spawnSync } from "node:child_process";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(here, "../media/jobs");
 const fixtures = path.join(here, "../../../contracts/fixtures/v1");
-const jobIds = JSON.parse(readFileSync(path.join(fixtures, "jobs.json"), "utf8")).jobs.map((entry) => entry.id);
+const jobIds = JSON.parse(readFileSync(path.join(fixtures, "jobs.json"), "utf8")).jobs.map(
+  (entry) => entry.id,
+);
 mkdirSync(outDir, { recursive: true });
 
 function wavTone(seconds = 24, sampleRate = 22050) {

@@ -58,10 +58,7 @@ function t(el, key) {
 }
 
 function esc(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll('"', "&quot;");
+  return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll('"', "&quot;");
 }
 
 class SavannaCredential extends HTMLElement {
@@ -129,12 +126,14 @@ class SavannaCredential extends HTMLElement {
     const data = this._data;
     const achievement = data.credentialSubject?.achievement?.name || data.name || "Credential";
     const status = data.credentialStatus?.status || "valid";
-    const statusKey = status === "revoked" ? "cred.revoked" : status === "expired" ? "cred.expired" : "cred.valid";
+    const statusKey =
+      status === "revoked" ? "cred.revoked" : status === "expired" ? "cred.expired" : "cred.valid";
     const issued = data.validFrom
-      ? new Intl.DateTimeFormat(lang === "am" ? "am-ET" : "en-GB", {
+      ? new Intl.DateTimeFormat(lang === "am" ? "am-ET-u-ca-ethiopic" : "en-GB", {
           day: "numeric",
           month: "long",
           year: "numeric",
+          timeZone: "UTC",
         }).format(new Date(data.validFrom))
       : "";
     const year = data.validFrom ? new Date(data.validFrom).getFullYear() : new Date().getFullYear();

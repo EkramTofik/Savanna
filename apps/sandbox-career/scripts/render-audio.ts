@@ -6,13 +6,15 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(here, "../media/jobs");
 const fixtures = path.join(here, "../../../contracts/fixtures/v1");
-const availableJobIds: string[] = JSON.parse(await readFile(path.join(fixtures, "jobs.json"), "utf8")).jobs.map(
-  (entry: { id: string }) => entry.id,
-);
+const availableJobIds: string[] = JSON.parse(
+  await readFile(path.join(fixtures, "jobs.json"), "utf8"),
+).jobs.map((entry: { id: string }) => entry.id);
 const requestedJob = process.argv[2];
 const requestedLang = process.argv[3];
 if (requestedJob && !availableJobIds.includes(requestedJob)) {
-  throw new Error(`Unknown job id "${requestedJob}". Available jobs: ${availableJobIds.join(", ")}`);
+  throw new Error(
+    `Unknown job id "${requestedJob}". Available jobs: ${availableJobIds.join(", ")}`,
+  );
 }
 if (requestedLang && requestedLang !== "en" && requestedLang !== "am") {
   throw new Error(`Unknown language "${requestedLang}". Use "en" or "am".`);

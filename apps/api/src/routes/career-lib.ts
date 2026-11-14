@@ -8,13 +8,16 @@ export function problem(
   detail: string,
   extra: Json = {},
 ): void {
-  res.status(status).type("application/problem+json").json({
-    type: "about:blank",
-    title,
-    status,
-    detail,
-    ...extra,
-  });
+  res
+    .status(status)
+    .type("application/problem+json")
+    .json({
+      type: "about:blank",
+      title,
+      status,
+      detail,
+      ...extra,
+    });
 }
 
 export function getKey(req: Request): string {

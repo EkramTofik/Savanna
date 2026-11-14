@@ -90,10 +90,13 @@ export function qrSvg(text, size = 160) {
         const rr = r + y;
         const cc = c + x;
         if (rr < 0 || cc < 0 || rr >= dim || cc >= dim) continue;
-        const on = x === -1 || y === -1 || x === 7 || y === 7
-          ? false
-          : x === 0 || y === 0 || x === 6 || y === 6 || (x >= 2 && x <= 4 && y >= 2 && y <= 4);
-        if (x >= 0 && x <= 6 && y >= 0 && y <= 6) m[rr][cc] = x === 0 || y === 0 || x === 6 || y === 6 || (x >= 2 && x <= 4 && y >= 2 && y <= 4);
+        const on =
+          x === -1 || y === -1 || x === 7 || y === 7
+            ? false
+            : x === 0 || y === 0 || x === 6 || y === 6 || (x >= 2 && x <= 4 && y >= 2 && y <= 4);
+        if (x >= 0 && x <= 6 && y >= 0 && y <= 6)
+          m[rr][cc] =
+            x === 0 || y === 0 || x === 6 || y === 6 || (x >= 2 && x <= 4 && y >= 2 && y <= 4);
         else if (x === -1 || y === -1 || x === 7 || y === 7) m[rr][cc] = false;
         void on;
       }
@@ -160,13 +163,39 @@ export function qrSvg(text, size = 160) {
     m[r][c] = formatBits[i] === 1;
   };
   const fmtMap = [
-    [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 7], [8, 8],
-    [7, 8], [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8],
+    [8, 0],
+    [8, 1],
+    [8, 2],
+    [8, 3],
+    [8, 4],
+    [8, 5],
+    [8, 7],
+    [8, 8],
+    [7, 8],
+    [5, 8],
+    [4, 8],
+    [3, 8],
+    [2, 8],
+    [1, 8],
+    [0, 8],
   ];
   fmtMap.forEach(([r, c], i) => putFmt(r, c, i));
   const fmtMap2 = [
-    [dim - 1, 8], [dim - 2, 8], [dim - 3, 8], [dim - 4, 8], [dim - 5, 8], [dim - 6, 8], [dim - 7, 8],
-    [8, dim - 8], [8, dim - 7], [8, dim - 6], [8, dim - 5], [8, dim - 4], [8, dim - 3], [8, dim - 2], [8, dim - 1],
+    [dim - 1, 8],
+    [dim - 2, 8],
+    [dim - 3, 8],
+    [dim - 4, 8],
+    [dim - 5, 8],
+    [dim - 6, 8],
+    [dim - 7, 8],
+    [8, dim - 8],
+    [8, dim - 7],
+    [8, dim - 6],
+    [8, dim - 5],
+    [8, dim - 4],
+    [8, dim - 3],
+    [8, dim - 2],
+    [8, dim - 1],
   ];
   fmtMap2.forEach(([r, c], i) => putFmt(r, c, i));
 

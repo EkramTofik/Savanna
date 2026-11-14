@@ -1,4 +1,4 @@
-import { LitElement, css, html } from "lit";
+import { LitElement, css, html, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import am from "./i18n/am.json";
 import en from "./i18n/en.json";
@@ -82,20 +82,38 @@ export class SavannaCredential extends LitElement {
   @property({ type: String }) api = "";
   @property({ attribute: "api-key" }) apiKey = "";
   @property({ type: String }) lang = "";
+  @property({ attribute: "id" }) credentialAttribute = "";
+  @property({ attribute: "credential" }) credential = "";
 
   @state() private data: Badge | null = null;
   @state() private error = false;
   @state() private live = "";
+  private request?: AbortController;
+  private hasLoaded = false;
 
   connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener("savanna:lang-change", this.onLang);
-    void this.load();
+    if (this.hasLoaded) void this.load();
   }
 
   disconnectedCallback(): void {
     window.removeEventListener("savanna:lang-change", this.onLang);
+    this.request?.abort();
     super.disconnectedCallback();
+  }
+
+  protected updated(changed: PropertyValues<this>): void {
+    if (
+      !this.hasLoaded ||
+      changed.has("credentialAttribute") ||
+      changed.has("credential") ||
+      changed.has("api") ||
+      changed.has("apiKey")
+    ) {
+      this.hasLoaded = true;
+      void this.load();
+    }
   }
 
   private onLang = (ev: Event) => {
@@ -117,7 +135,7 @@ export class SavannaCredential extends LitElement {
   }
 
   private credentialId(): string {
-    return this.getAttribute("id") || this.getAttribute("credential") || "";
+    return this.credentialAttribute || this.credential || this.id;
   }
 
   private verifyUrl(): string {
@@ -125,6 +143,9 @@ export class SavannaCredential extends LitElement {
   }
 
   private async load(): Promise<void> {
+    this.request?.abort();
+    const request = new AbortController();
+    this.request = request;
     this.error = false;
     this.data = null;
     const id = this.credentialId();
@@ -135,11 +156,30 @@ export class SavannaCredential extends LitElement {
           "X-Savanna-Key": this.apiKey,
           Accept: "application/ld+json",
         },
+        signal: request.signal,
       });
-      if (!res.ok) throw new Error("bad");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.data = (await res.json()) as Badge;
-    } catch {
+      this.dispatchEvent(
+        new CustomEvent("savanna:ready", {
+          bubbles: true,
+          composed: true,
+          detail: { credential: id },
+        }),
+      );
+    } catch (error) {
+      if (request.signal.aborted) return;
       this.error = true;
+      this.dispatchEvent(
+        new CustomEvent("savanna:error", {
+          bubbles: true,
+          composed: true,
+          detail: {
+            credential: id,
+            message: error instanceof Error ? error.message : "Unable to load credential",
+          },
+        }),
+      );
     }
   }
 
@@ -160,8 +200,11 @@ export class SavannaCredential extends LitElement {
   }
 
   private linkedInHref(): string {
-    const name = this.data?.credentialSubject?.achievement?.name ?? this.data?.name ?? "Savanna credential";
-    const year = this.data?.validFrom ? new Date(this.data.validFrom).getFullYear() : new Date().getFullYear();
+    const name =
+      this.data?.credentialSubject?.achievement?.name ?? this.data?.name ?? "Savanna credential";
+    const year = this.data?.validFrom
+      ? new Date(this.data.validFrom).getFullYear()
+      : new Date().getFullYear();
     const month = this.data?.validFrom ? new Date(this.data.validFrom).getMonth() + 1 : 1;
     const params = new URLSearchParams({
       startTask: "CERTIFICATION_NAME",
@@ -184,10 +227,11 @@ export class SavannaCredential extends LitElement {
     const achievement =
       this.data.credentialSubject?.achievement?.name ?? this.data.name ?? "Credential";
     const issued = this.data.validFrom
-      ? new Intl.DateTimeFormat(lang === "am" ? "am-ET" : "en-GB", {
+      ? new Intl.DateTimeFormat(lang === "am" ? "am-ET-u-ca-ethiopic" : "en-GB", {
           day: "numeric",
           month: "long",
           year: "numeric",
+          timeZone: "UTC",
         }).format(new Date(this.data.validFrom))
       : "";
     return html`

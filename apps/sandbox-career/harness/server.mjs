@@ -110,7 +110,10 @@ const openApiDoc = {
 
 const jobsList = JSON.parse(readFileSync(path.join(fixtures, "jobs.json"), "utf8"));
 const jobs = Object.fromEntries(
-  jobsList.jobs.map((j) => [j.id, JSON.parse(readFileSync(path.join(fixtures, "jobs", `${j.id}.json`), "utf8"))]),
+  jobsList.jobs.map((j) => [
+    j.id,
+    JSON.parse(readFileSync(path.join(fixtures, "jobs", `${j.id}.json`), "utf8")),
+  ]),
 );
 const seed = JSON.parse(readFileSync(path.join(fixtures, "credentials", "C-7.json"), "utf8"));
 let credentials = { [seed.id]: seed };
@@ -193,15 +196,14 @@ function toBadge(record) {
   };
   return {
     ...body,
-    proof:
-      record.proof ?? {
-        type: "DataIntegrityProof",
-        cryptosuite: "eddsa-rdfc-2022",
-        proofPurpose: "assertionMethod",
-        verificationMethod: "did:web:localhost%3A4020#key-1",
-        warning:
-          "Hosted verification is the supported path. POST /v1/credentials attaches an Ed25519 canonical-JSON proof.",
-      },
+    proof: record.proof ?? {
+      type: "DataIntegrityProof",
+      cryptosuite: "eddsa-rdfc-2022",
+      proofPurpose: "assertionMethod",
+      verificationMethod: "did:web:localhost%3A4020#key-1",
+      warning:
+        "Hosted verification is the supported path. POST /v1/credentials attaches an Ed25519 canonical-JSON proof.",
+    },
   };
 }
 
@@ -216,7 +218,10 @@ function jobLd(job) {
     validThrough: job.validThrough,
     employmentType: job.employmentType || "FULL_TIME",
     hiringOrganization: { "@type": "Organization", name: job.employer },
-    jobLocation: { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: job.location, addressCountry: "ET" } },
+    jobLocation: {
+      "@type": "Place",
+      address: { "@type": "PostalAddress", addressLocality: job.location, addressCountry: "ET" },
+    },
     jobLocationType: job.remote ? "TELECOMMUTE" : "ON_SITE",
     url: `${publicBaseUrl}${job.applyUrl}`,
     directApply: true,
@@ -235,11 +240,20 @@ function send(res, status, body, type = "application/json; charset=utf-8") {
 }
 
 function problem(res, status, title, detail) {
-  send(res, status, { type: "about:blank", title, status, detail }, "application/problem+json; charset=utf-8");
+  send(
+    res,
+    status,
+    { type: "about:blank", title, status, detail },
+    "application/problem+json; charset=utf-8",
+  );
 }
 
 function keyOf(req) {
-  return req.headers["x-savanna-key"] || new URL(req.url, publicBaseUrl).searchParams.get("api-key") || "";
+  return (
+    req.headers["x-savanna-key"] ||
+    new URL(req.url, publicBaseUrl).searchParams.get("api-key") ||
+    ""
+  );
 }
 
 function needPub(req, res) {
@@ -266,14 +280,22 @@ function mime(file) {
 }
 
 function esc(value) {
-  return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 function verifyHtml(record) {
   const status = statusOf(record);
   const url = `${publicBaseUrl}/verify/${record.id}`;
   const qr = qrSvg(url, 160);
-  const issued = new Date(record.issuedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const issued = new Date(record.issuedAt).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Verify credential — ${esc(record.achievement)}</title>
@@ -394,7 +416,10 @@ async function readBody(req) {
 
 const staticFiles = {
   "/components/job-card.ce.js": path.join(repo, "packages/components/src/job-card/job-card.ce.js"),
-  "/components/credential.ce.js": path.join(repo, "packages/components/src/credential/credential.ce.js"),
+  "/components/credential.ce.js": path.join(
+    repo,
+    "packages/components/src/credential/credential.ce.js",
+  ),
 };
 
 const server = createServer(async (req, res) => {
@@ -432,24 +457,35 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (req.method === "GET" && p === "/.well-known/did.json") {
-      send(res, 200, {
-        "@context": ["https://www.w3.org/ns/did/v1"],
-        id: "did:web:localhost%3A4020",
-        verificationMethod: [{
-          id: "did:web:localhost%3A4020#key-1",
-          type: "Multikey",
-          controller: "did:web:localhost%3A4020",
-          publicKeyJwk: { kty: "OKP", crv: "Ed25519", x: DEMO_JWK.x },
-        }],
-        assertionMethod: ["did:web:localhost%3A4020#key-1"],
-      }, "application/did+json");
+      send(
+        res,
+        200,
+        {
+          "@context": ["https://www.w3.org/ns/did/v1"],
+          id: "did:web:localhost%3A4020",
+          verificationMethod: [
+            {
+              id: "did:web:localhost%3A4020#key-1",
+              type: "Multikey",
+              controller: "did:web:localhost%3A4020",
+              publicKeyJwk: { kty: "OKP", crv: "Ed25519", x: DEMO_JWK.x },
+            },
+          ],
+          assertionMethod: ["did:web:localhost%3A4020#key-1"],
+        },
+        "application/did+json",
+      );
       return;
     }
     if (req.method === "GET" && p === "/v1/jobs") {
       if (!needPub(req, res)) return;
       send(res, 200, {
         jobs: Object.values(jobs).map((job) => ({
-          id: job.id, title: job.title, employer: job.employer, location: job.location, remote: job.remote,
+          id: job.id,
+          title: job.title,
+          employer: job.employer,
+          location: job.location,
+          remote: job.remote,
         })),
       });
       return;
@@ -539,9 +575,15 @@ const server = createServer(async (req, res) => {
       if (!needPub(req, res)) return;
       const record = credentials[credHtml[1]];
       if (!record) return problem(res, 404, "Not Found", "Credential was not found.");
-      send(res, 200, verifyHtml(record).replace("<h1>Credential verification</h1>",
-        `<h1>${esc(record.achievement)}</h1><p>Print this page to PDF (tagged print path depends on the browser). Live status: ${esc(statusOf(record))}.</p><h2>Credential verification</h2>`),
-        "text/html; charset=utf-8");
+      send(
+        res,
+        200,
+        verifyHtml(record).replace(
+          "<h1>Credential verification</h1>",
+          `<h1>${esc(record.achievement)}</h1><p>Print this page to PDF (tagged print path depends on the browser). Live status: ${esc(statusOf(record))}.</p><h2>Credential verification</h2>`,
+        ),
+        "text/html; charset=utf-8",
+      );
       return;
     }
     const credRevoke = p.match(/^\/v1\/credentials\/([^/]+)\/revoke$/);
@@ -567,8 +609,14 @@ const server = createServer(async (req, res) => {
       const record = credentials[verify[1]];
       if (!record) {
         const accept = req.headers.accept || "";
-        if (accept.includes("ld+json")) return problem(res, 404, "Not Found", "Credential was not found.");
-        send(res, 404, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Not found</title></head><body><main><h1>Credential not found</h1></main></body></html>`, "text/html; charset=utf-8");
+        if (accept.includes("ld+json"))
+          return problem(res, 404, "Not Found", "Credential was not found.");
+        send(
+          res,
+          404,
+          `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Not found</title></head><body><main><h1>Credential not found</h1></main></body></html>`,
+          "text/html; charset=utf-8",
+        );
         return;
       }
       if ((req.headers.accept || "").includes("ld+json")) {

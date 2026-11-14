@@ -14,7 +14,7 @@ export default defineConfig({
       reuseExistingServer: true,
     },
     {
-      command: "npm run ui",
+      command: "npm run ui-only",
       url: "http://localhost:5173",
       reuseExistingServer: true,
     },

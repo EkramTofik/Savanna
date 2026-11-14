@@ -22,6 +22,19 @@ node --test test/api.node.test.mjs
 
 Keys: publishable `pk_live_demo`, secret `sk_live_demo`.
 
+## Run the UI and API together
+
+Start the local API harness and Vite UI in one terminal from the repository root:
+
+```bash
+pnpm --filter sandbox-career dev
+```
+
+Open http://localhost:5173. This command starts both required services: Vite on port
+5173 and the API harness on port 4020. Do not start only `ui-only` unless the API
+harness is already running. To use the no-build harness page instead, start
+`node apps/sandbox-career/harness/server.mjs` and open http://localhost:4020.
+
 ## Tests
 
 ```bash
@@ -73,7 +86,9 @@ publish it to your CDN. Load it once, then use either element in any HTML templa
 
 In React, Vue and Angular, load the same module once from the app shell and place the
 custom-element tags in the component template. Keep values as strings/HTML attributes.
-Use `savanna:ready` and `savanna:error` events to observe job loading where needed.
+Both elements emit `savanna:ready` and `savanna:error` and reload when their identifying
+attributes or API settings change. See the [platform integration guide](./PLATFORM-INTEGRATION.md)
+for framework-specific React, Vue and Angular examples, including event handling.
 The [partner demo page](./partner-demo.html) and Playwright test exercise the built bundle
 against the API on a different port.
 
@@ -102,5 +117,9 @@ After `npm run build`, partners can load `dist/savanna-career.v1.js` and drop in
 
 ```html
 <savanna-job-card job="J-9" api="https://api.example.org" api-key="pk_live_xxx"></savanna-job-card>
-<savanna-credential id="C-7" api="https://api.example.org" api-key="pk_live_xxx"></savanna-credential>
+<savanna-credential
+  id="C-7"
+  api="https://api.example.org"
+  api-key="pk_live_xxx"
+></savanna-credential>
 ```

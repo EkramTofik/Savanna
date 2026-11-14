@@ -5,10 +5,14 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(here, "../media/jobs");
 const fixtures = path.join(here, "../../../contracts/fixtures/v1");
-const availableJobIds = JSON.parse(await readFile(path.join(fixtures, "jobs.json"), "utf8")).jobs.map((entry) => entry.id);
+const availableJobIds = JSON.parse(
+  await readFile(path.join(fixtures, "jobs.json"), "utf8"),
+).jobs.map((entry) => entry.id);
 const requestedJob = process.argv[2];
 if (requestedJob && !availableJobIds.includes(requestedJob)) {
-  throw new Error(`Unknown job id "${requestedJob}". Available jobs: ${availableJobIds.join(", ")}`);
+  throw new Error(
+    `Unknown job id "${requestedJob}". Available jobs: ${availableJobIds.join(", ")}`,
+  );
 }
 const jobIds = requestedJob ? [requestedJob] : availableJobIds;
 
@@ -80,11 +84,15 @@ for (const id of jobIds) {
   try {
     for (const [index, piece] of pieces.entries()) {
       frames.push(await say(piece));
-      console.log(`  ${id}-${LANG}: chunk ${index + 1}/${pieces.length} (${piece.length} chars, ${frames.at(-1).length} bytes)`);
+      console.log(
+        `  ${id}-${LANG}: chunk ${index + 1}/${pieces.length} (${piece.length} chars, ${frames.at(-1).length} bytes)`,
+      );
       if (index < pieces.length - 1) await sleep(400);
     }
   } catch (error) {
-    console.error(`${id}-${LANG}: failed at chunk ${frames.length + 1}/${pieces.length} - ${error.message}`);
+    console.error(
+      `${id}-${LANG}: failed at chunk ${frames.length + 1}/${pieces.length} - ${error.message}`,
+    );
     failed = true;
     continue;
   }

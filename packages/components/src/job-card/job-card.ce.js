@@ -129,12 +129,16 @@ class SavannaJobCard extends HTMLElement {
       prefsWrite({ lastJobId: job });
       this._injectLd();
       this._render();
-      this.dispatchEvent(new CustomEvent("savanna:ready", { bubbles: true, composed: true, detail: { job } }));
+      this.dispatchEvent(
+        new CustomEvent("savanna:ready", { bubbles: true, composed: true, detail: { job } }),
+      );
     } catch {
       this.shadowRoot.innerHTML = `<style>${css}</style><p>${t(this, "job.error")}</p>
         <button type="button" class="retry">${t(this, "job.retry")}</button>`;
       this.shadowRoot.querySelector(".retry")?.addEventListener("click", () => this._load());
-      this.dispatchEvent(new CustomEvent("savanna:error", { bubbles: true, composed: true, detail: { job } }));
+      this.dispatchEvent(
+        new CustomEvent("savanna:error", { bubbles: true, composed: true, detail: { job } }),
+      );
     }
   }
 
@@ -169,7 +173,12 @@ class SavannaJobCard extends HTMLElement {
     const apply = job.applyUrl.startsWith("http") ? job.applyUrl : `${this._root()}${job.applyUrl}`;
     const locale = lang === "am" ? "am-ET-u-ca-ethiopic" : "en-GB";
     const deadline = job.validThrough
-      ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" }).format(new Date(job.validThrough))
+      ? new Intl.DateTimeFormat(locale, {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          timeZone: "UTC",
+        }).format(new Date(job.validThrough))
       : "—";
     const reqHtml = reqs.length
       ? `<h3>${t(this, "job.requirements")}</h3><ul>${reqs.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`

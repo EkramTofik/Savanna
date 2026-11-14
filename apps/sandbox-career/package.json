@@ -4,9 +4,10 @@
   "type": "module",
   "scripts": {
     "start": "node harness/server.mjs",
-    "dev": "node harness/server.mjs",
+    "dev": "npm run ui",
     "api": "node harness/server.mjs",
-    "ui": "vite --port 5173 --strictPort",
+    "ui": "concurrently -k -n API,UI \"npm:api\" \"npm:ui-only\"",
+    "ui-only": "vite --port 5173 --strictPort",
     "build": "vite build",
     "test": "vite build && playwright test",
     "audio": "tsx scripts/render-audio.ts",
