@@ -3,7 +3,9 @@ import type { Router } from "express";
 import { HttpError } from "../lib/errors";
 import type { Ctx } from "../lib/context";
 import { toManifest } from "../lib/manifest";
-import { LangQuery } from "../schemas/lesson";
+import { z } from "zod";
+import type { OperationDoc } from "../lib/openapi";
+import { LangQuery, LessonListSchema, LessonManifestSchema, TranscriptSchema } from "../schemas/lesson";
 
 export function register(router: Router, ctx: Ctx) {
   router.get("/lessons", async (_req, res) => {
@@ -34,3 +36,29 @@ export function register(router: Router, ctx: Ctx) {
     res.json(t);
   });
 }
+
+const IdParam = z.object({ id: z.string().describe("Lesson id, e.g. L-102") });
+
+export const openapi: OperationDoc[] = [
+  {
+    method: "get", path: "/lessons", summary: "List lessons", tags: ["Lessons"],
+    responses: { 200: { description: "Published lessons.", schema: LessonListSchema } },
+  },
+  {
+    method: "get", path: "/lessons/{id}", summary: "Get a lesson manifest", tags: ["Lessons"],
+    description: "Everything a player needs: media, English and Amharic captions, sign video, audio description, transcript and offline pack. Fields that do not exist for a lesson are null.",
+    params: IdParam,
+    responses: { 200: { description: "The lesson manifest (contract C1).", schema: LessonManifestSchema }, 404: { description: "Unknown lesson." } },
+  },
+  {
+    method: "get", path: "/lessons/{id}/captions/{file}", summary: "Get a caption file", tags: ["Lessons"],
+    description: "Redirects to the WebVTT file for the requested language.",
+    params: IdParam.extend({ file: z.enum(["en.vtt", "am.vtt"]) }),
+    responses: { 302: { description: "Redirect to the caption file.", headers: { Location: "URL of the WebVTT file" } }, 404: { description: "No captions in that language." } },
+  },
+  {
+    method: "get", path: "/lessons/{id}/transcript", summary: "Get a lesson transcript", tags: ["Lessons"],
+    params: IdParam, query: LangQuery,
+    responses: { 200: { description: "Timed transcript lines.", schema: TranscriptSchema }, 404: { description: "No transcript in that language." } },
+  },
+];

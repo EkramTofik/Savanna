@@ -21,6 +21,9 @@
   Mounting (added in task 4.2, additive): default `access = "key"` -> your router is mounted under `/v1` behind
   `X-Savanna-Key` auth, so register paths WITHOUT `/v1` (e.g. `router.get("/jobs/:id", ...)`).
   `export const access = "public"` -> mounted at the root with no auth, so use FULL paths
-  (e.g. `/verify/:id`, `/v1/health`). Admin actions: `router.post("/credentials", requireScope("admin"), ...)`.
+  (e.g. `/verify/:id`, `/v1/health`).
+  **Every route file must also export `openapi: OperationDoc[]`** (summary, Zod schemas for params/query/body/responses;
+  see `apps/api/src/routes/lessons.ts`). The spec at `/v1/openapi.json`, Swagger UI at `/docs` and the SDK are built from it.
+  A test fails if a route file has no docs or documents a route that does not exist. Admin actions: `router.post("/credentials", requireScope("admin"), ...)`.
 - C8 Fixtures: M4 L-102, transcript, preferences; M1 captions (`media/en.vtt`, `media/am.vtt`) and the lesson video;
   M2 L-103, sign, AD, pack; M3 jobs/credentials. Replace placeholders with real files anytime; keep the file names.

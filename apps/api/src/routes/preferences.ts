@@ -6,6 +6,8 @@ import { createHash } from "node:crypto";
 import type { Request, Router } from "express";
 import { HttpError } from "../lib/errors";
 import type { Ctx } from "../lib/context";
+import { z } from "zod";
+import type { OperationDoc } from "../lib/openapi";
 import { PreferencesSchema } from "../schemas/preferences";
 
 function userHash(req: Request): string {
@@ -28,3 +30,21 @@ export function register(router: Router, ctx: Ctx) {
     res.json(prefs);
   });
 }
+
+const UserHeader = z.object({
+  "X-Savanna-User": z.string().min(16).max(200).describe("Opaque per-user id (16+ characters) issued by the host platform. Treat it like a password; only its hash is stored."),
+});
+
+export const openapi: OperationDoc[] = [
+  {
+    method: "get", path: "/preferences", summary: "Get a user's saved preferences", tags: ["Preferences"],
+    headers: UserHeader,
+    responses: { 200: { description: "The preferences object ({} if none saved yet).", schema: PreferencesSchema } },
+  },
+  {
+    method: "put", path: "/preferences", summary: "Save a user's preferences", tags: ["Preferences"],
+    description: "Replaces the whole object. Each owner writes only their own namespace (contract C3).",
+    headers: UserHeader, body: PreferencesSchema,
+    responses: { 200: { description: "The saved preferences.", schema: PreferencesSchema } },
+  },
+];
