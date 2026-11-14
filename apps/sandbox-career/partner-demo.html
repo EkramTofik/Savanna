@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Partner careers page</title>
+    <style>
+      body {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: 1rem;
+        font:
+          1.125rem/1.5 system-ui,
+          sans-serif;
+      }
+      savanna-job-card,
+      savanna-credential {
+        display: block;
+        margin-block: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Partner careers page</h1>
+    <savanna-job-card
+      job="J-9"
+      api="http://localhost:4020"
+      api-key="pk_live_demo"
+      lang="en"
+    ></savanna-job-card>
+    <savanna-credential
+      id="C-7"
+      api="http://localhost:4020"
+      api-key="pk_live_demo"
+      lang="en"
+    ></savanna-credential>
+    <script type="module">
+      await import(`/dist/savanna-career.v1.js?build=${Date.now()}`);
+    </script>
+  </body>
+</html>

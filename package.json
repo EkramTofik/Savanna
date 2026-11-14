@@ -10,7 +10,11 @@
   "scripts": {
     "mock": "node contracts/mock/server.js",
     "format": "prettier --write .",
-    "test": "node --test packages/pipeline/src/pack/*.test.mjs"
+    "test": "node --test packages/pipeline/src/pack/*.test.mjs",
+    "ui": "pnpm --filter sandbox-career ui",
+    "career": "pnpm --filter sandbox-career dev",
+    "dev:api": "pnpm --filter @savanna/api dev",
+    "openapi": "pnpm --filter @savanna/api openapi:export && pnpm --filter @savanna/sdk generate"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -23,5 +27,10 @@
     "prettier": "^3.4.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/express": "^5.0.6"
+    }
   }
 }
