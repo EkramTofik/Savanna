@@ -5,7 +5,7 @@
   job="J-9"
   api="http://localhost:4020"
   api-key="pk_live_demo"
-  lang="en"
+  lang="am"
 ></savanna-job-card>
 ```
 

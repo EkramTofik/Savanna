@@ -1,14 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="am">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Savanna Career Gateway — sandbox</title>
+    <title>የሳቫና የሥራ መግቢያ ማሳያ</title>
     <style>
       body {
         margin: 0;
         font:
-          1.125rem/1.5 "Segoe UI",
+          1.125rem/1.5 "Noto Sans Ethiopic",
+          Nyala,
+          "Segoe UI",
           system-ui,
           sans-serif;
         color: #111;
@@ -42,26 +44,22 @@
   </head>
   <body>
     <header>
-      <h1>Career Gateway sandbox</h1>
-      <p>
-        <button type="button" data-lang="en">English</button>
-        <button type="button" data-lang="am">አማርኛ</button>
-      </p>
+      <h1>የሳቫና የሥራ መግቢያ ማሳያ</h1>
     </header>
     <main>
-      <h2>Job</h2>
+      <h2>የሥራ ዕድል</h2>
       <savanna-job-card
         job="J-9"
         api="http://localhost:4020"
         api-key="pk_live_demo"
-        lang="en"
+        lang="am"
       ></savanna-job-card>
-      <h2>Certificate</h2>
+      <h2>የምስክር ወረቀት</h2>
       <savanna-credential
         id="C-7"
         api="http://localhost:4020"
         api-key="pk_live_demo"
-        lang="en"
+        lang="am"
       ></savanna-credential>
     </main>
     <script type="module" src="/src/main.ts"></script>

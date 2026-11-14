@@ -208,7 +208,7 @@ export function qrSvg(text, size = 160) {
       }
     }
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img" aria-label="QR code linking to ${escapeXml(text)}">${rects}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img" aria-label="የፈጣን ምላሽ ኮድ፤ የማረጋገጫ አገናኝ ${escapeXml(text)}">${rects}</svg>`;
 }
 
 function escapeXml(value) {

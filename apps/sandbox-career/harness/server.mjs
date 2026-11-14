@@ -13,6 +13,9 @@ const publicBaseUrl = process.env.PUBLIC_BASE_URL ?? `http://localhost:${port}`;
 const PK = "pk_live_demo";
 const SK = "sk_live_demo";
 const credFile = path.join(here, "credentials-db.json");
+const amharicContent = JSON.parse(
+  readFileSync(path.join(repo, "apps/api/src/routes/member3-amharic.json"), "utf8"),
+);
 
 // Plug-in Level 2 (deck s12): a REST API described by OpenAPI so another
 // platform's engineers can integrate it. Mirrors the route-module OpenAPI
@@ -119,13 +122,20 @@ const jobsList = JSON.parse(readFileSync(path.join(fixtures, "jobs.json"), "utf8
 const jobs = Object.fromEntries(
   jobsList.jobs.map((j) => [
     j.id,
-    JSON.parse(readFileSync(path.join(fixtures, "jobs", `${j.id}.json`), "utf8")),
+    {
+      ...JSON.parse(readFileSync(path.join(fixtures, "jobs", `${j.id}.json`), "utf8")),
+      ...amharicContent.jobs[j.id],
+    },
   ]),
 );
-const seed = JSON.parse(readFileSync(path.join(fixtures, "credentials", "C-7.json"), "utf8"));
+const rawSeed = JSON.parse(readFileSync(path.join(fixtures, "credentials", "C-7.json"), "utf8"));
+const seed = { ...rawSeed, ...amharicContent.credentials[rawSeed.id] };
 let credentials = { [seed.id]: seed };
 if (existsSync(credFile)) {
   credentials = { ...credentials, ...JSON.parse(readFileSync(credFile, "utf8")) };
+}
+if (credentials[seed.id]) {
+  credentials[seed.id] = { ...credentials[seed.id], ...amharicContent.credentials[seed.id] };
 }
 
 const DEMO_JWK = {
@@ -158,7 +168,7 @@ function signPayload(payload) {
     verificationMethod: "did:web:localhost%3A4020#key-1",
     proofValue: `z${signature.toString("base64url")}`,
     warning:
-      "Hackathon proof: Ed25519 over canonical JSON, not full RDFC-1.0. Hosted verification is the supported path.",
+      "የሃካቶን ማረጋገጫ፦ ኤድ25519 በተደራጀ JSON ላይ ተመስርቷል፤ ሙሉ RDFC-1.0 አይደለም። በአገልጋይ ላይ ማረጋገጥ የሚደገፈው መንገድ ነው።",
   };
 }
 
@@ -166,6 +176,11 @@ function statusOf(record) {
   if (record.status === "revoked") return "revoked";
   if (record.expiresAt && Date.parse(record.expiresAt) < Date.now()) return "expired";
   return "valid";
+}
+
+function statusLabel(record) {
+  const status = statusOf(record);
+  return status === "valid" ? "ትክክለኛ" : status === "revoked" ? "ተሰርዟል" : "ጊዜው አልፏል";
 }
 
 function toBadge(record) {
@@ -179,7 +194,7 @@ function toBadge(record) {
     id: verifyUrl,
     type: ["VerifiableCredential", "OpenBadgeCredential"],
     name: record.achievement,
-    issuer: { id: "did:web:localhost%3A4020", type: ["Profile"], name: "Savanna Access Kit" },
+    issuer: { id: "did:web:localhost%3A4020", type: ["Profile"], name: amharicContent.issuerName },
     validFrom: record.validFrom,
     credentialStatus: {
       id: `${publicBaseUrl}/v1/credentials/${record.id}`,
@@ -196,7 +211,7 @@ function toBadge(record) {
         id: `${publicBaseUrl}/achievements/${encodeURIComponent(record.achievement)}`,
         type: ["Achievement"],
         name: record.achievement,
-        description: "Issued by Savanna Access Kit after course completion.",
+        description: "ኮርሱን ከጨረሰ በኋላ በሳቫና ተደራሽነት ኪት የተሰጠ።",
         achievementType: "Certificate",
       },
     },
@@ -209,7 +224,7 @@ function toBadge(record) {
       proofPurpose: "assertionMethod",
       verificationMethod: "did:web:localhost%3A4020#key-1",
       warning:
-        "Hosted verification is the supported path. POST /v1/credentials attaches an Ed25519 canonical-JSON proof.",
+        "በአገልጋይ ላይ ማረጋገጥ የሚደገፈው መንገድ ነው። POST /v1/credentials የኤድ25519 ማረጋገጫ ፊርማ ያያይዛል።",
     },
   };
 }
@@ -220,7 +235,7 @@ function jobLd(job) {
     "@type": "JobPosting",
     identifier: job.id,
     title: job.title,
-    description: `${job.description.en} Remote-friendly, screen-reader-tested application.`,
+    description: job.description.am,
     datePosted: "2026-11-12",
     validThrough: job.validThrough,
     employmentType: job.employmentType || "FULL_TIME",
@@ -298,16 +313,17 @@ function verifyHtml(record) {
   const status = statusOf(record);
   const url = `${publicBaseUrl}/verify/${record.id}`;
   const qr = qrSvg(url, 160);
-  const issued = new Date(record.issuedAt).toLocaleDateString("en-GB", {
+  const issued = new Date(record.issuedAt).toLocaleDateString("am-ET-u-ca-ethiopic", {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+  return `<!DOCTYPE html><html lang="am"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Verify credential — ${esc(record.achievement)}</title>
+<title>የምስክር ወረቀት ማረጋገጫ — ${esc(record.achievement)}</title>
 <style>
-body{margin:0;font:1.125rem/1.5 system-ui,sans-serif;color:#111;padding:1.25rem;max-width:40rem}
+body{margin:0;font:1.125rem/1.5 "Noto Sans Ethiopic",Nyala,system-ui,sans-serif;color:#111;padding:1.25rem;max-width:40rem}
 .status{display:inline-block;padding:.35rem .7rem;border-radius:.35rem;font-weight:700;min-height:44px;line-height:1.8}
 .valid{background:#d7f5d7;color:#064b06}.revoked,.expired{background:#fde8e8;color:#7a1010}
 *,*::before,*::after{box-sizing:border-box}
@@ -317,57 +333,57 @@ padding:.5rem 1rem;margin:.5rem .5rem 0 0;font:inherit;color:#fff;background:#0b
 text-decoration:none;cursor:pointer}
 :focus{outline:3px solid #0b5cab;outline-offset:2px}
 </style></head><body><main>
-<h1>Credential verification</h1>
-<p><span class="status ${esc(status)}">${status === "valid" ? "Valid" : status === "revoked" ? "Revoked" : "Expired"}</span></p>
+<h1>የምስክር ወረቀት ማረጋገጫ</h1>
+<p><span class="status ${esc(status)}">${status === "valid" ? "ትክክለኛ" : status === "revoked" ? "ተሰርዟል" : "ጊዜው አልፏል"}</span></p>
 <dl>
-<dt>Achievement</dt><dd>${esc(record.achievement)}</dd>
-<dt>Recipient</dt><dd>${esc(record.recipientName || "Learner (pseudonymous)")}</dd>
-<dt>Issued</dt><dd>${esc(issued)}</dd>
-<dt>Issuer</dt><dd>Savanna Access Kit</dd>
-<dt>Status</dt><dd>${esc(status)}</dd>
-<dt>Id</dt><dd><code>${esc(record.id)}</code></dd>
+<dt>ስኬት</dt><dd>${esc(record.achievement)}</dd>
+<dt>ተቀባይ</dt><dd>${esc(record.recipientName || "ስሙ በግል ተጠብቋል")}</dd>
+<dt>የተሰጠበት ቀን</dt><dd>${esc(issued)}</dd>
+<dt>ሰጪ</dt><dd>${esc(amharicContent.issuerName)}</dd>
+<dt>ሁኔታ</dt><dd>${status === "valid" ? "ትክክለኛ" : status === "revoked" ? "ተሰርዟል" : "ጊዜው አልፏል"}</dd>
+<dt>መለያ</dt><dd><code>${esc(record.id)}</code></dd>
 </dl>
-<p>Hosted verification looks this credential up on the issuer server. The Ed25519 proof is a draft (canonical JSON, not RDFC-1.0).</p>
+<p>ይህ ማረጋገጫ የምስክር ወረቀቱን ሁኔታ በሰጪው አገልጋይ ላይ ይፈትሻል። የኤድ25519 ፊርማው የሙከራ ስሪት ነው፤ ሙሉ RDFC-1.0 አይደለም።</p>
 <div>${qr}</div>
-<p><button type="button" id="copy">Copy verification link</button>
-<a class="button" href="/verify/${encodeURIComponent(record.id)}/pdf">Download tagged PDF</a></p>
+<p><button type="button" id="copy">የማረጋገጫ አገናኝ ቅዳ</button>
+<a class="button" href="/verify/${encodeURIComponent(record.id)}/pdf">ምስክር ወረቀቱን አውርድ</a></p>
 <p id="copied" role="status" aria-live="polite"></p>
 </main>
 <script>
 const url = ${JSON.stringify(url)};
 document.getElementById("copy").addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText(url); document.getElementById("copied").textContent = "Link copied."; }
+  try { await navigator.clipboard.writeText(url); document.getElementById("copied").textContent = "አገናኙ ተቀድቷል።"; }
   catch { document.getElementById("copied").textContent = url; }
 });
 </script></body></html>`;
 }
 
 function applyHtml(jobId) {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>Apply — ${esc(jobId)}</title>
+  return `<!DOCTYPE html><html lang="am"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>ለሥራ ያመልክቱ — ${esc(jobId)}</title>
 <style>*,*::before,*::after{box-sizing:border-box}
-body{font:1.125rem/1.5 system-ui,sans-serif;margin:0;padding:1.25rem;max-width:40rem}
+body{font:1.125rem/1.5 "Noto Sans Ethiopic",Nyala,system-ui,sans-serif;margin:0;padding:1.25rem;max-width:40rem}
 label{display:block;font-weight:700;margin-top:1rem} input,textarea{width:100%;min-height:44px;font:inherit;padding:.4rem}
 button{min-height:44px;min-width:44px;font:inherit;margin-top:1rem;padding:.5rem 1rem}
 .error{color:#7a1010;background:#fde8e8;padding:.75rem}:focus{outline:3px solid #0b5cab;outline-offset:2px}</style>
-</head><body><main><h1>Apply for job ${esc(jobId)}</h1>
-<p>There is no time limit on this form. You can save and return.</p>
+</head><body><main><h1>ለ ${esc(jobId)} የሥራ ዕድል ያመልክቱ</h1>
+<p>በዚህ ቅጽ ላይ የጊዜ ገደብ የለም። መረጃውን አስቀምጠው በኋላ መመለስ ይችላሉ።</p>
 <div id="errors" class="error" hidden role="alert"></div>
 <form id="apply" novalidate>
-<label for="name">Full name</label><input id="name" name="name" required autocomplete="name">
-<label for="contact">Email or phone</label><input id="contact" name="contact" required autocomplete="email">
-<label for="why">Why this role? (plain language is welcome)</label>
+<label for="name">ሙሉ ስም</label><input id="name" name="name" required autocomplete="name">
+<label for="contact">ኢሜይል ወይም ስልክ</label><input id="contact" name="contact" required autocomplete="email">
+<label for="why">ለምን ይህን ሥራ መረጡ? (በቀላል ቋንቋ መጻፍ ይችላሉ)</label>
 <textarea id="why" name="why" rows="5" required></textarea>
-<button type="submit">Send application</button>
+<button type="submit">ማመልከቻውን ላክ</button>
 </form><p id="done" role="status" aria-live="polite"></p></main>
 <script>
 const form=document.getElementById("apply"); const errors=document.getElementById("errors");
 form.addEventListener("submit",(ev)=>{ev.preventDefault();
 const missing=[...form.querySelectorAll("[required]")].filter(el=>!el.value.trim());
-if(missing.length){errors.hidden=false; errors.innerHTML="<p>Please fill: "+missing.map(el=>{
+if(missing.length){errors.hidden=false; errors.innerHTML="<p>እባክዎ ይሙሉ፦ "+missing.map(el=>{
   const label=form.querySelector("label[for='"+el.id+"']"); return label?label.textContent:el.id;
-}).join(", ")+".</p>"; missing[0].focus(); return;}
-errors.hidden=true; document.getElementById("done").textContent="Application recorded locally for the demo. Thank you."; form.reset();});
+}).join("፣ ")+"።</p>"; missing[0].focus(); return;}
+errors.hidden=true; document.getElementById("done").textContent="ማመልከቻው ለማሳያው በአካባቢው ተመዝግቧል። እናመሰግናለን።"; form.reset();});
 </script></body></html>`;
 }
 
@@ -375,42 +391,30 @@ function sandboxHtml() {
   const jobCards = jobsList.jobs
     .map(
       (job) =>
-        `<savanna-job-card job="${esc(job.id)}" api="${publicBaseUrl}" api-key="${PK}" lang="en"></savanna-job-card>`,
+        `<savanna-job-card job="${esc(job.id)}" api="${publicBaseUrl}" api-key="${PK}" lang="am"></savanna-job-card>`,
     )
     .join("\n");
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+  return `<!DOCTYPE html><html lang="am"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Savanna Career Gateway — sandbox</title>
+<title>የሳቫና የሥራ መግቢያ ማሳያ</title>
 <style>
-body{margin:0;font:1.125rem/1.5 system-ui,sans-serif;color:#111;background:#f7f7f7}
+body{margin:0;font:1.125rem/1.5 "Noto Sans Ethiopic",Nyala,system-ui,sans-serif;color:#111;background:#f7f7f7}
 header,main{max-width:42rem;margin:0 auto;padding:1rem}
 button{min-height:44px;min-width:44px;font:inherit;margin-right:.5rem}
 savanna-job-card,savanna-credential{display:block;margin:1rem 0}
 :focus-visible{outline:3px solid #0b5cab;outline-offset:2px}
 </style></head><body>
 <header>
-<h1>Career Gateway sandbox</h1>
-<p><button type="button" data-lang="en">English</button>
-<button type="button" data-lang="am">አማርኛ</button></p>
+<h1>የሳቫና የሥራ መግቢያ ማሳያ</h1>
 </header>
 <main>
-<h2>Jobs</h2>
+<h2>የሥራ ዕድሎች</h2>
 ${jobCards}
-<h2>Certificate</h2>
-<savanna-credential id="C-7" credential="C-7" api="${publicBaseUrl}" api-key="${PK}" lang="en"></savanna-credential>
+<h2>የምስክር ወረቀት</h2>
+<savanna-credential id="C-7" credential="C-7" api="${publicBaseUrl}" api-key="${PK}" lang="am"></savanna-credential>
 </main>
 <script type="module" src="/components/job-card.ce.js"></script>
 <script type="module" src="/components/credential.ce.js"></script>
-<script type="module">
-document.querySelectorAll("[data-lang]").forEach((button)=>{
-  button.addEventListener("click",()=>{
-    const lang=button.dataset.lang;
-    document.documentElement.lang=lang;
-    document.querySelectorAll("savanna-job-card, savanna-credential").forEach((el)=>el.setAttribute("lang", lang));
-    window.dispatchEvent(new CustomEvent("savanna:lang-change",{bubbles:true,composed:true,detail:{lang}}));
-  });
-});
-</script>
 </body></html>`;
 }
 
@@ -528,8 +532,8 @@ const server = createServer(async (req, res) => {
       try {
         const page = await browser.newPage();
         const certificate = verifyHtml(record).replace(
-          "<h1>Credential verification</h1>",
-          `<h1>${esc(record.achievement)}</h1><p>This document certifies that ${esc(record.recipientName || "the learner")} completed the achievement above.</p><p>Status at time of download: ${esc(statusOf(record))}. Verify live at ${esc(`${publicBaseUrl}/verify/${record.id}`)}.</p><h2>Credential verification</h2>`,
+          "<h1>የምስክር ወረቀት ማረጋገጫ</h1>",
+          `<h1>${esc(record.achievement)}</h1><p>${esc(record.recipientName || "ተማሪ")} ከላይ የተጠቀሰውን ስኬት እንዳጠናቀቀ ይህ ሰነድ ያረጋግጣል።</p><p>በማውረድ ጊዜ ያለው ሁኔታ፦ ${statusLabel(record)}። በቀጥታ ለማረጋገጥ፦ ${esc(`${publicBaseUrl}/verify/${record.id}`)}።</p><h2>የምስክር ወረቀት ማረጋገጫ</h2>`,
         );
         await page.setContent(certificate, { waitUntil: "load" });
         const pdf = await page.pdf({
@@ -586,8 +590,8 @@ const server = createServer(async (req, res) => {
         res,
         200,
         verifyHtml(record).replace(
-          "<h1>Credential verification</h1>",
-          `<h1>${esc(record.achievement)}</h1><p>Print this page to PDF (tagged print path depends on the browser). Live status: ${esc(statusOf(record))}.</p><h2>Credential verification</h2>`,
+          "<h1>የምስክር ወረቀት ማረጋገጫ</h1>",
+          `<h1>${esc(record.achievement)}</h1><p>ይህን ገጽ እንደ PDF ያትሙ። ቀጥታ ሁኔታ፦ ${statusLabel(record)}።</p><h2>የምስክር ወረቀት ማረጋገጫ</h2>`,
         ),
         "text/html; charset=utf-8",
       );
@@ -621,7 +625,7 @@ const server = createServer(async (req, res) => {
         send(
           res,
           404,
-          `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Not found</title></head><body><main><h1>Credential not found</h1></main></body></html>`,
+          `<!DOCTYPE html><html lang="am"><head><meta charset="utf-8"><title>አልተገኘም</title></head><body><main><h1>የምስክር ወረቀቱ አልተገኘም</h1><p>አገናኙን ያረጋግጡና እንደገና ይሞክሩ።</p></main></body></html>`,
           "text/html; charset=utf-8",
         );
         return;

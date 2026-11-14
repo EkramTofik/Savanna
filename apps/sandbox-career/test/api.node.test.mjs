@@ -37,7 +37,7 @@ test("JobPosting JSON-LD", async () => {
   assert.equal(res.status, 200);
   assert.equal(body["@type"], "JobPosting");
   assert.equal(body.jobLocationType, "TELECOMMUTE");
-  assert.match(String(body.description), /screen-reader-tested/);
+  assert.match(String(body.description), /በማያ ንባብ/);
 });
 
 test("issue fetch revoke", async () => {
@@ -46,7 +46,7 @@ test("issue fetch revoke", async () => {
     headers: { "X-Savanna-Key": "sk_live_demo", "Content-Type": "application/json" },
     body: JSON.stringify({
       recipientRef: "urn:savanna:learner:test-revoke",
-      achievement: "Test Badge",
+      achievement: "የሙከራ ሽልማት",
     }),
   });
   assert.equal(issued.status, 201);
@@ -67,8 +67,8 @@ test("verify page has QR alt text", async () => {
   const res = await fetch(`${BASE}/verify/C-7`);
   const html = await res.text();
   assert.equal(res.status, 200);
-  assert.match(html, /QR code linking to/);
-  assert.match(html, /Digital Bridge/);
+  assert.match(html, /የፈጣን ምላሽ ኮድ/);
+  assert.match(html, /ዲጂታል ብሪጅ/);
 });
 
 test("credential endpoint returns a tagged PDF", async () => {

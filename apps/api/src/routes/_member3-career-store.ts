@@ -24,19 +24,36 @@ const fixturesDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../../../contracts/fixtures/v1",
 );
+const amharicContent = JSON.parse(
+  readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "member3-amharic.json"), "utf8"),
+) as {
+  jobs: Record<string, Pick<JobRecord, "title" | "employer" | "location" | "payText">>;
+  credentials: Record<string, Pick<CredentialRecord, "recipientName" | "achievement">>;
+  issuerName: string;
+};
 const jobIndex = JSON.parse(readFileSync(path.join(fixturesDir, "jobs.json"), "utf8")) as {
   jobs: Array<{ id: string }>;
 };
 
+function localizeJob(job: JobRecord): JobRecord {
+  return { ...job, ...amharicContent.jobs[job.id] };
+}
+
+function localizeCredential(record: CredentialRecord): CredentialRecord {
+  return { ...record, ...amharicContent.credentials[record.id] };
+}
+
 const memoryJobs = new Map(
   jobIndex.jobs.map(({ id }) => [
     id,
-    JSON.parse(readFileSync(path.join(fixturesDir, "jobs", `${id}.json`), "utf8")) as JobRecord,
+    localizeJob(
+      JSON.parse(readFileSync(path.join(fixturesDir, "jobs", `${id}.json`), "utf8")) as JobRecord,
+    ),
   ]),
 );
-const seedCredential = JSON.parse(
+const seedCredential = localizeCredential(JSON.parse(
   readFileSync(path.join(fixturesDir, "credentials", "C-7.json"), "utf8"),
-) as CredentialRecord;
+) as CredentialRecord);
 const memoryCredentials = new Map<string, CredentialRecord>([[seedCredential.id, seedCredential]]);
 
 function prismaFor(ctx: Ctx): CareerPrismaClient | undefined {
@@ -48,7 +65,7 @@ function prismaFor(ctx: Ctx): CareerPrismaClient | undefined {
 function jobFromPrisma(value: unknown): JobRecord {
   const row = value as Record<string, unknown>;
   const validThrough = row.validThrough;
-  return {
+  return localizeJob({
     ...(row as unknown as JobRecord),
     validThrough:
       validThrough instanceof Date
@@ -56,21 +73,21 @@ function jobFromPrisma(value: unknown): JobRecord {
         : typeof validThrough === "string"
           ? validThrough
           : null,
-  };
+  });
 }
 
 function credentialFromPrisma(value: unknown): CredentialRecord {
   const row = value as Record<string, unknown>;
   const dateString = (value: unknown) =>
     value instanceof Date ? value.toISOString() : String(value ?? "");
-  return {
+  return localizeCredential({
     ...(row as unknown as CredentialRecord),
     issuedAt: dateString(row.issuedAt),
     validFrom: dateString(row.validFrom),
     expiresAt: row.expiresAt ? dateString(row.expiresAt) : null,
     status: row.status as CredentialRecord["status"],
     proof: (row.proof as Json | null | undefined) ?? null,
-  };
+  });
 }
 
 function credentialData(record: CredentialRecord): Record<string, unknown> {
@@ -133,7 +150,7 @@ export function createMember3CareerContext(ctx: Ctx): CareerCtx {
     publishableKeys: new Set(ctx.config.partners.map((partner) => partner.key)),
     secretKeys: new Set([ctx.config.secretKey]),
     publicBaseUrl,
-    issuerName: "Savanna Access Kit",
+    issuerName: amharicContent.issuerName,
     issuerDid,
     signCredential(payload) {
       return {

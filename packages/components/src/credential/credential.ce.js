@@ -26,13 +26,13 @@ const am = {
   "cred.issued": "የተሰጠበት ቀን",
   "cred.copy": "የማረጋገጫ አገናኝ ቅዳ",
   "cred.copied": "አገናኙ ተቀድቷል",
-  "cred.linkedin": "ወደ LinkedIn ጨምር",
-  "cred.pdf": "የPDF የምስክር ወረቀት አውርድ",
+  "cred.linkedin": "ወደ ሊንክድኢን ጨምር",
+  "cred.pdf": "ምስክር ወረቀቱን አውርድ",
   "cred.verify": "የሕዝብ ማረጋገጫ ገጽ ክፈት",
 };
 
 const css = `
-:host { display:block; font-family:var(--savanna-font, system-ui, sans-serif);
+:host { display:block; font-family:var(--savanna-font, "Noto Sans Ethiopic", Nyala, system-ui, sans-serif);
   --_accent:var(--savanna-accent,#0b5cab); --_radius:var(--savanna-radius,.5rem);
   --_focus:var(--savanna-focus,#0b5cab); color:#111; max-width:100%; }
 article { padding:1rem; border:2px solid #222; border-radius:var(--_radius); background:#fff;
@@ -49,7 +49,7 @@ button:focus-visible, a:focus-visible { outline:3px solid var(--_focus); outline
 `;
 
 function langOf(el) {
-  const v = (el.getAttribute("lang") || document.documentElement.lang || "en").slice(0, 2);
+  const v = (el.getAttribute("lang") || document.documentElement.lang || "am").slice(0, 2);
   return v === "am" ? "am" : "en";
 }
 
@@ -141,14 +141,14 @@ class SavannaCredential extends HTMLElement {
     const linkedin = `https://www.linkedin.com/profile/add?${new URLSearchParams({
       startTask: "CERTIFICATION_NAME",
       name: achievement,
-      organizationName: "Savanna Access Kit",
+      organizationName: "የሳቫና ተደራሽነት ኪት",
       issueYear: String(year),
       issueMonth: String(month),
       certUrl: this._verify(),
     })}`;
     this.shadowRoot.innerHTML = `<style>${css}</style>
       <article lang="${lang}">
-        <h2>${t(this, "cred.heading")}: ${esc(achievement)}</h2>
+        <h2>${t(this, "cred.heading")}፦ ${esc(achievement)}</h2>
         <p>${t(this, "cred.status")}: ${t(this, statusKey)}</p>
         <p>${t(this, "cred.issued")}: ${esc(issued)}</p>
         <div class="row">

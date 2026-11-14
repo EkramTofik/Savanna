@@ -55,9 +55,9 @@ export function register(router: Router, ctx: Ctx): void {
         return;
       }
       res.status(404).type("html").send(`<!doctype html>
-        <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Credential not found</title></head><body><main><h1>Credential not found</h1>
-        <p>We could not find that certificate. Check the link and try again.</p></main></body></html>`);
+        <html lang="am"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>አልተገኘም</title></head><body><main><h1>የምስክር ወረቀቱ አልተገኘም</h1>
+        <p>አገናኙን ያረጋግጡና እንደገና ይሞክሩ።</p></main></body></html>`);
       return;
     }
     if (wantsJsonLd(req) && (req.header("accept") ?? "").includes("ld+json")) {

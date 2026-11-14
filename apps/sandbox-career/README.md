@@ -73,14 +73,14 @@ publish it to your CDN. Load it once, then use either element in any HTML templa
   job="J-9"
   api="https://api.example.org"
   api-key="pk_live_xxx"
-  lang="en"
+  lang="am"
 ></savanna-job-card>
 
 <savanna-credential
   id="C-7"
   api="https://api.example.org"
   api-key="pk_live_xxx"
-  lang="en"
+  lang="am"
 ></savanna-credential>
 ```
 

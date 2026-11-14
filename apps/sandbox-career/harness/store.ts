@@ -13,12 +13,18 @@ async function readJson<T>(file: string): Promise<T> {
 }
 
 export async function createStore() {
+  const amharic = await readJson<{
+    jobs: Record<string, Pick<JobRecord, "title" | "employer" | "location" | "payText">>;
+    credentials: Record<string, Pick<CredentialRecord, "recipientName" | "achievement">>;
+  }>(path.join(repoRoot, "apps/api/src/routes/member3-amharic.json"));
   const listed = await readJson<{ jobs: { id: string }[] }>(path.join(fixtures, "jobs.json"));
   const jobs: JobRecord[] = [];
   for (const item of listed.jobs) {
-    jobs.push(await readJson<JobRecord>(path.join(fixtures, "jobs", `${item.id}.json`)));
+    const job = await readJson<JobRecord>(path.join(fixtures, "jobs", `${item.id}.json`));
+    jobs.push({ ...job, ...amharic.jobs[job.id] });
   }
-  const seed = await readJson<CredentialRecord>(path.join(fixtures, "credentials", "C-7.json"));
+  const rawSeed = await readJson<CredentialRecord>(path.join(fixtures, "credentials", "C-7.json"));
+  const seed = { ...rawSeed, ...amharic.credentials[rawSeed.id] };
   let credentials: Record<string, CredentialRecord> = { [seed.id]: seed };
   try {
     credentials = {
@@ -27,6 +33,9 @@ export async function createStore() {
     };
   } catch {
     /* first run */
+  }
+  if (credentials[seed.id]) {
+    credentials[seed.id] = { ...credentials[seed.id], ...amharic.credentials[seed.id] };
   }
 
   return {

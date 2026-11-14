@@ -26,14 +26,14 @@ describe("Member 3 CareerGateway routes", () => {
     expect(response.headers["content-type"]).toContain("application/ld+json");
     expect(response.body).toMatchObject({
       "@type": "JobPosting",
-      title: "Accessible Learning Support Associate",
-      hiringOrganization: { name: "Digital Bridge Ethiopia" },
+      title: "የተደራሽ ትምህርት ድጋፍ ባለሙያ",
+      hiringOrganization: { name: "ዲጂታል ብሪጅ ኢትዮጵያ" },
     });
   });
 
   it("requires the secret scope for issue and revoke, then reflects revocation immediately", async () => {
     const server = await app();
-    const body = { recipientRef: "urn:savanna:learner:test-01", achievement: "Accessible Design" };
+    const body = { recipientRef: "urn:savanna:learner:test-01", achievement: "ተደራሽ ንድፍ" };
     expect((await request(server).post("/v1/credentials").set(PUBLISHABLE).send(body)).status).toBe(403);
 
     const issued = await request(server).post("/v1/credentials").set(SECRET).send(body);
@@ -59,7 +59,8 @@ describe("Member 3 CareerGateway routes", () => {
     const server = await app();
     const html = await request(server).get("/verify/C-7");
     expect(html.status).toBe(200);
-    expect(html.text).toContain('aria-label="QR code linking to');
+    expect(html.text).toContain('aria-label="የፈጣን ምላሽ ኮድ፤ የማረጋገጫ አገናኝ');
+    expect(html.text).toContain('<html lang="am">');
     expect(html.text).toContain("/verify/C-7/pdf");
 
     const badge = await request(server)

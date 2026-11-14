@@ -63,7 +63,7 @@ export function jobToJsonLd(job: JobRecord, publicBaseUrl: string): Json {
     "@type": "JobPosting",
     identifier: job.id,
     title: job.title,
-    description: `${job.description.en} Remote-friendly, screen-reader-tested application.`,
+    description: job.description.am,
     datePosted: "2026-11-12",
     validThrough: job.validThrough ?? undefined,
     employmentType: job.employmentType ?? "FULL_TIME",

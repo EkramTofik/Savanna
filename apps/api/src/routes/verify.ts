@@ -7,32 +7,33 @@ import { didDocument, toOpenBadge } from "./open-badges.js";
 export { toOpenBadge };
 
 function statusLabel(status: string): string {
-  if (status === "valid") return "Valid";
-  if (status === "revoked") return "Revoked";
-  return "Expired";
+  if (status === "valid") return "ትክክለኛ";
+  if (status === "revoked") return "ተሰርዟል";
+  return "ጊዜው አልፏል";
 }
 
 export async function verifyPageHtml(record: CredentialRecord, ctx: CareerCtx): Promise<string> {
   const status = effectiveStatus(record);
   const url = `${ctx.publicBaseUrl}/verify/${record.id}`;
   const qr = await QRCode.toString(url, { type: "svg", margin: 1, width: 160 });
-  const issued = new Date(record.issuedAt).toLocaleDateString("en-GB", {
+  const issued = new Date(record.issuedAt).toLocaleDateString("am-ET-u-ca-ethiopic", {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
-  const recipient = escapeHtml(record.recipientName || "Learner (pseudonymous)");
+  const recipient = escapeHtml(record.recipientName || "ስሙ በግል ተጠብቋል");
   const achievement = escapeHtml(record.achievement);
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="am">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Verify credential — ${achievement}</title>
+  <title>የምስክር ወረቀት ማረጋገጫ — ${achievement}</title>
   <style>
     :root {
       --savanna-accent: #0b5cab;
-      --savanna-font: "Segoe UI", system-ui, sans-serif;
+      --savanna-font: "Noto Sans Ethiopic", Nyala, "Segoe UI", system-ui, sans-serif;
       --savanna-focus: #0b5cab;
     }
     * { box-sizing: border-box; }
@@ -75,25 +76,25 @@ export async function verifyPageHtml(record: CredentialRecord, ctx: CareerCtx): 
 </head>
 <body>
   <main>
-    <h1>Credential verification</h1>
+    <h1>የምስክር ወረቀት ማረጋገጫ</h1>
     <p>
       <span class="status ${escapeHtml(status)}">${statusLabel(status)}</span>
     </p>
     <dl>
-      <dt>Achievement</dt><dd>${achievement}</dd>
-      <dt>Recipient</dt><dd>${recipient}</dd>
-      <dt>Issued</dt><dd>${escapeHtml(issued)}</dd>
-      <dt>Issuer</dt><dd>${escapeHtml(ctx.issuerName)}</dd>
-      <dt>Status</dt><dd>${statusLabel(status)}</dd>
-      <dt>Id</dt><dd><code>${escapeHtml(record.id)}</code></dd>
+      <dt>ስኬት</dt><dd>${achievement}</dd>
+      <dt>ተቀባይ</dt><dd>${recipient}</dd>
+      <dt>የተሰጠበት ቀን</dt><dd>${escapeHtml(issued)}</dd>
+      <dt>ሰጪ</dt><dd>${escapeHtml(ctx.issuerName)}</dd>
+      <dt>ሁኔታ</dt><dd>${statusLabel(status)}</dd>
+      <dt>መለያ</dt><dd><code>${escapeHtml(record.id)}</code></dd>
     </dl>
-    <p>Hosted verification looks this credential up on the issuer server. A cryptographic Data Integrity proof is attached as a draft (canonical JSON + Ed25519), not full RDFC-1.0.</p>
+    <p>ይህ ማረጋገጫ የምስክር ወረቀቱን ሁኔታ በሰጪው አገልጋይ ላይ ይፈትሻል። የኤድ25519 ፊርማው የሙከራ ስሪት ነው፤ ሙሉ RDFC-1.0 አይደለም።</p>
     <div class="qr">
-      ${qr.replace("<svg", `<svg role="img" aria-label="QR code linking to ${escapeHtml(url)}"`)}
+      ${qr.replace("<svg", `<svg role="img" aria-label="የፈጣን ምላሽ ኮድ፤ የማረጋገጫ አገናኝ ${escapeHtml(url)}"`)}
     </div>
     <p>
-      <button type="button" id="copy">Copy verification link</button>
-      <a class="button" href="/verify/${encodeURIComponent(record.id)}/pdf">Download tagged PDF</a>
+      <button type="button" id="copy">የማረጋገጫ አገናኝ ቅዳ</button>
+      <a class="button" href="/verify/${encodeURIComponent(record.id)}/pdf">ምስክር ወረቀቱን አውርድ</a>
     </p>
     <p id="copied" role="status" aria-live="polite"></p>
   </main>
@@ -102,7 +103,7 @@ export async function verifyPageHtml(record: CredentialRecord, ctx: CareerCtx): 
     document.getElementById("copy").addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(url);
-        document.getElementById("copied").textContent = "Link copied.";
+        document.getElementById("copied").textContent = "አገናኙ ተቀድቷል።";
       } catch {
         document.getElementById("copied").textContent = url;
       }
@@ -125,11 +126,11 @@ export function register(router: Router, ctx: CareerCtx): void {
           problem(res, 404, "Not Found", `Credential ${req.params.id} was not found.`);
           return;
         }
-        res.status(404).type("html").send(`<!DOCTYPE html><html lang="en"><head>
-          <meta charset="utf-8"><title>Credential not found</title>
+        res.status(404).type("html").send(`<!DOCTYPE html><html lang="am"><head>
+          <meta charset="utf-8"><title>አልተገኘም</title>
           <meta name="viewport" content="width=device-width, initial-scale=1"></head>
-          <body><main><h1>Credential not found</h1>
-          <p>We could not find that certificate. Check the link and try again.</p>
+          <body><main><h1>የምስክር ወረቀቱ አልተገኘም</h1>
+          <p>አገናኙን ያረጋግጡና እንደገና ይሞክሩ።</p>
           </main></body></html>`);
         return;
       }
