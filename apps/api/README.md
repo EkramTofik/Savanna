@@ -54,6 +54,15 @@ $env:STORE="prisma"; pnpm dev:api
 Schema files live in `prisma/schema/` (`base.prisma`, `content.prisma`; Member 3 adds `career.prisma`).
 The API output and the fixtures are both checked against one Zod schema (`src/schemas/lesson.ts`), so the real API cannot drift from the mock.
 
+## API docs and SDK (task 4.4)
+- Swagger UI: http://localhost:4000/docs (click **Authorize**, enter `pk_dev_local`). Spec: `/v1/openapi.json` (OpenAPI 3.1, public).
+- **Every route file exports `openapi: OperationDoc[]`** next to `register()`. Describe each operation once with Zod
+  (`params`, `query`, `headers`, `body`, `responses`). See `src/routes/lessons.ts` for a full example. Common errors
+  (400, 401, 403, 429) are added automatically. Tests fail if a file has no docs or documents a route that does not exist.
+- Regenerate the committed spec and the TypeScript SDK types (Member 4 does this at integration time, so PRs do not conflict):
+  `pnpm openapi`  ->  `docs/openapi.json` and `packages/sdk/src/schema.d.ts`.
+- SDK: `import { createSavannaClient } from "@savanna/sdk"`; `api.GET("/v1/lessons/{id}", { params: { path: { id: "L-102" } } })`.
+
 ## Keys and config (env)
 | Variable | Meaning | Dev default |
 |---|---|---|

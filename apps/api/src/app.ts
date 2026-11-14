@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import cors from "cors";
@@ -7,6 +8,7 @@ import { loadConfig } from "./config";
 import { createStore } from "./db/createStore";
 import type { AppConfig, Ctx } from "./lib/context";
 import { loadRouteModules } from "./lib/loadRoutes";
+import { buildOpenApi } from "./lib/openapi";
 import { authenticate, originAllowed } from "./middleware/auth";
 import { errorHandler, notFound } from "./middleware/errors";
 import { limiter } from "./middleware/rateLimit";
@@ -43,6 +45,24 @@ export async function createApp(opts: AppOptions = {}) {
   app.use(express.json({ limit: "100kb" }));
 
   const modules = await loadRouteModules(opts.routesDir ?? path.join(here, "routes"));
+
+  // OpenAPI 3.1 spec (assembled from every route file) and Swagger UI. Both are public.
+  const spec = buildOpenApi(modules);
+  app.locals.openapi = spec;
+  app.get("/v1/openapi.json", (_req, res) => void res.json(spec));
+  const swaggerDist = createRequire(import.meta.url)("swagger-ui-dist").getAbsoluteFSPath() as string;
+  app.use("/docs/assets", express.static(swaggerDist, { index: false }));
+  app.get("/docs/init.js", (_req, res) =>
+    void res.type("application/javascript").send('window.ui = SwaggerUIBundle({ url: "/v1/openapi.json", dom_id: "#swagger-ui", persistAuthorization: true });'),
+  );
+  app.get("/docs", (_req, res) =>
+    void res.type("html").send(
+      '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+        "<title>Savanna Access Kit API</title>" +
+        '<link rel="stylesheet" href="/docs/assets/swagger-ui.css"></head><body><div id="swagger-ui"></div>' +
+        '<script src="/docs/assets/swagger-ui-bundle.js"></script><script src="/docs/init.js"></script></body></html>',
+    ),
+  );
 
   // Public modules first (full paths, no auth), then key-protected modules under /v1.
   for (const { mod } of modules.filter((m) => m.mod.access === "public")) {

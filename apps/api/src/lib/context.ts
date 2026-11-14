@@ -2,6 +2,7 @@
 // Additive changes only: add fields, never rename or remove.
 import type { Router } from "express";
 import type { Store } from "../db/store";
+import type { OperationDoc } from "./openapi";
 
 export interface Partner {
   name: string;
@@ -44,5 +45,7 @@ export type RegisterRoutes = (router: Router, ctx: Ctx) => void;
  */
 export interface RouteModule {
   register: RegisterRoutes;
+  /** OpenAPI docs for every operation this file registers (required; checked by tests). */
+  openapi?: OperationDoc[];
   access?: "key" | "public";
 }

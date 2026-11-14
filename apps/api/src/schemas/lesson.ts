@@ -26,3 +26,7 @@ export const TranscriptSchema = z.object({
 export type Transcript = z.infer<typeof TranscriptSchema>;
 
 export const LangQuery = z.object({ lang: Lang.default("en") });
+
+export const LessonListSchema = z.object({
+  lessons: z.array(z.object({ id: z.string(), title: z.object({ en: z.string(), am: z.string() }), durationSec: z.number().int() })),
+});

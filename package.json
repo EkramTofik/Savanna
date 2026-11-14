@@ -9,7 +9,8 @@
   "scripts": {
     "mock": "node contracts/mock/server.js",
     "format": "prettier --write .",
-    "dev:api": "pnpm --filter @savanna/api dev"
+    "dev:api": "pnpm --filter @savanna/api dev",
+    "openapi": "pnpm --filter @savanna/api openapi:export && pnpm --filter @savanna/sdk generate"
   },
   "dependencies": {
     "cors": "^2.8.5",
