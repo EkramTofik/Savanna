@@ -1,3 +1,6 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - "api"
+  - "demo/sandbox-career"
+  - "module"
+  - "pipeline"
+  - "sdk"

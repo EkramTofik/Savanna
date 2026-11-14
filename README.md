@@ -15,11 +15,11 @@ Try it: http://localhost:4010/v1/lessons/L-102
 ## Rules (see the Task Delegation Plan)
 1. Contracts in `contracts/` are frozen after Hour 0: additive changes only, announce in chat.
 2. One owner per folder (`.github/CODEOWNERS`). Never edit another member's folder.
-3. Build against fixtures and your own sandbox in `apps/sandbox-*`.
+3. Build against fixtures and your own sandbox in `demo/sandbox-*`.
 4. Duplicate small helpers instead of waiting. Blocked over 30 min: stub it and move on.
 5. Branches: `m1/...`, `m2/...`, `m3/...`, `m4/...`. Merge when CI is green.
 
 ## Layout
-- `apps/api` Express API, `apps/demo` Savanna starter + script tag, `apps/sandbox-*` per-member test pages
-- `packages/components` Lit web components, `packages/pipeline` content CLI, `packages/sdk` generated client
+- `api` Express API, `savanna` Savanna starter + script tag, `demo/sandbox-*` per-member test pages
+- `module` Lit web components, `pipeline` content CLI, `sdk` generated client
 - `contracts` shared shapes, fixtures and mock server, `docs` documentation
