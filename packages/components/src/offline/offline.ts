@@ -8,6 +8,7 @@ export class SavannaOffline extends LitElement{
  @property() api=''; @property({attribute:'api-key'}) apiKey=''; @property({attribute:'lesson-id'}) lessonId='';
  @state() private manifest:any=null; @state() private status='Load a lesson pack to begin.'; @state() private busy=false; @state() private progress=0; @state() private saved=false;
  connectedCallback(){super.connectedCallback();this.saved=read().savedLessons.includes(this.lessonId);void this.refresh();}
+ updated(changed:Map<string,unknown>){if((changed.has('api')||changed.has('lessonId'))&&this.api&&this.lessonId&&!this.manifest)void this.refresh();}
  private url(){return `${this.api.replace(/\/$/,'')}/v1/lessons/${encodeURIComponent(this.lessonId)}/pack`;}
  private headers(){return this.apiKey?{'X-Savanna-Key':this.apiKey}:{};}
  private async refresh(){if(!this.api||!this.lessonId)return;try{const r=await fetch(this.url(),{headers:this.headers()});if(!r.ok)throw Error(r.status===404?'Pack is not published.':`Manifest request failed (${r.status}).`);this.manifest=await r.json();this.status=`Pack ready · ${this.size(this.manifest.sizeBytes||0)}`;}catch(e){this.status=(e as Error).message;}}

@@ -408,3 +408,55 @@ Your Member 2 section is **production-ready**.
 
 **Last updated:** 14-Nov-2026
 **Status:** READY FOR INTEGRATION ✓
+
+
+# Member 2 Sandbox - PowerShell Commands
+
+# Terminal 1: Start Mock API Server
+# Serves fixtures on http://localhost:4010
+cd C:\Users\ekru6\Downloads\savanna-access-kit
+npm run mock
+
+# Terminal 2: Start HTTP Server (KEEP RUNNING)
+# Serves sandbox on http://localhost:3001
+cd C:\Users\ekru6\Downloads\savanna-access-kit
+npx http-server -p 3001
+
+# Terminal 3: Run All Tests
+cd C:\Users\ekru6\Downloads\savanna-access-kit
+npm test
+# Expected: ✓ 40 tests passing, 0 failures
+
+# Alternative: Use Python HTTP Server (if npx is slow)
+cd C:\Users\ekru6\Downloads\savanna-access-kit
+python -m http.server 3001
+
+# Browser: Open Sandbox
+# http://127.0.0.1:3001/apps/sandbox-media/
+# OR: http://localhost:3001/apps/sandbox-media/
+
+# Run Specific Tests
+cd C:\Users\ekru6\Downloads\savanna-access-kit
+node --test packages/components/src/sign-window/sign-window.test.ts
+node --test packages/components/src/audio-description/audio-description.test.ts
+node --test packages/components/src/offline/offline.test.ts
+node --test packages/components/src/member2-a11y.test.ts
+
+# Format Code
+npm run format
+
+# Check TypeScript
+npx tsc --noEmit
+
+# Install Dependencies (if needed)
+pnpm install
+
+# Clear npm Cache (if needed)
+npm cache clean --force
+
+# Kill All Node Processes (if servers get stuck)
+Get-Process node | Stop-Process -Force
+
+# Check What's Listening on Ports
+netstat -ano | findstr :3001
+netstat -ano | findstr :4010

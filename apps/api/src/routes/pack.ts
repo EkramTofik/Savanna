@@ -1,6 +1,20 @@
 import type {Request,Response,Router} from 'express';
 import path from 'node:path';import {createReadStream,promises as fs} from 'node:fs';
-type Ctx={packRoot:string;requireApiKey?:(req:Request,res:Response,next:()=>void)=>void};
+
+/**
+ * Local context shape for this route.
+ * `packRoot` — absolute path to the directory where pack sub-directories live.
+ *   Each sub-directory is named by lesson id and must contain manifest.json + pack.zip.
+ * `requireApiKey` — optional Express middleware that rejects requests lacking X-Savanna-Key.
+ * Compatible with the shared Ctx (C7) because we only add optional fields.
+ */
+type Ctx={
+  packRoot: string;
+  requireApiKey?: (req:Request, res:Response, next:()=>void) => void;
+  // Allow the shared Ctx fields to pass through without complaints
+  prisma?: unknown;
+  config?: { port:number; databaseUrl:string; redisUrl?:string };
+};
 const idOk=(s:string)=>/^[A-Za-z0-9_-]{1,80}$/.test(s);
 function problem(res:Response,status:number,title:string,detail:string){return res.status(status).type('application/problem+json').json({type:'about:blank',title,status,detail});}
 async function fileAt(root:string,id:string,name:string){const dir=path.resolve(root,id),f=path.resolve(dir,name);if(!f.startsWith(dir+path.sep))throw Error('bad path');await fs.access(f);return f;}
