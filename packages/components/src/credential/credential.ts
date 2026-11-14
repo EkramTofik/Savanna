@@ -22,7 +22,7 @@ export class SavannaCredential extends LitElement {
   static styles = css`
     :host {
       display: block;
-      font-family: var(--savanna-font, "Segoe UI", system-ui, sans-serif);
+      font-family: var(--savanna-font, "Noto Sans Ethiopic", Nyala, "Segoe UI", system-ui, sans-serif);
       --_accent: var(--savanna-accent, #0b5cab);
       --_radius: var(--savanna-radius, 0.5rem);
       --_focus: var(--savanna-focus, #0b5cab);
@@ -209,7 +209,7 @@ export class SavannaCredential extends LitElement {
     const params = new URLSearchParams({
       startTask: "CERTIFICATION_NAME",
       name,
-      organizationName: "Savanna Access Kit",
+      organizationName: "የሳቫና ተደራሽነት ኪት",
       issueYear: String(year),
       issueMonth: String(month),
       certUrl: this.verifyUrl(),
@@ -236,7 +236,7 @@ export class SavannaCredential extends LitElement {
       : "";
     return html`
       <article lang=${lang}>
-        <h2>${this.t("cred.heading")}: ${achievement}</h2>
+        <h2>${this.t("cred.heading")}፦ ${achievement}</h2>
         <p>${this.t("cred.status")}: ${this.t(this.statusKey())}</p>
         <p>${this.t("cred.issued")}: ${issued}</p>
         <div class="row">
@@ -247,7 +247,7 @@ export class SavannaCredential extends LitElement {
           <a class="action" href=${this.verifyUrl()}>${this.t("cred.verify")}</a>
           <a
             class="action"
-            href=${`${this.apiRoot()}/v1/credentials/${encodeURIComponent(this.credentialId())}/pdf?api-key=${encodeURIComponent(this.apiKey)}`}
+            href=${`${this.apiRoot()}/verify/${encodeURIComponent(this.credentialId())}/pdf`}
             >${this.t("cred.pdf")}</a
           >
         </div>

@@ -23,14 +23,14 @@ embed the secret key used to issue or revoke credentials.
   job="J-9"
   api="https://api.example.org"
   api-key="pk_live_xxx"
-  lang="en"
+  lang="am"
 ></savanna-job-card>
 
 <savanna-credential
   id="C-7"
   api="https://api.example.org"
   api-key="pk_live_xxx"
-  lang="en"
+  lang="am"
 ></savanna-credential>
 ```
 
@@ -84,7 +84,7 @@ useEffect(() => {
   return () => node.removeEventListener("savanna:ready", onReady);
 }, []);
 
-return <savanna-job-card ref={jobRef} job="J-9" api={apiUrl} api-key={publicKey} lang="en" />;
+return <savanna-job-card ref={jobRef} job="J-9" api={apiUrl} api-key={publicKey} lang="am" />;
 ```
 
 ## Vue 3
@@ -106,8 +106,8 @@ Then put the tags in a Vue template. Register event listeners on a template ref 
 
 ```vue
 <template>
-  <savanna-job-card ref="jobCard" :job="jobId" :api="apiUrl" :api-key="publicKey" lang="en" />
-  <savanna-credential id="C-7" :api="apiUrl" :api-key="publicKey" lang="en" />
+  <savanna-job-card ref="jobCard" :job="jobId" :api="apiUrl" :api-key="publicKey" lang="am" />
+  <savanna-credential id="C-7" :api="apiUrl" :api-key="publicKey" lang="am" />
 </template>
 ```
 
@@ -127,13 +127,13 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA } from "@angular/core";
       [attr.job]="jobId"
       [attr.api]="apiUrl"
       [attr.api-key]="publicKey"
-      lang="en">
+      lang="am">
     </savanna-job-card>
     <savanna-credential
       id="C-7"
       [attr.api]="apiUrl"
       [attr.api-key]="publicKey"
-      lang="en">
+      lang="am">
     </savanna-credential>
   `,
 })
@@ -148,8 +148,9 @@ export class CareersComponent {
 
 Serve the host page, module, and API over HTTPS. Allow the host's exact origin in API
 CORS and allow `GET`, `POST`, `OPTIONS`, and the `X-Savanna-Key` header. The PDF link
-uses the publishable key in its query string because a normal link cannot attach a
-custom request header. Keep secret credentials on the server.
+targets the public `/verify/{id}/pdf` endpoint and does not expose an API key. Other
+key-protected API requests use the publishable key in the `X-Savanna-Key` header.
+Keep secret credentials on the server.
 
 The runnable plain-page integration is [partner-demo.html](./partner-demo.html); it
 loads the built module and exercises the API from a separate web origin/port.

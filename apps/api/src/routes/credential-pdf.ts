@@ -33,11 +33,12 @@ export async function renderCertificatePdf(
 async function certificateHtml(record: CredentialRecord, ctx: CareerCtx): Promise<string> {
   const verify = await verifyPageHtml(record, ctx);
   const status = effectiveStatus(record);
+  const statusAm = status === "valid" ? "ትክክለኛ" : status === "revoked" ? "ተሰርዟል" : "ጊዜው አልፏል";
   const extra = `
-    <article lang="en">
+    <article lang="am">
       <h1>${escapeHtml(record.achievement)}</h1>
-      <p>This document certifies that ${escapeHtml(record.recipientName || "the learner")} completed the achievement above.</p>
-      <p>Status at time of download: ${escapeHtml(status)}. Verify live at ${escapeHtml(`${ctx.publicBaseUrl}/verify/${record.id}`)}.</p>
+      <p>${escapeHtml(record.recipientName || "ተማሪ")} ከላይ የተጠቀሰውን ስኬት እንዳጠናቀቀ ይህ ሰነድ ያረጋግጣል።</p>
+      <p>በማውረድ ጊዜ ያለው ሁኔታ፦ ${statusAm}። በቀጥታ ለማረጋገጥ፦ ${escapeHtml(`${ctx.publicBaseUrl}/verify/${record.id}`)}።</p>
     </article>`;
   return verify.replace("<main>", `<main>${extra}`);
 }

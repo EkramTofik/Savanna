@@ -53,7 +53,7 @@ export function signPayload(payload: Json): Json {
     verificationMethod: "did:web:localhost%3A4020#key-1",
     proofValue: `z${signature.toString("base64url")}`,
     warning:
-      "Hackathon proof: Ed25519 over canonical JSON, not full RDFC-1.0. Hosted verification is the supported path.",
+      "የሃካቶን ማረጋገጫ፦ ኤድ25519 በተደራጀ JSON ላይ ተመስርቷል፤ ሙሉ RDFC-1.0 አይደለም። በአገልጋይ ላይ ማረጋገጥ የሚደገፈው መንገድ ነው።",
   };
 }
 
@@ -102,7 +102,7 @@ export function toOpenBadge(record: CredentialRecord, ctx: CareerCtx): Json {
         id: `${ctx.publicBaseUrl}/achievements/${encodeURIComponent(record.achievement)}`,
         type: ["Achievement"],
         name: record.achievement,
-        description: "Issued by Savanna Access Kit after course completion.",
+        description: "ኮርሱን ከጨረሰ በኋላ በሳቫና ተደራሽነት ኪት የተሰጠ።",
         achievementType: "Certificate",
       },
     },

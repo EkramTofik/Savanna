@@ -4,11 +4,11 @@ import AxeBuilder from "@axe-core/playwright";
 test("job card and credential render and pass axe", async ({ page }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Accessible Learning Support Associate" }),
+    page.getByRole("heading", { name: "የተደራሽ ትምህርት ድጋፍ ባለሙያ" }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: /Apply for this job/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Play audio summary/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Certificate", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /ለዚህ ስራ ያመልክቱ/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /የድምጽ ማጠቃለያ አጫውት/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "የምስክር ወረቀት", exact: true })).toBeVisible();
 
   const results = await new AxeBuilder({ page }).analyze();
   // Hackathon gate (deck s14): axe-core clean — zero critical and zero serious.
@@ -23,7 +23,7 @@ test("320px viewport has no horizontal scroll", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Accessible Learning Support Associate" }),
+    page.getByRole("heading", { name: "የተደራሽ ትምህርት ድጋፍ ባለሙያ" }),
   ).toBeVisible();
   const scroll = await page.evaluate(() => ({
     inner: window.innerWidth,
@@ -53,13 +53,12 @@ test("keyboard can play audio summary and open apply", async ({ page }) => {
   await expect(play).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("Enter");
   await expect(play).toHaveAttribute("aria-pressed", "false");
-  await page.getByRole("link", { name: /Apply for this job/i }).focus();
-  await expect(page.getByRole("link", { name: /Apply for this job/i })).toBeFocused();
+  await page.getByRole("link", { name: /ለዚህ ስራ ያመልክቱ/ }).focus();
+  await expect(page.getByRole("link", { name: /ለዚህ ስራ ያመልክቱ/ }).first()).toBeFocused();
 });
 
 test("Amharic job dates use the Ethiopian calendar", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "አማርኛ" }).click();
   const jobCard = page.locator("savanna-job-card").first();
   await expect(jobCard.locator("article[lang='am']")).toBeVisible();
   const displayedDate = await jobCard.locator("dl dd").nth(3).textContent();
@@ -118,18 +117,18 @@ test("Amharic job dates use the Ethiopian calendar", async ({ page }) => {
 
 test("verify page is readable and copy works", async ({ page }) => {
   await page.goto("http://localhost:4020/verify/C-7");
-  await expect(page.getByRole("heading", { name: "Credential verification" })).toBeVisible();
-  await expect(page.getByText("Digital Bridge — Accessible Media Basics")).toBeVisible();
-  await expect(page.getByRole("img", { name: /QR code/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "የምስክር ወረቀት ማረጋገጫ" })).toBeVisible();
+  await expect(page.getByText("ዲጂታል ብሪጅ — ለተደራሽ ሚዲያ መሠረታዊ እውቀት")).toBeVisible();
+  await expect(page.getByRole("img", { name: /የፈጣን ምላሽ ኮድ/ })).toBeVisible();
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.getByRole("button", { name: /Copy verification link/i }).click();
-  await expect(page.locator("#copied")).toHaveText(/Link copied|localhost:4020\/verify\/C-7/);
+  await page.getByRole("button", { name: /የማረጋገጫ አገናኝ ቅዳ/ }).click();
+  await expect(page.locator("#copied")).toHaveText(/አገናኙ ተቀድቷል|localhost:4020\/verify\/C-7/);
 });
 
 test("apply form shows error summary without a timeout", async ({ page }) => {
   await page.goto("http://localhost:4020/apply/J-9");
-  await page.getByRole("button", { name: "Send application" }).click();
-  await expect(page.getByRole("alert")).toContainText("Please fill");
+  await page.getByRole("button", { name: "ማመልከቻውን ላክ" }).click();
+  await expect(page.getByRole("alert")).toContainText("እባክዎ ይሙሉ");
 });
 
 test("verification and apply pages reflow at 320px", async ({ page }) => {
@@ -173,14 +172,15 @@ test("bilingual job audio assets stay within the 20 to 30 second target", async 
 test("built component bundle works from a partner-host integration page", async ({ page }) => {
   await page.goto("/partner-demo.html");
   await expect(
-    page.getByRole("heading", { name: "Accessible Learning Support Associate" }),
+    page.getByRole("heading", { name: "የተደራሽ ትምህርት ድጋፍ ባለሙያ" }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Certificate: Digital Bridge" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /የምስክር ወረቀት፦ ዲጂታል ብሪጅ/ })).toBeVisible();
   const pdfLink = page
     .locator("savanna-credential")
-    .getByRole("link", { name: "Download PDF certificate" });
+    .getByRole("link", { name: "ምስክር ወረቀቱን አውርድ" });
   const pdfHref = await pdfLink.getAttribute("href");
-  expect(pdfHref).toContain("api-key=pk_live_demo");
+  expect(pdfHref).toMatch(/\/verify\/[^/]+\/pdf$/);
+  expect(pdfHref).not.toContain("api-key");
   const pdf = await page.request.get(new URL(pdfHref!, page.url()).toString());
   expect(pdf.status()).toBe(200);
   expect(pdf.headers()["content-type"]).toContain("application/pdf");
@@ -190,8 +190,8 @@ test("host frameworks can update attributes and observe component events", async
   await page.goto("/partner-demo.html");
   const jobCard = page.locator("savanna-job-card");
   const credential = page.locator("savanna-credential");
-  await expect(jobCard.getByRole("heading", { name: "Accessible Learning Support Associate" })).toBeVisible();
-  await expect(credential.getByRole("heading", { name: "Certificate: Digital Bridge" })).toBeVisible();
+  await expect(jobCard.getByRole("heading", { name: "የተደራሽ ትምህርት ድጋፍ ባለሙያ" })).toBeVisible();
+  await expect(credential.getByRole("heading", { name: /የምስክር ወረቀት፦ ዲጂታል ብሪጅ/ })).toBeVisible();
 
   const jobReady = await page.evaluate(
     () =>
@@ -206,7 +206,7 @@ test("host frameworks can update attributes and observe component events", async
       }),
   );
   expect(jobReady).toEqual({ job: "J-10" });
-  await expect(jobCard.getByRole("heading", { name: "Junior Data Steward" })).toBeVisible();
+  await expect(jobCard.getByRole("heading", { name: "ጀማሪ የውሂብ መዝገብ ባለሙያ" })).toBeVisible();
 
   const credentialEvents = await page.evaluate(async () => {
     const element = document.querySelector("savanna-credential")!;

@@ -81,7 +81,7 @@ const ctx = {
   publishableKeys: new Set(["pk_live_demo"]),
   secretKeys: new Set(["sk_live_demo"]),
   publicBaseUrl,
-  issuerName: "Savanna Access Kit",
+  issuerName: "የሳቫና ተደራሽነት ኪት",
   issuerDid: "did:web:localhost%3A4020",
   signCredential: signPayload,
 };

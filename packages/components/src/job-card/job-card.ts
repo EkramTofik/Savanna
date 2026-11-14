@@ -33,7 +33,7 @@ export class SavannaJobCard extends LitElement {
     :host {
       display: block;
       color: #111;
-      font-family: var(--savanna-font, "Segoe UI", system-ui, sans-serif);
+      font-family: var(--savanna-font, "Noto Sans Ethiopic", Nyala, "Segoe UI", system-ui, sans-serif);
       --_accent: var(--savanna-accent, #0b5cab);
       --_radius: var(--savanna-radius, 0.5rem);
       --_focus: var(--savanna-focus, #0b5cab);
@@ -253,7 +253,7 @@ export class SavannaJobCard extends LitElement {
       "@type": "JobPosting",
       identifier: job.id,
       title: job.title,
-      description: `${job.description.en} Remote-friendly, screen-reader-tested application.`,
+      description: job.description[this.activeLang()],
       validThrough: job.validThrough,
       employmentType: "FULL_TIME",
       hiringOrganization: { "@type": "Organization", name: job.employer },
@@ -265,7 +265,7 @@ export class SavannaJobCard extends LitElement {
 
   private audio(): { url: string; transcript: string } {
     const lang = this.activeLang();
-    const block = this.data?.audioSummary[lang] ?? this.data?.audioSummary.en;
+    const block = this.data?.audioSummary[lang];
     const root = this.apiRoot();
     const url = block?.url?.startsWith("http") ? block.url : `${root}${block?.url ?? ""}`;
     return { url, transcript: block?.transcript ?? "" };
@@ -320,9 +320,8 @@ export class SavannaJobCard extends LitElement {
       return html`<p>${this.t("job.loading")}</p>`;
     }
     const lang = this.activeLang();
-    const desc = this.data.description[lang] ?? this.data.description.en;
-    const reqs =
-      this.data.description.requirements?.[lang] ?? this.data.description.requirements?.en ?? [];
+    const desc = this.data.description[lang];
+    const reqs = this.data.description.requirements?.[lang] ?? [];
     const audio = this.audio();
     const prefs = readJobsPrefs();
     return html`

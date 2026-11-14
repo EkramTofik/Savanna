@@ -3,14 +3,14 @@ import { escapeHtml } from "../../api/src/routes/career-lib.js";
 export function applyFormHtml(jobId: string): string {
   const id = escapeHtml(jobId);
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="am">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Apply — ${id}</title>
+  <title>ለሥራ ያመልክቱ — ${id}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    body { font: 1.125rem/1.5 system-ui, sans-serif; margin: 0; padding: 1.25rem; max-width: 40rem; }
+    body { font: 1.125rem/1.5 "Noto Sans Ethiopic", Nyala, system-ui, sans-serif; margin: 0; padding: 1.25rem; max-width: 40rem; }
     label { display: block; font-weight: 700; margin-top: 1rem; }
     input, textarea { width: 100%; min-height: 44px; font: inherit; padding: 0.4rem; }
     button { min-height: 44px; min-width: 44px; font: inherit; margin-top: 1rem; padding: 0.5rem 1rem; }
@@ -20,17 +20,17 @@ export function applyFormHtml(jobId: string): string {
 </head>
 <body>
   <main>
-    <h1>Apply for job ${id}</h1>
-    <p>There is no time limit on this form. You can save and return.</p>
+    <h1>ለ ${id} የሥራ ዕድል ያመልክቱ</h1>
+    <p>በዚህ ቅጽ ላይ የጊዜ ገደብ የለም። መረጃውን አስቀምጠው በኋላ መመለስ ይችላሉ።</p>
     <div id="errors" class="error" hidden role="alert"></div>
     <form id="apply" novalidate>
-      <label for="name">Full name</label>
+      <label for="name">ሙሉ ስም</label>
       <input id="name" name="name" required autocomplete="name">
-      <label for="contact">Email or phone</label>
+      <label for="contact">ኢሜይል ወይም ስልክ</label>
       <input id="contact" name="contact" required autocomplete="email">
-      <label for="why">Why this role? (plain language is welcome)</label>
+      <label for="why">ለምን ይህን ሥራ መረጡ? (በቀላል ቋንቋ መጻፍ ይችላሉ)</label>
       <textarea id="why" name="why" rows="5" required></textarea>
-      <button type="submit">Send application</button>
+      <button type="submit">ማመልከቻውን ላክ</button>
     </form>
     <p id="done" role="status" aria-live="polite"></p>
   </main>
@@ -42,15 +42,15 @@ export function applyFormHtml(jobId: string): string {
       const missing = [...form.querySelectorAll("[required]")].filter((el) => !el.value.trim());
       if (missing.length) {
         errors.hidden = false;
-        errors.innerHTML = "<p>Please fill: " + missing.map((el) => {
+        errors.innerHTML = "<p>እባክዎ ይሙሉ፦ " + missing.map((el) => {
           const label = form.querySelector("label[for='" + el.id + "']");
           return label ? label.textContent : el.id;
-        }).join(", ") + ".</p>";
+        }).join("፣ ") + "።</p>";
         missing[0].focus();
         return;
       }
       errors.hidden = true;
-      document.getElementById("done").textContent = "Application recorded locally for the demo. Thank you.";
+      document.getElementById("done").textContent = "ማመልከቻው ለማሳያው በአካባቢው ተመዝግቧል። እናመሰግናለን።";
       form.reset();
     });
   </script>

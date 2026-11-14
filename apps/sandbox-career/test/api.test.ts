@@ -48,7 +48,7 @@ test("GET /v1/jobs/{id}.jsonld is a JobPosting", async () => {
   assert.equal(body["@type"], "JobPosting");
   assert.equal(body.jobLocationType, "TELECOMMUTE");
   assert.equal(body.employmentType, "FULL_TIME");
-  assert.ok(String(body.description).includes("screen-reader-tested"));
+  assert.ok(String(body.description).includes("በማያ ንባብ"));
 });
 
 test("issue, fetch and revoke a credential", async () => {
@@ -60,8 +60,8 @@ test("issue, fetch and revoke a credential", async () => {
     },
     body: JSON.stringify({
       recipientRef: "urn:savanna:learner:test-revoke",
-      achievement: "Test Badge",
-      recipientName: "Test Learner",
+      achievement: "የሙከራ ሽልማት",
+      recipientName: "የሙከራ ተማሪ",
     }),
   });
   assert.equal(issued.res.status, 201);

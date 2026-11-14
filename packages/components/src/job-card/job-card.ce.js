@@ -34,7 +34,7 @@ const am = {
 };
 
 const css = `
-:host { display:block; color:#111; font-family:var(--savanna-font, system-ui, sans-serif);
+:host { display:block; color:#111; font-family:var(--savanna-font, "Noto Sans Ethiopic", Nyala, system-ui, sans-serif);
   --_accent:var(--savanna-accent,#0b5cab); --_radius:var(--savanna-radius,.5rem);
   --_focus:var(--savanna-focus,#0b5cab); max-width:100%; }
 article { display:flex; flex-direction:column; gap:.75rem; padding:1rem;
@@ -58,7 +58,7 @@ summary { min-height:44px; display:flex; align-items:center; cursor:pointer; }
 `;
 
 function langOf(el) {
-  const v = (el.getAttribute("lang") || document.documentElement.lang || "en").slice(0, 2);
+  const v = (el.getAttribute("lang") || document.documentElement.lang || "am").slice(0, 2);
   return v === "am" ? "am" : "en";
 }
 
@@ -153,7 +153,7 @@ class SavannaJobCard extends HTMLElement {
       "@type": "JobPosting",
       identifier: job.id,
       title: job.title,
-      description: `${job.description.en} Remote-friendly, screen-reader-tested application.`,
+      description: job.description[langOf(this)],
       validThrough: job.validThrough,
       employmentType: job.employmentType || "FULL_TIME",
       hiringOrganization: { "@type": "Organization", name: job.employer },
@@ -166,9 +166,9 @@ class SavannaJobCard extends HTMLElement {
   _render() {
     const lang = langOf(this);
     const job = this._data;
-    const desc = job.description[lang] || job.description.en;
-    const reqs = job.description.requirements?.[lang] || job.description.requirements?.en || [];
-    const audio = job.audioSummary[lang] || job.audioSummary.en;
+    const desc = job.description[lang];
+    const reqs = job.description.requirements?.[lang] || [];
+    const audio = job.audioSummary[lang];
     const audioUrl = audio.url.startsWith("http") ? audio.url : `${this._root()}${audio.url}`;
     const apply = job.applyUrl.startsWith("http") ? job.applyUrl : `${this._root()}${job.applyUrl}`;
     const locale = lang === "am" ? "am-ET-u-ca-ethiopic" : "en-GB";

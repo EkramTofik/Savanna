@@ -28,6 +28,6 @@ export function writeJobsPrefs(patch: JobsPrefs): void {
 }
 
 export function resolveLang(el: HTMLElement, attr: string): "en" | "am" {
-  const value = (attr || el.lang || document.documentElement.lang || "en").slice(0, 2);
+  const value = (attr || el.lang || document.documentElement.lang || "am").slice(0, 2);
   return value === "am" ? "am" : "en";
 }
