@@ -5,3 +5,7 @@ dist
 *.log
 coverage
 .vite
+
+.venv/
+pipeline-out/
+test-videos/
