@@ -29,6 +29,8 @@ npm run test:api
 npm test
 ```
 
+Automated checks: `node --test test/api.node.test.mjs` (API) and `npm test` (Playwright + axe-core, zoom, keyboard).
+
 ## Honesty notes (say this to judges)
 
 - Hosted verification is the supported path (server lookup, status valid/revoked/expired).

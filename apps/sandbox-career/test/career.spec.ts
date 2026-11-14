@@ -9,6 +9,11 @@ test("job card and credential render and pass axe", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /Certificate/i })).toBeVisible();
 
   const results = await new AxeBuilder({ page }).analyze();
+  // Hackathon gate (deck s14): axe-core clean — zero critical and zero serious.
+  const blocking = results.violations.filter(
+    (v) => v.impact === "critical" || v.impact === "serious",
+  );
+  expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
   expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([]);
 });
 

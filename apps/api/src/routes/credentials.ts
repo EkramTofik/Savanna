@@ -118,6 +118,13 @@ export const openapi = {
         responses: { "200": { description: "OpenBadgeCredential" } },
       },
     },
+    "/v1/credentials/{id}/pdf": {
+      get: {
+        summary: "Tagged certificate PDF (FR-D3)",
+        tags: ["Credentials"],
+        responses: { "200": { description: "application/pdf" } },
+      },
+    },
     "/v1/credentials/{id}/revoke": {
       post: {
         summary: "Revoke a credential (secret key)",

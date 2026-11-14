@@ -1,0 +1,31 @@
+{
+  "id": "J-10",
+  "title": "Junior Data Steward",
+  "employer": "Savanna Partners",
+  "location": "Remote",
+  "remote": true,
+  "payText": "ETB 15,000–20,000 / month",
+  "validThrough": "2027-01-15T23:59:59.000Z",
+  "employmentType": "FULL_TIME",
+  "applyUrl": "/apply/J-10",
+  "description": {
+    "en": "Keep learner records accurate and private. Remote-friendly, screen-reader-tested application.",
+    "am": "የተማሪ መዝገቦች ትክክለኛ እና የግል እንዲሆኑ ያድርጉ። ማመልከቻው ከርቀት ተስማሚ እና በማያ ንባብ የተሞከረ ነው።",
+    "requirements": {
+      "en": ["Care with personal data", "Amharic or English writing"],
+      "am": ["ለግል መረጃ ጥንቃቄ", "በአማርኛ ወይም በእንግሊዝኛ መጻፍ"]
+    }
+  },
+  "audioSummary": {
+    "en": {
+      "url": "/media/jobs/J-10-en.wav",
+      "durationSec": 20,
+      "transcript": "Junior Data Steward at Savanna Partners. Full time and remote. Pay is 15 to 20 thousand birr a month. Apply by 15 January 2027. You will keep learner records accurate and private. The application is screen-reader tested. Key needs: care with personal data, and Amharic or English writing."
+    },
+    "am": {
+      "url": "/media/jobs/J-10-am.mp3",
+      "durationSec": 20,
+      "transcript": "በሳቫና አጋሮች ጁኒየር የመረጃ ጠባቂ። ሙሉ ሰዓት እና ከርቀት። ደመወዝ በወር ከ15 እስከ 20 ሺህ ብር። ማመልከቻ እስከ ጃንዋሪ 15 ቀን 2027። የተማሪ መዝገቦችን ትክክለኛ እና የግል ያደርጋሉ። ማመልከቻው በማያ ንባብ ተሞክሯል። ዋና መስፈርቶች፡ ለግል መረጃ ጥንቃቄ፣ በአማርኛ ወይም በእንግሊዝኛ መጻፍ።"
+    }
+  }
+}

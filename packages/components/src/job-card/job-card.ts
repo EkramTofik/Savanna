@@ -273,7 +273,8 @@ export class SavannaJobCard extends LitElement {
 
   private formatDate(iso?: string | null): string {
     if (!iso) return "—";
-    const locale = this.activeLang() === "am" ? "am-ET" : "en-GB";
+    // Built for Ethiopia: Amharic dates use the Ethiopian (Ge'ez) calendar.
+    const locale = this.activeLang() === "am" ? "am-ET-u-ca-ethiopic" : "en-GB";
     return new Intl.DateTimeFormat(locale, {
       day: "numeric",
       month: "long",

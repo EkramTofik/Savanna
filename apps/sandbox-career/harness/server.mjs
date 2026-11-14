@@ -14,6 +14,100 @@ const PK = "pk_live_demo";
 const SK = "sk_live_demo";
 const credFile = path.join(here, "credentials-db.json");
 
+// Plug-in Level 2 (deck s12): a REST API described by OpenAPI so another
+// platform's engineers can integrate it. Mirrors the route-module OpenAPI
+// definitions in apps/api/src/routes/*.ts.
+const openApiDoc = {
+  openapi: "3.1.0",
+  info: {
+    title: "Savanna Career Gateway API",
+    version: "1.0.0",
+    description:
+      "Job postings (schema.org/JobPosting), verifiable credentials (Open Badges 3.0) and hosted verification. Present a key in X-Savanna-Key.",
+  },
+  servers: [{ url: publicBaseUrl }],
+  components: {
+    securitySchemes: {
+      SavannaKey: { type: "apiKey", in: "header", name: "X-Savanna-Key" },
+    },
+    parameters: {
+      SavannaKey: {
+        name: "X-Savanna-Key",
+        in: "header",
+        required: true,
+        schema: { type: "string" },
+      },
+    },
+  },
+  paths: {
+    "/v1/jobs": {
+      get: {
+        summary: "List jobs",
+        tags: ["Jobs"],
+        parameters: [{ $ref: "#/components/parameters/SavannaKey" }],
+        responses: { 200: { description: "Job list" } },
+      },
+    },
+    "/v1/jobs/{id}": {
+      get: {
+        summary: "Get a job",
+        tags: ["Jobs"],
+        parameters: [
+          { $ref: "#/components/parameters/SavannaKey" },
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: { 200: { description: "Job" }, 404: { description: "Missing" } },
+      },
+    },
+    "/v1/jobs/{id}.jsonld": {
+      get: {
+        summary: "Job as schema.org/JobPosting JSON-LD",
+        tags: ["Jobs"],
+        parameters: [
+          { $ref: "#/components/parameters/SavannaKey" },
+          { name: "id", in: "path", required: true, schema: { type: "string" } },
+        ],
+        responses: { 200: { description: "JobPosting" } },
+      },
+    },
+    "/v1/credentials": {
+      post: {
+        summary: "Issue a credential (secret key)",
+        tags: ["Credentials"],
+        responses: { 201: { description: "Issued OpenBadgeCredential" } },
+      },
+    },
+    "/v1/credentials/{id}": {
+      get: {
+        summary: "Fetch a credential as JSON-LD",
+        tags: ["Credentials"],
+        responses: { 200: { description: "OpenBadgeCredential" } },
+      },
+    },
+    "/v1/credentials/{id}/pdf": {
+      get: {
+        summary: "Tagged certificate PDF (FR-D3)",
+        tags: ["Credentials"],
+        responses: { 200: { description: "application/pdf" } },
+      },
+    },
+    "/v1/credentials/{id}/revoke": {
+      post: {
+        summary: "Revoke a credential (secret key)",
+        tags: ["Credentials"],
+        responses: { 200: { description: "Revoked" } },
+      },
+    },
+    "/verify/{id}": {
+      get: {
+        summary: "Human verify page or OpenBadgeCredential JSON-LD",
+        tags: ["Credentials"],
+        responses: { 200: { description: "HTML or JSON-LD" } },
+      },
+    },
+  },
+};
+
 const jobsList = JSON.parse(readFileSync(path.join(fixtures, "jobs.json"), "utf8"));
 const jobs = Object.fromEntries(
   jobsList.jobs.map((j) => [j.id, JSON.parse(readFileSync(path.join(fixtures, "jobs", `${j.id}.json`), "utf8"))]),
@@ -329,6 +423,10 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === "GET" && p === "/v1/health") {
       send(res, 200, { ok: true, slice: "career" });
+      return;
+    }
+    if (req.method === "GET" && p === "/openapi.json") {
+      send(res, 200, openApiDoc);
       return;
     }
     if (req.method === "GET" && p === "/.well-known/did.json") {

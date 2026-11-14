@@ -167,7 +167,7 @@ class SavannaJobCard extends HTMLElement {
     const audio = job.audioSummary[lang] || job.audioSummary.en;
     const audioUrl = audio.url.startsWith("http") ? audio.url : `${this._root()}${audio.url}`;
     const apply = job.applyUrl.startsWith("http") ? job.applyUrl : `${this._root()}${job.applyUrl}`;
-    const locale = lang === "am" ? "am-ET" : "en-GB";
+    const locale = lang === "am" ? "am-ET-u-ca-ethiopic" : "en-GB";
     const deadline = job.validThrough
       ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" }).format(new Date(job.validThrough))
       : "—";
