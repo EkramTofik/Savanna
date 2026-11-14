@@ -39,7 +39,7 @@ describe("API skeleton", () => {
   });
 
   it("blocks a publishable key from an unknown origin (production rules)", async () => {
-    const res = await request(await app({ NODE_ENV: "production", SECRET_KEY: "s".repeat(20), PARTNERS: JSON.stringify([{ name: "p", key: "pk_live_12345", origins: ["https://ok.example"] }]) }))
+    const res = await request(await app({ NODE_ENV: "production", STORE: "memory", SECRET_KEY: "s".repeat(20), PARTNERS: JSON.stringify([{ name: "p", key: "pk_live_12345", origins: ["https://ok.example"] }]) }))
       .get("/v1/hello").set({ "X-Savanna-Key": "pk_live_12345", Origin: "https://evil.example" });
     expect(res.status).toBe(403);
   });

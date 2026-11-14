@@ -1,0 +1,42 @@
+// Owner: Member 4. Lessons, their files, transcripts and synced preferences.
+
+model Lesson {
+  id          String   @id
+  title       Json     // { "en": "...", "am": "..." }
+  summary     Json?
+  durationSec Int
+  status      String   @default("published")
+  createdAt   DateTime @default(now())
+  assets      LessonAsset[]
+  transcripts Transcript[]
+}
+
+model LessonAsset {
+  id       String  @id @default(uuid())
+  lessonId String
+  lesson   Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  kind     String  // video | audio | vtt | sign | ad_audio | ad_vtt | transcript_html | pdf | pack | brf
+  lang     String?
+  url      String
+  bytes    Int     @default(0)
+  checksum String  @default("")
+  reviewed Boolean @default(false)
+  meta     Json?   // sign: { offsetMs }, ad_audio: { extended }
+
+  @@index([lessonId, kind])
+}
+
+model Transcript {
+  lessonId String
+  lang     String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lines    Json   // [{ start, end, text }]
+
+  @@id([lessonId, lang])
+}
+
+model Preference {
+  userHash  String   @id // SHA-256 of the user token; the raw token is never stored
+  data      Json
+  updatedAt DateTime @updatedAt
+}

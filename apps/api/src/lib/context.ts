@@ -1,6 +1,7 @@
 // Contract C7: every route module receives this as its second argument.
 // Additive changes only: add fields, never rename or remove.
 import type { Router } from "express";
+import type { Store } from "../db/store";
 
 export interface Partner {
   name: string;
@@ -19,11 +20,15 @@ export interface AppConfig {
   secretKey: string;
   partners: Partner[];
   rateLimitPerMin: number;
+  /** "memory" (default in dev, no database needed) or "prisma" (PostgreSQL). */
+  store: "memory" | "prisma";
 }
 
 // Replace `unknown` with the generated PrismaClient type once Prisma is set up (task 4.3).
 export interface Ctx {
   prisma: unknown;
+  /** Content store (lessons, transcripts, preferences). Added in task 4.3. */
+  store: Store;
   config: AppConfig;
 }
 

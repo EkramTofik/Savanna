@@ -14,6 +14,7 @@
 - C6 API: endpoints per SRS section 8, errors `application/problem+json`, header `X-Savanna-Key`,
   component attributes `api` and `api-key`. Mock: `pnpm mock` maps `GET /v1/<path>` to `fixtures/v1/<path>.json`
   and serves `GET /media/<file>` from `fixtures/media/` (placeholder video, audio, captions, sign video, AD).
+  Real API extras (additive): `GET /v1/lessons`, `GET /v1/lessons/{id}/captions/{en|am}.vtt` (302 redirect), `GET|PUT /v1/preferences` with header `X-Savanna-User`.
   Not mocked: POST requests and non-JSON API responses (`.vtt`, `.jsonld`, `pack.zip`). Use `/media/*` or your own fixtures.
 - C7 Route modules: each file in `apps/api/src/routes/` exports `register(router: Router, ctx: Ctx)`
   (and later its OpenAPI definitions). `Ctx = { prisma, config }`, defined in `apps/api/src/lib/context.ts`.
