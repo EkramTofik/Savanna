@@ -15,7 +15,11 @@
   component attributes `api` and `api-key`. Mock: `pnpm mock` maps `GET /v1/<path>` to `fixtures/v1/<path>.json`
   and serves `GET /media/<file>` from `fixtures/media/` (placeholder video, audio, captions, sign video, AD).
   Not mocked: POST requests and non-JSON API responses (`.vtt`, `.jsonld`, `pack.zip`). Use `/media/*` or your own fixtures.
-- C7 Route modules: each file in `apps/api/src/routes/` exports `register(router: Router, ctx: Ctx)` plus its OpenAPI
-  definitions. `Ctx = { prisma, config }`, defined in `apps/api/src/lib/context.ts`.
+- C7 Route modules: each file in `apps/api/src/routes/` exports `register(router: Router, ctx: Ctx)`
+  (and later its OpenAPI definitions). `Ctx = { prisma, config }`, defined in `apps/api/src/lib/context.ts`.
+  Mounting (added in task 4.2, additive): default `access = "key"` -> your router is mounted under `/v1` behind
+  `X-Savanna-Key` auth, so register paths WITHOUT `/v1` (e.g. `router.get("/jobs/:id", ...)`).
+  `export const access = "public"` -> mounted at the root with no auth, so use FULL paths
+  (e.g. `/verify/:id`, `/v1/health`). Admin actions: `router.post("/credentials", requireScope("admin"), ...)`.
 - C8 Fixtures: M4 L-102, transcript, preferences; M1 captions (`media/en.vtt`, `media/am.vtt`) and the lesson video;
   M2 L-103, sign, AD, pack; M3 jobs/credentials. Replace placeholders with real files anytime; keep the file names.
