@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { Router } from "express";
 import { z } from "zod";
 import type { CareerCtx, CredentialRecord } from "./career-types.js";
-import { effectiveStatus, problem, requirePublishable, requireSecret } from "./career-lib.js";
+import { effectiveStatus, pathParam, problem, requirePublishable, requireSecret } from "./career-lib.js";
 import { toOpenBadge } from "./open-badges.js";
 
 const issueBody = z.object({
@@ -49,9 +49,10 @@ export function register(router: Router, ctx: CareerCtx): void {
 
   router.get("/v1/credentials/:id", requirePublishable(ctx), async (req, res, next) => {
     try {
-      const record = await ctx.store.getCredential(req.params.id);
+      const id = pathParam(req, "id");
+      const record = await ctx.store.getCredential(id);
       if (!record) {
-        problem(res, 404, "Not Found", `Credential ${req.params.id} was not found.`);
+        problem(res, 404, "Not Found", `Credential ${id} was not found.`);
         return;
       }
       res.type("application/ld+json").json(toOpenBadge(record, ctx));
@@ -62,9 +63,10 @@ export function register(router: Router, ctx: CareerCtx): void {
 
   router.get("/v1/credentials/:id/pdf", requirePublishable(ctx), async (req, res, next) => {
     try {
-      const record = await ctx.store.getCredential(req.params.id);
+      const id = pathParam(req, "id");
+      const record = await ctx.store.getCredential(id);
       if (!record) {
-        problem(res, 404, "Not Found", `Credential ${req.params.id} was not found.`);
+        problem(res, 404, "Not Found", `Credential ${id} was not found.`);
         return;
       }
       const { renderCertificatePdf } = await import("./credential-pdf.js");
@@ -80,9 +82,10 @@ export function register(router: Router, ctx: CareerCtx): void {
 
   router.post("/v1/credentials/:id/revoke", requireSecret(ctx), async (req, res, next) => {
     try {
-      const record = await ctx.store.getCredential(req.params.id);
+      const id = pathParam(req, "id");
+      const record = await ctx.store.getCredential(id);
       if (!record) {
-        problem(res, 404, "Not Found", `Credential ${req.params.id} was not found.`);
+        problem(res, 404, "Not Found", `Credential ${id} was not found.`);
         return;
       }
       record.status = "revoked";

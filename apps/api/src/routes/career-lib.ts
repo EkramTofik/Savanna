@@ -27,6 +27,11 @@ export function getKey(req: Request): string {
   return typeof q === "string" ? q : "";
 }
 
+export function pathParam(req: Request, name: string): string {
+  const value = req.params[name];
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
 export function requirePublishable(ctx: CareerCtx) {
   return (req: Request, res: Response, next: NextFunction) => {
     const key = getKey(req);

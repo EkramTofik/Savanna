@@ -10,7 +10,9 @@
     "mock": "node contracts/mock/server.js",
     "format": "prettier --write .",
     "ui": "pnpm --filter sandbox-career ui",
-    "career": "pnpm --filter sandbox-career dev"
+    "career": "pnpm --filter sandbox-career dev",
+    "dev:api": "pnpm --filter @savanna/api dev",
+    "openapi": "pnpm --filter @savanna/api openapi:export && pnpm --filter @savanna/sdk generate"
   },
   "dependencies": {
     "cors": "^2.8.5",

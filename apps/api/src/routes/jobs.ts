@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { CareerCtx } from "./career-types.js";
-import { jobToJsonLd, problem, requirePublishable } from "./career-lib.js";
+import { jobToJsonLd, pathParam, problem, requirePublishable } from "./career-lib.js";
 
 export function register(router: Router, ctx: CareerCtx): void {
   const auth = requirePublishable(ctx);
@@ -24,9 +24,10 @@ export function register(router: Router, ctx: CareerCtx): void {
 
   router.get("/v1/jobs/:id.jsonld", auth, async (req, res, next) => {
     try {
-      const job = await ctx.store.getJob(req.params.id);
+      const id = pathParam(req, "id");
+      const job = await ctx.store.getJob(id);
       if (!job) {
-        problem(res, 404, "Not Found", `Job ${req.params.id} was not found.`);
+        problem(res, 404, "Not Found", `Job ${id} was not found.`);
         return;
       }
       res.type("application/ld+json").json(jobToJsonLd(job, ctx.publicBaseUrl));
@@ -37,9 +38,10 @@ export function register(router: Router, ctx: CareerCtx): void {
 
   router.get("/v1/jobs/:id", auth, async (req, res, next) => {
     try {
-      const job = await ctx.store.getJob(req.params.id);
+      const id = pathParam(req, "id");
+      const job = await ctx.store.getJob(id);
       if (!job) {
-        problem(res, 404, "Not Found", `Job ${req.params.id} was not found.`);
+        problem(res, 404, "Not Found", `Job ${id} was not found.`);
         return;
       }
       res.json(job);
