@@ -4,6 +4,7 @@ import cors from "cors";
 import express, { Router } from "express";
 import helmet from "helmet";
 import { loadConfig } from "./config";
+import { createStore } from "./db/createStore";
 import type { AppConfig, Ctx } from "./lib/context";
 import { loadRouteModules } from "./lib/loadRoutes";
 import { authenticate, originAllowed } from "./middleware/auth";
@@ -22,7 +23,8 @@ export interface AppOptions {
 
 export async function createApp(opts: AppOptions = {}) {
   const config = opts.config ?? loadConfig();
-  const ctx: Ctx = { prisma: undefined, config, ...opts.ctx };
+  const created = opts.ctx?.store ? undefined : await createStore(config);
+  const ctx: Ctx = { prisma: created?.prisma, store: (opts.ctx?.store ?? created?.store)!, config, ...opts.ctx };
 
   const app = express();
   app.disable("x-powered-by");
@@ -33,7 +35,7 @@ export async function createApp(opts: AppOptions = {}) {
   app.use(
     cors({
       origin: (origin, cb) => cb(null, !origin || originAllowed(origin, allOrigins, config.production)),
-      allowedHeaders: ["Content-Type", "X-Savanna-Key"],
+      allowedHeaders: ["Content-Type", "X-Savanna-Key", "X-Savanna-User"],
       maxAge: 600,
     }),
   );

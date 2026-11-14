@@ -22,6 +22,8 @@ const EnvSchema = z.object({
   /** JSON array: [{"name":"savanna","key":"pk_live_xxx","origins":["https://savanna.example"]}] */
   PARTNERS: z.string().optional(),
   RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(120),
+  /** memory = fixtures in RAM (no database). prisma = PostgreSQL. Defaults to prisma in production. */
+  STORE: z.enum(["memory", "prisma"]).optional(),
 });
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -44,5 +46,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     secretKey: e.SECRET_KEY ?? "sk_dev_local_change_me_please",
     partners,
     rateLimitPerMin: e.RATE_LIMIT_PER_MIN,
+    store: e.STORE ?? (production ? "prisma" : "memory"),
   };
 }
