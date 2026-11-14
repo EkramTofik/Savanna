@@ -9,6 +9,7 @@ import { effectiveStatus, pathParam } from "./career-lib.js";
 import type { CredentialRecord, Json } from "./career-types.js";
 import { toOpenBadge } from "./open-badges.js";
 import { createMember3CareerContext } from "./_member3-career-store.js";
+import { deliverEvent } from "./_member3-webhooks.js";
 
 const IssueCredentialSchema = z.object({
   recipientRef: z.string().min(1).max(200).describe("Pseudonymous learner reference; do not send an email address."),
@@ -68,6 +69,7 @@ export function register(router: Router, ctx: Ctx): void {
     const badge = toOpenBadge(record, career);
     record.proof = (badge.proof as Json | undefined) ?? null;
     const saved = await career.store.saveCredential(record);
+    await deliverEvent("credential.issued", { id: saved.id, status: effectiveStatus(saved) });
     res.status(201).type("application/ld+json").json(toOpenBadge(saved, career));
   });
 

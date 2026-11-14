@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="am">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>የሳቫና የሥራ ዕድሎች</title>
+    <link rel="stylesheet" href="../assets/css/application_alx.css" media="all" />
+    <link rel="stylesheet" href="../assets/css/app.css" media="all" />
+    <style>
+      main {
+        max-width: 46rem;
+      }
+      savanna-job-card,
+      savanna-credential {
+        display: block;
+        margin-block: 1.5rem;
+      }
+      .skip-link {
+        position: absolute;
+        inset-inline-start: 0.5rem;
+        inset-block-start: -3rem;
+        padding: 0.5rem 1rem;
+        color: #fff;
+        background: #002b56;
+        border-radius: 0.25rem;
+        z-index: 10;
+      }
+      .skip-link:focus {
+        inset-block-start: 0.5rem;
+      }
+    </style>
+  </head>
+  <body class="bg-body-tertiary">
+    <a class="skip-link" href="#main">ወደ ዋና ይዘት ዝለል</a>
+    <main id="main" class="container-lg py-4">
+      <h1 class="h3 mb-2">የሥራ ዕድሎች</h1>
+      <p class="text-body-secondary">
+        ይህ የማሳያ ገጽ የሳቫና የሥራ መግቢያ ሞጁልን በአንድ የስክሪፕት መለያ ይጭናል። የሥራ ካርዶቹ እና የምስክር
+        ወረቀቱ የሚመጡት ከሳቫና ኤፒአይ ነው፤ ሁሉም ጽሑፍ በአማርኛ ነው።
+      </p>
+
+      <h2 class="h4 mt-4">የሥራ ዕድሎች</h2>
+      <savanna-job-card job="J-9" api="" api-key="pk_dev_local" lang="am"></savanna-job-card>
+      <savanna-job-card job="J-10" api="" api-key="pk_dev_local" lang="am"></savanna-job-card>
+
+      <h2 class="h4 mt-4">የምስክር ወረቀት</h2>
+      <savanna-credential id="C-7" api="" api-key="pk_dev_local" lang="am"></savanna-credential>
+
+      <p class="mt-4">
+        የሙከራ ሥራ መረጃ፦
+        <a href="data/jobs.json">data/jobs.json</a>
+      </p>
+    </main>
+
+    <script type="module" src="../module/savanna-career.v1.js"></script>
+    <script>
+      document.addEventListener("savanna:ready", function (event) {
+        console.log("ሞጁሉ ተጭኗል", event.detail);
+      });
+      document.addEventListener("savanna:error", function (event) {
+        console.log("ሞጁሉ ስህተት አሳይቷል", event.detail);
+      });
+    </script>
+  </body>
+</html>
