@@ -53,6 +53,22 @@ test("keyboard can play audio summary and open apply", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Apply for this job/i })).toBeFocused();
 });
 
+test("Amharic job dates use the Ethiopian calendar", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "አማርኛ" }).click();
+  const jobCard = page.locator("savanna-job-card").first();
+  await expect(jobCard.locator("article[lang='am']")).toBeVisible();
+  const displayedDate = await jobCard.locator("dl dd").nth(3).textContent();
+  const expectedDate = await page.evaluate(() =>
+    new Intl.DateTimeFormat("am-ET-u-ca-ethiopic", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date("2026-12-31T23:59:59.000Z")),
+  );
+  expect(displayedDate?.trim()).toBe(expectedDate);
+});
+
 test("verify page is readable and copy works", async ({ page }) => {
   await page.goto("http://localhost:4020/verify/C-7");
   await expect(page.getByRole("heading", { name: "Credential verification" })).toBeVisible();
@@ -67,4 +83,56 @@ test("apply form shows error summary without a timeout", async ({ page }) => {
   await page.goto("http://localhost:4020/apply/J-9");
   await page.getByRole("button", { name: "Send application" }).click();
   await expect(page.getByRole("alert")).toContainText("Please fill");
+});
+
+test("verification and apply pages reflow at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  for (const url of ["http://localhost:4020/verify/C-7", "http://localhost:4020/apply/J-9"]) {
+    await page.goto(url);
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }));
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport + 1);
+  }
+});
+
+test("bilingual job audio assets stay within the 20 to 30 second target", async ({ page }) => {
+  const outOfRange: string[] = [];
+  for (const id of ["J-9", "J-10"]) {
+    const response = await page.request.get(`http://localhost:4020/v1/jobs/${id}`, {
+      headers: { "X-Savanna-Key": "pk_live_demo" },
+    });
+    const job = await response.json();
+    for (const lang of ["en", "am"]) {
+      const url = `http://localhost:4020${job.audioSummary[lang].url}`;
+      const duration = await page.evaluate(async (audioUrl) => {
+        const response = await fetch(audioUrl, { headers: { "X-Savanna-Key": "pk_live_demo" } });
+        const data = await response.arrayBuffer();
+        const context = new AudioContext();
+        try {
+          return (await context.decodeAudioData(data)).duration;
+        } finally {
+          await context.close();
+        }
+      }, url);
+      console.log(`${id} ${lang} audio: ${duration.toFixed(2)}s`);
+      if (duration < 20 || duration > 30) outOfRange.push(`${id} ${lang}: ${duration.toFixed(2)}s`);
+    }
+  }
+  expect(outOfRange).toEqual([]);
+});
+
+test("built component bundle works from a partner-host integration page", async ({ page }) => {
+  await page.goto("/partner-demo.html");
+  await expect(page.getByRole("heading", { name: "Accessible Learning Support Associate" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Certificate: Digital Bridge" })).toBeVisible();
+  const pdfLink = page
+    .locator("savanna-credential")
+    .getByRole("link", { name: "Download PDF certificate" });
+  const pdfHref = await pdfLink.getAttribute("href");
+  expect(pdfHref).toContain("api-key=pk_live_demo");
+  const pdf = await page.request.get(new URL(pdfHref!, page.url()).toString());
+  expect(pdf.status()).toBe(200);
+  expect(pdf.headers()["content-type"]).toContain("application/pdf");
 });

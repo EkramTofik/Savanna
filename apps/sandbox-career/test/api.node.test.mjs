@@ -65,3 +65,29 @@ test("verify page has QR alt text", async () => {
   assert.match(html, /QR code linking to/);
   assert.match(html, /Digital Bridge/);
 });
+
+test("credential endpoint returns a tagged PDF", async () => {
+  const res = await fetch(`${BASE}/v1/credentials/C-7/pdf`, {
+    headers: { "X-Savanna-Key": "pk_live_demo" },
+  });
+  const pdf = Buffer.from(await res.arrayBuffer()).toString("latin1");
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-type") ?? "", /application\/pdf/);
+  assert.match(pdf, /^%PDF-/);
+  assert.match(pdf, /\/StructTreeRoot\b/);
+});
+
+test("OpenAPI and CORS support partner integrations", async () => {
+  const openapi = await fetch(`${BASE}/openapi.json`).then((res) => res.json());
+  assert.equal(openapi.openapi, "3.1.0");
+  const preflight = await fetch(`${BASE}/v1/jobs`, {
+    method: "OPTIONS",
+    headers: {
+      Origin: "https://partner.example.test",
+      "Access-Control-Request-Method": "GET",
+      "Access-Control-Request-Headers": "x-savanna-key",
+    },
+  });
+  assert.equal(preflight.status, 204);
+  assert.match(preflight.headers.get("access-control-allow-headers") ?? "", /X-Savanna-Key/i);
+});

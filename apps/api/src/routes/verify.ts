@@ -60,7 +60,7 @@ export async function verifyPageHtml(
     .revoked, .expired { background: #fde8e8; color: #7a1010; }
     dl { display: grid; grid-template-columns: 1fr; gap: 0.35rem 1rem; }
     dt { font-weight: 700; margin-top: 0.75rem; }
-    dd { margin: 0; }
+    dd { margin: 0; overflow-wrap: anywhere; }
     button, a.button {
       display: inline-flex; align-items: center; justify-content: center;
       min-height: 44px; min-width: 44px; padding: 0.5rem 1rem;

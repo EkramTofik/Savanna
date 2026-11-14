@@ -29,7 +29,65 @@ npm run test:api
 npm test
 ```
 
-Automated checks: `node --test test/api.node.test.mjs` (API) and `npm test` (Playwright + axe-core, zoom, keyboard).
+Automated checks: `node --test test/api.node.test.mjs` (API) and `npm test` (builds the
+bundle, then runs Playwright + axe-core, audio duration, 320 px reflow, 200%/400% zoom,
+keyboard and partner-page integration checks).
+
+## Requirements and handoff
+
+- [CareerGateway task matrix](./CAREERGATEWAY-TASKS.md) maps every task (3.1–3.9) to its
+  SRS reference, priority, points, evidence and remaining manual checks.
+- [Saturday verification runbook](./SATURDAY-TASKS.md) covers NVDA/TalkBack co-design,
+  audio listening, mobile/browser checks and PAC/veraPDF review.
+
+## Integrate on another platform
+
+The production build is a self-contained ES module: it bundles Lit and registers both
+custom elements, so the host does not need Vite, React, Vue or Angular. Build it from the
+repository root:
+
+```bash
+pnpm --filter sandbox-career build
+```
+
+Copy `apps/sandbox-career/dist/savanna-career.v1.js` to your site's static assets or
+publish it to your CDN. Load it once, then use either element in any HTML template:
+
+```html
+<script type="module" src="/assets/savanna-career.v1.js"></script>
+
+<savanna-job-card
+  job="J-9"
+  api="https://api.example.org"
+  api-key="pk_live_xxx"
+  lang="en"
+></savanna-job-card>
+
+<savanna-credential
+  id="C-7"
+  api="https://api.example.org"
+  api-key="pk_live_xxx"
+  lang="en"
+></savanna-credential>
+```
+
+In React, Vue and Angular, load the same module once from the app shell and place the
+custom-element tags in the component template. Keep values as strings/HTML attributes.
+Use `savanna:ready` and `savanna:error` events to observe job loading where needed.
+The [partner demo page](./partner-demo.html) and Playwright test exercise the built bundle
+against the API on a different port.
+
+For a deployed integration, serve both the partner site and API over HTTPS. Configure the
+API CORS allowlist for the exact partner origins and permit `GET`, `POST`, `OPTIONS` and
+the `X-Savanna-Key` header. The browser components must only receive a **publishable**
+key (`pk_...`); keep secret keys (`sk_...`) on your server for issuing/revoking
+credentials. The PDF download link uses the publishable key as an `api-key` query
+parameter because a normal anchor navigation cannot attach a custom header. Do not put
+secret keys in URLs, HTML or client-side code.
+
+Components are block-level and reflow to their available width. The job card and
+credential controls have 44 px minimum targets. Host pages should avoid fixed-width
+wrappers and must preserve room for focus outlines.
 
 ## Honesty notes (say this to judges)
 

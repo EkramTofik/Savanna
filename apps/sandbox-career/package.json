@@ -8,7 +8,7 @@
     "api": "node harness/server.mjs",
     "ui": "vite --port 5173 --strictPort",
     "build": "vite build",
-    "test": "playwright test",
+    "test": "vite build && playwright test",
     "audio": "tsx scripts/render-audio.ts",
     "audio:azure": "node scripts/render-audio-azure.mjs",
     "audio:google": "node scripts/render-audio-google.mjs",

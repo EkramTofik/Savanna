@@ -201,7 +201,9 @@ export class SavannaCredential extends LitElement {
             >${this.t("cred.linkedin")}</a
           >
           <a class="action" href=${this.verifyUrl()}>${this.t("cred.verify")}</a>
-          <a class="action" href=${`${this.apiRoot()}/v1/credentials/${encodeURIComponent(this.credentialId())}/pdf`}
+          <a
+            class="action"
+            href=${`${this.apiRoot()}/v1/credentials/${encodeURIComponent(this.credentialId())}/pdf?api-key=${encodeURIComponent(this.apiKey)}`}
             >${this.t("cred.pdf")}</a
           >
         </div>

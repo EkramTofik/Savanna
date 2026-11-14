@@ -6,9 +6,19 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(here, "../media/jobs");
 const fixtures = path.join(here, "../../../contracts/fixtures/v1");
-const jobIds: string[] = JSON.parse(await readFile(path.join(fixtures, "jobs.json"), "utf8")).jobs.map(
+const availableJobIds: string[] = JSON.parse(await readFile(path.join(fixtures, "jobs.json"), "utf8")).jobs.map(
   (entry: { id: string }) => entry.id,
 );
+const requestedJob = process.argv[2];
+const requestedLang = process.argv[3];
+if (requestedJob && !availableJobIds.includes(requestedJob)) {
+  throw new Error(`Unknown job id "${requestedJob}". Available jobs: ${availableJobIds.join(", ")}`);
+}
+if (requestedLang && requestedLang !== "en" && requestedLang !== "am") {
+  throw new Error(`Unknown language "${requestedLang}". Use "en" or "am".`);
+}
+const jobIds = requestedJob ? [requestedJob] : availableJobIds;
+const languages = requestedLang ? [requestedLang] : ["en", "am"];
 
 type Job = {
   id: string;
@@ -67,7 +77,7 @@ for (const id of jobIds) {
 await mkdir(outDir, { recursive: true });
 
 for (const job of jobs) {
-  for (const lang of ["en", "am"] as const) {
+  for (const lang of languages) {
     const file = path.join(outDir, `${job.id}-${lang}.wav`);
     const summary = job.audioSummary[lang];
     const text = summary?.transcript ?? "";

@@ -281,8 +281,9 @@ function verifyHtml(record) {
 body{margin:0;font:1.125rem/1.5 system-ui,sans-serif;color:#111;padding:1.25rem;max-width:40rem}
 .status{display:inline-block;padding:.35rem .7rem;border-radius:.35rem;font-weight:700;min-height:44px;line-height:1.8}
 .valid{background:#d7f5d7;color:#064b06}.revoked,.expired{background:#fde8e8;color:#7a1010}
-dl{display:grid;grid-template-columns:1fr;gap:.35rem} dt{font-weight:700;margin-top:.75rem} dd{margin:0}
-button,a.button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;
+*,*::before,*::after{box-sizing:border-box}
+dl{display:grid;grid-template-columns:1fr;gap:.35rem} dt{font-weight:700;margin-top:.75rem} dd{margin:0;overflow-wrap:anywhere}
+    button,a.button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;
 padding:.5rem 1rem;margin:.5rem .5rem 0 0;font:inherit;color:#fff;background:#0b5cab;border:0;border-radius:.4rem;
 text-decoration:none;cursor:pointer}
 :focus{outline:3px solid #0b5cab;outline-offset:2px}
@@ -300,7 +301,7 @@ text-decoration:none;cursor:pointer}
 <p>Hosted verification looks this credential up on the issuer server. The Ed25519 proof is a draft (canonical JSON, not RDFC-1.0).</p>
 <div>${qr}</div>
 <p><button type="button" id="copy">Copy verification link</button>
-<a class="button" href="/v1/credentials/${encodeURIComponent(record.id)}/html-certificate">Open printable certificate</a></p>
+<a class="button" href="/v1/credentials/${encodeURIComponent(record.id)}/pdf?api-key=${PK}">Download tagged PDF</a></p>
 <p id="copied" role="status" aria-live="polite"></p>
 </main>
 <script>
@@ -315,7 +316,8 @@ document.getElementById("copy").addEventListener("click", async () => {
 function applyHtml(jobId) {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Apply — ${esc(jobId)}</title>
-<style>body{font:1.125rem/1.5 system-ui,sans-serif;margin:0;padding:1.25rem;max-width:40rem}
+<style>*,*::before,*::after{box-sizing:border-box}
+body{font:1.125rem/1.5 system-ui,sans-serif;margin:0;padding:1.25rem;max-width:40rem}
 label{display:block;font-weight:700;margin-top:1rem} input,textarea{width:100%;min-height:44px;font:inherit;padding:.4rem}
 button{min-height:44px;min-width:44px;font:inherit;margin-top:1rem;padding:.5rem 1rem}
 .error{color:#7a1010;background:#fde8e8;padding:.75rem}:focus{outline:3px solid #0b5cab;outline-offset:2px}</style>
@@ -473,6 +475,40 @@ const server = createServer(async (req, res) => {
       send(res, 200, applyHtml(apply[1]), "text/html; charset=utf-8");
       return;
     }
+    const credPdf = p.match(/^\/v1\/credentials\/([^/]+)\/pdf$/);
+    if (req.method === "GET" && credPdf) {
+      if (!needPub(req, res)) return;
+      const record = credentials[credPdf[1]];
+      if (!record) return problem(res, 404, "Not Found", "Credential was not found.");
+      const { chromium } = await import("playwright");
+      const browser = await chromium.launch({ headless: true });
+      try {
+        const page = await browser.newPage();
+        const certificate = verifyHtml(record).replace(
+          "<h1>Credential verification</h1>",
+          `<h1>${esc(record.achievement)}</h1><p>This document certifies that ${esc(record.recipientName || "the learner")} completed the achievement above.</p><p>Status at time of download: ${esc(statusOf(record))}. Verify live at ${esc(`${publicBaseUrl}/verify/${record.id}`)}.</p><h2>Credential verification</h2>`,
+        );
+        await page.setContent(certificate, { waitUntil: "load" });
+        const pdf = await page.pdf({
+          format: "A4",
+          printBackground: true,
+          displayHeaderFooter: false,
+          tagged: true,
+          outline: true,
+        });
+        res.writeHead(200, {
+          "content-type": "application/pdf",
+          "content-disposition": `attachment; filename="credential-${record.id}.pdf"`,
+          "access-control-allow-origin": "*",
+          "access-control-allow-headers": "Content-Type, Accept, X-Savanna-Key",
+          "access-control-allow-methods": "GET,POST,OPTIONS",
+        });
+        res.end(pdf);
+      } finally {
+        await browser.close();
+      }
+      return;
+    }
     if (req.method === "POST" && p === "/v1/credentials") {
       if (!needSec(req, res)) return;
       const body = await readBody(req);
@@ -498,10 +534,10 @@ const server = createServer(async (req, res) => {
       send(res, 201, toBadge(record), "application/ld+json; charset=utf-8");
       return;
     }
-    const credPdf = p.match(/^\/v1\/credentials\/([^/]+)\/html-certificate$/);
-    if (req.method === "GET" && credPdf) {
+    const credHtml = p.match(/^\/v1\/credentials\/([^/]+)\/html-certificate$/);
+    if (req.method === "GET" && credHtml) {
       if (!needPub(req, res)) return;
-      const record = credentials[credPdf[1]];
+      const record = credentials[credHtml[1]];
       if (!record) return problem(res, 404, "Not Found", "Credential was not found.");
       send(res, 200, verifyHtml(record).replace("<h1>Credential verification</h1>",
         `<h1>${esc(record.achievement)}</h1><p>Print this page to PDF (tagged print path depends on the browser). Live status: ${esc(statusOf(record))}.</p><h2>Credential verification</h2>`),

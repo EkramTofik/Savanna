@@ -9,6 +9,7 @@ export function applyFormHtml(jobId: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Apply — ${id}</title>
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
     body { font: 1.125rem/1.5 system-ui, sans-serif; margin: 0; padding: 1.25rem; max-width: 40rem; }
     label { display: block; font-weight: 700; margin-top: 1rem; }
     input, textarea { width: 100%; min-height: 44px; font: inherit; padding: 0.4rem; }

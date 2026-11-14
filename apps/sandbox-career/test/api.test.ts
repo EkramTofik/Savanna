@@ -23,10 +23,9 @@ before(async () => {
   } catch {
     /* start harness */
   }
-  child = spawn("npx", ["tsx", "harness/server.ts"], {
+  child = spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", "harness/server.ts"], {
     cwd: path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."),
     stdio: "inherit",
-    shell: true,
   });
   for (let i = 0; i < 40; i += 1) {
     await delay(250);

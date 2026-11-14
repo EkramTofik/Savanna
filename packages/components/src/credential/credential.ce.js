@@ -156,7 +156,7 @@ class SavannaCredential extends HTMLElement {
           <button type="button" class="copy">${t(this, "cred.copy")}</button>
           <a class="action" href="${esc(linkedin)}" rel="noopener noreferrer" target="_blank">${t(this, "cred.linkedin")}</a>
           <a class="action" href="${esc(this._verify())}">${t(this, "cred.verify")}</a>
-          <a class="action" href="${esc(`${this._root()}/v1/credentials/${encodeURIComponent(this._cid())}/html-certificate`)}">${t(this, "cred.pdf")}</a>
+          <a class="action" href="${esc(`${this._root()}/v1/credentials/${encodeURIComponent(this._cid())}/pdf?api-key=${encodeURIComponent(this.getAttribute("api-key") || "")}`)}">${t(this, "cred.pdf")}</a>
         </div>
         <p class="live" role="status" aria-live="polite"></p>
       </article>`;
