@@ -1,13 +1,27 @@
 {
   "name": "savanna-access-kit",
   "private": true,
+  "version": "1.0.0",
   "type": "module",
   "packageManager": "pnpm@9.15.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "mock": "node contracts/mock/server.js",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "node --test packages/pipeline/src/pack/*.test.mjs"
   },
-  "dependencies": { "cors": "^2.8.5", "express": "^4.21.2" },
-  "devDependencies": { "@types/node": "^22.10.0", "prettier": "^3.4.2", "tsx": "^4.19.2", "typescript": "^5.7.2" }
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "archiver": "^7.0.1",
+    "lit": "^3.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
 }

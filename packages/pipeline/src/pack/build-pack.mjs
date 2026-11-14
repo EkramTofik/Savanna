@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+import fs from 'node:fs/promises';import {createWriteStream} from 'node:fs';import path from 'node:path';import crypto from 'node:crypto';import {spawn} from 'node:child_process';import archiver from 'archiver';
+const arg=k=>{const i=process.argv.indexOf('--'+k);return i<0?null:process.argv[i+1];};
+const run=(c,a)=>new Promise((ok,no)=>{const p=spawn(c,a,{stdio:'inherit'});p.on('error',no);p.on('close',n=>n===0?ok():no(Error(c+' exited '+n)));});
+const input=path.resolve(arg('input')||'.'),output=path.resolve(arg('output')||'.'),id=arg('lesson');if(!id||!/^[\w-]{1,80}$/.test(id))throw Error('Provide a valid --lesson id');
+const has=async p=>{try{await fs.access(p);return true;}catch{return false;}};
+const audio=['audio-source.mp3','audio-source.wav','audio-source.m4a'].map(x=>path.join(input,x));let source=null;for(const p of audio)if(await has(p)){source=p;break;}if(!source)throw Error('Missing audio-source.mp3/.wav/.m4a');
+const dir=path.join(output,id);await fs.mkdir(dir,{recursive:true});await run('ffmpeg',['-y','-i',source,'-vn','-ac','1','-c:a','libopus','-b:a','20k',path.join(dir,'lesson-audio.opus')]);
+for(const n of ['captions-en.vtt','captions-am.vtt','transcript.html','ad.vtt','ad.opus'])if(await has(path.join(input,n)))await fs.copyFile(path.join(input,n),path.join(dir,n));
+for(const n of ['captions-en.vtt','captions-am.vtt','transcript.html'])if(!await has(path.join(dir,n)))throw Error('Required input missing: '+n);
+if((await fs.stat(path.join(dir,'transcript.html'))).size>50*1024)throw Error('Transcript exceeds 50 KB');
+if(process.argv.includes('--include-video')){if(!await has(path.join(input,'video.mp4')))throw Error('video.mp4 missing');await run('ffmpeg',['-y','-i',path.join(input,'video.mp4'),'-vf','scale=-2:240','-c:v','libx264','-crf','30','-an',path.join(dir,'lesson-240p.mp4')]);}
+const files=[];for(const n of await fs.readdir(dir)){const p=path.join(dir,n);if((await fs.stat(p)).isFile())files.push({path:n,sizeBytes:(await fs.stat(p)).size,sha256:crypto.createHash('sha256').update(await fs.readFile(p)).digest('hex')});}
+const manifest={id,version:1,createdAt:new Date().toISOString(),sizeBytes:files.reduce((a,f)=>a+f.sizeBytes,0),content:{audio:'lesson-audio.opus',captions:{en:'captions-en.vtt',am:'captions-am.vtt'},transcript:'transcript.html',audioDescription:{audio:files.some(f=>f.path==='ad.opus')?'ad.opus':null,text:files.some(f=>f.path==='ad.vtt')?'ad.vtt':null},optionalVideo:files.some(f=>f.path==='lesson-240p.mp4')?'lesson-240p.mp4':null},files};
+await fs.writeFile(path.join(dir,'manifest.json'),JSON.stringify(manifest,null,2));const zipTmp=path.join(output,id+'.pack.tmp.zip');
+await new Promise((ok,no)=>{const out=createWriteStream(zipTmp),z=archiver('zip',{zlib:{level:9}});out.on('close',ok);out.on('error',no);z.on('error',no);z.pipe(out);z.directory(dir,false,{ignore:['pack.zip']});z.finalize();});
+await fs.rename(zipTmp,path.join(dir,'pack.zip'));console.log('Pack built:',dir);
