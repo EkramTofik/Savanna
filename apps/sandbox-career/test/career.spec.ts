@@ -6,7 +6,7 @@ test("job card and credential render and pass axe", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Accessible Learning Support Associate" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Apply for this job/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /Play audio summary/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /Certificate/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Certificate", exact: true })).toBeVisible();
 
   const results = await new AxeBuilder({ page }).analyze();
   // Hackathon gate (deck s14): axe-core clean — zero critical and zero serious.
@@ -43,7 +43,7 @@ test("200% and 400% zoom keep a single column", async ({ page }) => {
 
 test("keyboard can play audio summary and open apply", async ({ page }) => {
   await page.goto("/");
-  const play = page.getByRole("button", { name: /Play audio summary/i });
+  const play = page.locator("savanna-job-card").getByRole("button");
   await play.focus();
   await page.keyboard.press("Enter");
   await expect(play).toHaveAttribute("aria-pressed", "true");
