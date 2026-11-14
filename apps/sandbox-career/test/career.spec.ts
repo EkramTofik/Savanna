@@ -180,7 +180,8 @@ test("built component bundle works from a partner-host integration page", async 
     .locator("savanna-credential")
     .getByRole("link", { name: "Download PDF certificate" });
   const pdfHref = await pdfLink.getAttribute("href");
-  expect(pdfHref).toContain("api-key=pk_live_demo");
+  expect(pdfHref).toMatch(/\/verify\/[^/]+\/pdf$/);
+  expect(pdfHref).not.toContain("api-key");
   const pdf = await page.request.get(new URL(pdfHref!, page.url()).toString());
   expect(pdf.status()).toBe(200);
   expect(pdf.headers()["content-type"]).toContain("application/pdf");

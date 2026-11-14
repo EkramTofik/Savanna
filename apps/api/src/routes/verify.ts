@@ -93,7 +93,7 @@ export async function verifyPageHtml(record: CredentialRecord, ctx: CareerCtx): 
     </div>
     <p>
       <button type="button" id="copy">Copy verification link</button>
-      <a class="button" href="/v1/credentials/${encodeURIComponent(record.id)}/pdf">Download tagged PDF</a>
+      <a class="button" href="/verify/${encodeURIComponent(record.id)}/pdf">Download tagged PDF</a>
     </p>
     <p id="copied" role="status" aria-live="polite"></p>
   </main>

@@ -148,8 +148,9 @@ export class CareersComponent {
 
 Serve the host page, module, and API over HTTPS. Allow the host's exact origin in API
 CORS and allow `GET`, `POST`, `OPTIONS`, and the `X-Savanna-Key` header. The PDF link
-uses the publishable key in its query string because a normal link cannot attach a
-custom request header. Keep secret credentials on the server.
+targets the public `/verify/{id}/pdf` endpoint and does not expose an API key. Other
+key-protected API requests use the publishable key in the `X-Savanna-Key` header.
+Keep secret credentials on the server.
 
 The runnable plain-page integration is [partner-demo.html](./partner-demo.html); it
 loads the built module and exercises the API from a separate web origin/port.

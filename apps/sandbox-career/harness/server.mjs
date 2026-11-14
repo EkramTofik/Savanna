@@ -105,6 +105,13 @@ const openApiDoc = {
         responses: { 200: { description: "HTML or JSON-LD" } },
       },
     },
+    "/verify/{id}/pdf": {
+      get: {
+        summary: "Public tagged certificate PDF",
+        tags: ["Credentials"],
+        responses: { 200: { description: "application/pdf" } },
+      },
+    },
   },
 };
 
@@ -323,7 +330,7 @@ text-decoration:none;cursor:pointer}
 <p>Hosted verification looks this credential up on the issuer server. The Ed25519 proof is a draft (canonical JSON, not RDFC-1.0).</p>
 <div>${qr}</div>
 <p><button type="button" id="copy">Copy verification link</button>
-<a class="button" href="/v1/credentials/${encodeURIComponent(record.id)}/pdf?api-key=${PK}">Download tagged PDF</a></p>
+<a class="button" href="/verify/${encodeURIComponent(record.id)}/pdf">Download tagged PDF</a></p>
 <p id="copied" role="status" aria-live="polite"></p>
 </main>
 <script>
@@ -511,9 +518,9 @@ const server = createServer(async (req, res) => {
       send(res, 200, applyHtml(apply[1]), "text/html; charset=utf-8");
       return;
     }
-    const credPdf = p.match(/^\/v1\/credentials\/([^/]+)\/pdf$/);
+    const credPdf = p.match(/^\/(?:v1\/credentials|verify)\/([^/]+)\/pdf$/);
     if (req.method === "GET" && credPdf) {
-      if (!needPub(req, res)) return;
+      if (p.startsWith("/v1/") && !needPub(req, res)) return;
       const record = credentials[credPdf[1]];
       if (!record) return problem(res, 404, "Not Found", "Credential was not found.");
       const { chromium } = await import("playwright");

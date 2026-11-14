@@ -96,9 +96,9 @@ For a deployed integration, serve both the partner site and API over HTTPS. Conf
 API CORS allowlist for the exact partner origins and permit `GET`, `POST`, `OPTIONS` and
 the `X-Savanna-Key` header. The browser components must only receive a **publishable**
 key (`pk_...`); keep secret keys (`sk_...`) on your server for issuing/revoking
-credentials. The PDF download link uses the publishable key as an `api-key` query
-parameter because a normal anchor navigation cannot attach a custom header. Do not put
-secret keys in URLs, HTML or client-side code.
+credentials. Certificate downloads use the public `/verify/{id}/pdf` endpoint, so the
+normal anchor link does not need to expose an API key. Do not put secret keys in URLs,
+HTML or client-side code.
 
 Components are block-level and reflow to their available width. The job card and
 credential controls have 44 px minimum targets. Host pages should avoid fixed-width
