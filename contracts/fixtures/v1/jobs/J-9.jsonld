@@ -1,0 +1,39 @@
+{
+  "@context": "https://schema.org/",
+  "@type": "JobPosting",
+  "identifier": "J-9",
+  "title": "Accessible Learning Support Associate",
+  "description": "Help Digital Bridge learners use captions, sign language and offline packs. Remote-friendly, screen-reader-tested application.",
+  "datePosted": "2026-11-12",
+  "validThrough": "2026-12-31T23:59:59.000Z",
+  "employmentType": "FULL_TIME",
+  "hiringOrganization": {
+    "@type": "Organization",
+    "name": "Digital Bridge Ethiopia"
+  },
+  "jobLocation": {
+    "@type": "Place",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Addis Ababa",
+      "addressCountry": "ET"
+    }
+  },
+  "jobLocationType": "TELECOMMUTE",
+  "applicantLocationRequirements": {
+    "@type": "Country",
+    "name": "Ethiopia"
+  },
+  "baseSalary": {
+    "@type": "MonetaryAmount",
+    "currency": "ETB",
+    "value": {
+      "@type": "QuantitativeValue",
+      "minValue": 18000,
+      "maxValue": 24000,
+      "unitText": "MONTH"
+    }
+  },
+  "directApply": true,
+  "url": "/apply/J-9"
+}

@@ -9,3 +9,5 @@ coverage
 .venv/
 pipeline-out/
 test-videos/
+cert.pem
+key.pem

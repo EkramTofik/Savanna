@@ -1,0 +1,18 @@
+{
+  "jobs": [
+    {
+      "id": "J-9",
+      "title": "Accessible Learning Support Associate",
+      "employer": "Digital Bridge Ethiopia",
+      "location": "Addis Ababa / remote",
+      "remote": true
+    },
+    {
+      "id": "J-10",
+      "title": "Junior Data Steward",
+      "employer": "Savanna Partners",
+      "location": "Remote",
+      "remote": true
+    }
+  ]
+}

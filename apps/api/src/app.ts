@@ -7,7 +7,7 @@ import helmet from "helmet";
 import { loadConfig } from "./config";
 import { createStore } from "./db/createStore";
 import type { AppConfig, Ctx } from "./lib/context";
-import { loadRouteModules } from "./lib/loadRoutes";
+import { CAREER_HARNESS_FILES, loadRouteModules } from "./lib/loadRoutes";
 import { buildOpenApi } from "./lib/openapi";
 import { authenticate, originAllowed } from "./middleware/auth";
 import { errorHandler, notFound } from "./middleware/errors";
@@ -44,7 +44,9 @@ export async function createApp(opts: AppOptions = {}) {
   app.use(limiter(config));
   app.use(express.json({ limit: "100kb" }));
 
-  const modules = await loadRouteModules(opts.routesDir ?? path.join(here, "routes"));
+  const modules = await loadRouteModules(opts.routesDir ?? path.join(here, "routes"), {
+    excludeFiles: CAREER_HARNESS_FILES,
+  });
 
   // OpenAPI 3.1 spec (assembled from every route file) and Swagger UI. Both are public.
   const spec = buildOpenApi(modules);

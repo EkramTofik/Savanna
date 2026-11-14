@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createApp } from "../src/app";
 import { loadConfig } from "../src/config";
-import { loadRouteModules } from "../src/lib/loadRoutes";
+import { CAREER_HARNESS_FILES, loadRouteModules } from "../src/lib/loadRoutes";
 import { buildOpenApi } from "../src/lib/openapi";
 import { createSavannaClient } from "../../../packages/sdk/src";
 
@@ -41,7 +41,7 @@ describe("OpenAPI spec", () => {
   });
 
   it("every route file documents its operations", async () => {
-    const modules = await loadRouteModules(routesDir);
+    const modules = await loadRouteModules(routesDir, { excludeFiles: CAREER_HARNESS_FILES });
     for (const { file, mod } of modules) {
       expect(Array.isArray(mod.openapi) && mod.openapi.length > 0, `${file} must export openapi`).toBe(true);
     }

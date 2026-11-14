@@ -1,0 +1,35 @@
+{
+  "id": "J-9",
+  "title": "Accessible Learning Support Associate",
+  "employer": "Digital Bridge Ethiopia",
+  "location": "Addis Ababa / remote",
+  "remote": true,
+  "payText": "ETB 18,000–24,000 / month",
+  "validThrough": "2026-12-31T23:59:59.000Z",
+  "employmentType": "FULL_TIME",
+  "applyUrl": "/apply/J-9",
+  "description": {
+    "en": "Help Digital Bridge learners use captions, sign language and offline packs. Remote-friendly, screen-reader-tested application.",
+    "am": "የዲጂታል ብሪጅ ተማሪዎች መግለጫ ጽሑፍ፣ የኢትዮጵያ የምልክት ቋንቋ እና ከመስመር ውጭ ጥቅሎችን እንዲጠቀሙ ያግዙ። ማመልከቻው ከርቀት ተስማሚ እና በማያ ንባብ የተሞከረ ነው።",
+    "requirements": {
+      "en": [
+        "Can complete a task with keyboard only",
+        "Comfortable in English or Amharic",
+        "Willing to test with real users"
+      ],
+      "am": ["ተግባርን በቁልፍ ሰሌዳ ብቻ ማጠናቀቅ", "በእንግሊዝኛ ወይም በአማርኛ መስራት", "ከእውነተኛ ተጠቃሚዎች ጋር ለመሞከር ፈቃደኛ መሆን"]
+    }
+  },
+  "audioSummary": {
+    "en": {
+      "url": "/media/jobs/J-9-en.wav",
+      "durationSec": 24,
+      "transcript": "Accessible Learning Support Associate at Digital Bridge Ethiopia. Full-time, remote-friendly role in Addis Ababa. Monthly pay is 18 to 24 thousand birr. Apply by 31 December 2026. Help learners use captions, Ethiopian Sign Language and offline lessons. You should be comfortable using a keyboard and writing in English or Amharic."
+    },
+    "am": {
+      "url": "/media/jobs/J-9-am.mp3",
+      "durationSec": 24,
+      "transcript": "የዲጂታል ብሪጅ የተደራሽ ትምህርት ድጋፍ ስራ። በአዲስ አበባ ወይም ከርቀት ሙሉ ሰዓት ይሰራል። ደመወዝ ከ18 እስከ 24 ሺህ ብር። እስከ ታኅሣሥ 22 ቀን 2019 ዓ.ም. ያመልክቱ። ተማሪዎችን በመግለጫ ጽሑፍ እና በምልክት ቋንቋ ይርዱ። እንግሊዝኛ ወይም አማርኛ መጻፍ ያስፈልጋል።"
+    }
+  }
+}
