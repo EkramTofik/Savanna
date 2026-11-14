@@ -5,5 +5,9 @@ dist
 *.log
 coverage
 .vite
+
+.venv/
+pipeline-out/
+test-videos/
 cert.pem
 key.pem
