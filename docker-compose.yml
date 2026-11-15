@@ -23,11 +23,9 @@ services:
       PORT: 4010
       STORE: memory
       DATABASE_URL: postgresql://savanna:savanna@db:5432/savanna
-    depends_on:
-      - db
-      - redis
 
   db:
+    profiles: ["full"]
     image: postgres:16
     environment:
       POSTGRES_USER: savanna
@@ -37,6 +35,7 @@ services:
     volumes: [dbdata:/var/lib/postgresql/data]
 
   redis:
+    profiles: ["full"]
     image: redis:7
     ports: ["6379:6379"]
 

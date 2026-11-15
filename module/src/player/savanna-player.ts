@@ -1371,6 +1371,42 @@ export class SavannaPlayer extends LitElement {
   }
 
   /**
+   * Downloads saved preferences as JSON file (FR-A4 / NFR-S3).
+   */
+  public downloadMySettings(): void {
+    try {
+      const raw = typeof localStorage !== 'undefined' ? (localStorage.getItem('savanna.prefs.v1') || '{}') : '{}';
+      const blob = new Blob([raw], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'savanna-preferences.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.announceStatus(this.t('player.prefDownload'), 'Export');
+    } catch {
+      // ignore
+    }
+  }
+
+  /**
+   * Clears saved preferences and resets state (FR-A4 / NFR-S3).
+   */
+  public deleteMySettings(): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('savanna.prefs.v1');
+      }
+      this.resetPreferences();
+      this.announceStatus(this.t('player.prefDelete'), 'Delete');
+    } catch {
+      // ignore
+    }
+  }
+
+  /**
    * Announces an update to screen readers via a persistent polite live region
    * and optionally renders a visual HUD badge for sighted users.
    */
@@ -3389,8 +3425,8 @@ export class SavannaPlayer extends LitElement {
               </select>
             </div>
 
-            <!-- Reset to Defaults Button -->
-            <div class="setting-row" style="margin-top: 1rem;">
+            <!-- Reset, Download, Delete Buttons (FR-A4) -->
+            <div class="setting-row" style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
               <button
                 type="button"
                 class="btn-reset-prefs"
@@ -3398,6 +3434,22 @@ export class SavannaPlayer extends LitElement {
                 aria-label=${this.t('player.prefReset')}
               >
                 🔄 ${this.t('player.prefReset')}
+              </button>
+              <button
+                type="button"
+                class="btn-reset-prefs"
+                @click=${this.downloadMySettings}
+                aria-label=${this.t('player.prefDownload')}
+              >
+                💾 ${this.t('player.prefDownload')}
+              </button>
+              <button
+                type="button"
+                class="btn-reset-prefs"
+                @click=${this.deleteMySettings}
+                aria-label=${this.t('player.prefDelete')}
+              >
+                🗑️ ${this.t('player.prefDelete')}
               </button>
             </div>
           </div>

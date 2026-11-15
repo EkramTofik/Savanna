@@ -749,6 +749,8 @@ var en_default = {
   "player.prefEnabled": "Enabled",
   "player.prefDisabled": "Disabled",
   "player.prefReset": "Reset to Defaults",
+  "player.prefDownload": "Download my settings",
+  "player.prefDelete": "Delete my settings",
   "player.statusPrefsSaved": "Preferences saved",
   "player.statusLangChanged": "Language changed to {lang}"
 };
@@ -874,6 +876,8 @@ var am_default = {
   "player.prefEnabled": "\u12E8\u1290\u1243",
   "player.prefDisabled": "\u12E8\u1266\u12D8\u1290",
   "player.prefReset": "\u12C8\u12F0 \u1290\u1263\u122A \u1218\u120D\u1235",
+  "player.prefDownload": "\u12E8\u12A5\u1294\u1295 \u121D\u122D\u132B\u12CE\u127D \u12A0\u12CD\u122D\u12F5",
+  "player.prefDelete": "\u12E8\u12A5\u1294\u1295 \u121D\u122D\u132B\u12CE\u127D \u1230\u122D\u12DD",
   "player.statusPrefsSaved": "\u1245\u1295\u1265\u122E\u127D \u1270\u1240\u121D\u1320\u12CB\u120D",
   "player.statusLangChanged": "\u124B\u1295\u124B \u12C8\u12F0 {lang} \u1270\u1240\u12ED\u122F\u120D"
 };
@@ -2416,6 +2420,38 @@ var SavannaPlayer = class extends i4 {
     this.announceStatus(this.t("player.statusPrefsSaved"), "Reset");
   }
   /**
+   * Downloads saved preferences as JSON file (FR-A4 / NFR-S3).
+   */
+  downloadMySettings() {
+    try {
+      const raw = typeof localStorage !== "undefined" ? localStorage.getItem("savanna.prefs.v1") || "{}" : "{}";
+      const blob = new Blob([raw], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a3 = document.createElement("a");
+      a3.href = url;
+      a3.download = "savanna-preferences.json";
+      document.body.appendChild(a3);
+      a3.click();
+      document.body.removeChild(a3);
+      URL.revokeObjectURL(url);
+      this.announceStatus(this.t("player.prefDownload"), "Export");
+    } catch {
+    }
+  }
+  /**
+   * Clears saved preferences and resets state (FR-A4 / NFR-S3).
+   */
+  deleteMySettings() {
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.removeItem("savanna.prefs.v1");
+      }
+      this.resetPreferences();
+      this.announceStatus(this.t("player.prefDelete"), "Delete");
+    } catch {
+    }
+  }
+  /**
    * Announces an update to screen readers via a persistent polite live region
    * and optionally renders a visual HUD badge for sighted users.
    */
@@ -3737,8 +3773,8 @@ var SavannaPlayer = class extends i4 {
               </select>
             </div>
 
-            <!-- Reset to Defaults Button -->
-            <div class="setting-row" style="margin-top: 1rem;">
+            <!-- Reset, Download, Delete Buttons (FR-A4) -->
+            <div class="setting-row" style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
               <button
                 type="button"
                 class="btn-reset-prefs"
@@ -3746,6 +3782,22 @@ var SavannaPlayer = class extends i4 {
                 aria-label=${this.t("player.prefReset")}
               >
                 🔄 ${this.t("player.prefReset")}
+              </button>
+              <button
+                type="button"
+                class="btn-reset-prefs"
+                @click=${this.downloadMySettings}
+                aria-label=${this.t("player.prefDownload")}
+              >
+                💾 ${this.t("player.prefDownload")}
+              </button>
+              <button
+                type="button"
+                class="btn-reset-prefs"
+                @click=${this.deleteMySettings}
+                aria-label=${this.t("player.prefDelete")}
+              >
+                🗑️ ${this.t("player.prefDelete")}
               </button>
             </div>
           </div>
