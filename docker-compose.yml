@@ -1,4 +1,32 @@
 services:
+  web:
+    image: nginx:alpine
+    ports: ["8080:80"]
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./savanna:/usr/share/nginx/html/savanna:ro
+      - ./dist:/usr/share/nginx/html/dist:ro
+      - ./module:/usr/share/nginx/html/module:ro
+      - ./demo:/usr/share/nginx/html/demo:ro
+      - ./contracts/fixtures:/usr/share/nginx/html/fixtures:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports: ["4010:4010"]
+    environment:
+      NODE_ENV: development
+      PORT: 4010
+      STORE: memory
+      DATABASE_URL: postgresql://savanna:savanna@db:5432/savanna
+    depends_on:
+      - db
+      - redis
+
   db:
     image: postgres:16
     environment:
@@ -7,8 +35,10 @@ services:
       POSTGRES_DB: savanna
     ports: ["5432:5432"]
     volumes: [dbdata:/var/lib/postgresql/data]
+
   redis:
     image: redis:7
     ports: ["6379:6379"]
+
 volumes:
   dbdata:
