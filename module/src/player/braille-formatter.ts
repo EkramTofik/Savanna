@@ -151,16 +151,14 @@ export function translateEnglishToBraille(text: string): string {
   let result = '';
   let inNumber = false;
 
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-
+  for (const ch of text) {
     // Numbers: precede first digit with '#'
     if (/[0-9]/.test(ch)) {
       if (!inNumber) {
         result += '#';
         inNumber = true;
       }
-      result += BRAILLE_DIGITS[ch] || ch;
+      result += BRAILLE_DIGITS[ch] ?? ch;
       continue;
     }
 
@@ -173,8 +171,9 @@ export function translateEnglishToBraille(text: string): string {
     }
 
     // Lowercase and standard characters
-    if (EN_BRAILLE_MAP[ch]) {
-      result += EN_BRAILLE_MAP[ch];
+    const mapped = EN_BRAILLE_MAP[ch];
+    if (mapped) {
+      result += mapped;
     } else {
       result += ch;
     }
@@ -189,16 +188,19 @@ export function translateEnglishToBraille(text: string): string {
 export function translateAmharicToBraille(text: string): string {
   let result = '';
 
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ETHIOPIC_BRAILLE_MAP[ch]) {
-      result += ETHIOPIC_BRAILLE_MAP[ch];
+  for (const ch of text) {
+    const etMapped = ETHIOPIC_BRAILLE_MAP[ch];
+    if (etMapped) {
+      result += etMapped;
     } else if (/[0-9]/.test(ch)) {
-      result += '#' + (BRAILLE_DIGITS[ch] || ch);
-    } else if (EN_BRAILLE_MAP[ch.toLowerCase()]) {
-      result += EN_BRAILLE_MAP[ch.toLowerCase()];
+      result += '#' + (BRAILLE_DIGITS[ch] ?? ch);
     } else {
-      result += ch;
+      const enMapped = EN_BRAILLE_MAP[ch.toLowerCase()];
+      if (enMapped) {
+        result += enMapped;
+      } else {
+        result += ch;
+      }
     }
   }
 

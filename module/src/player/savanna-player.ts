@@ -215,8 +215,9 @@ export class SavannaPlayer extends LitElement {
     return this.captionsShowing;
   }
   set isCaptionsOpen(val: boolean) {
-    this.captionsShowing = val;
-    this.syncCaptionTracks();
+    if (this.captionsShowing !== val) {
+      this.toggleCaptions();
+    }
   }
 
   get isPrefsOpen(): boolean {
@@ -234,16 +235,18 @@ export class SavannaPlayer extends LitElement {
     return this.showSignWindow;
   }
   set isSignOpen(val: boolean) {
-    this.showSignWindow = val;
-    this.syncSignWindow();
+    if (this.showSignWindow !== val) {
+      this.toggleSignWindow();
+    }
   }
 
   get isAdOpen(): boolean {
     return this.audioDescriptionEnabled;
   }
   set isAdOpen(val: boolean) {
-    this.audioDescriptionEnabled = val;
-    this.syncAudioDescription();
+    if (this.audioDescriptionEnabled !== val) {
+      this.toggleAudioDescription();
+    }
   }
 
   @query('.btn-transcript')
