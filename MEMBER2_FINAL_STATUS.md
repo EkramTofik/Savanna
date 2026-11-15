@@ -1,5 +1,16 @@
 # Member 2: Media Access — READY FOR SUBMISSION ✅
 
+## ✅ READY FOR SUBMISSION — ALL REQUIREMENTS MET
+
+### Critical Requirement NOW COMPLETE ✅
+**"Where it mounts"** (Team Technical Guide, Track 2):  
+✅ **Integrated into `savanna/pages/concept-with-navigation.html`**  
+✅ **Mounted in `#curriculum_navigation_content .savanna-styles`**  
+✅ **Under the banner image** (exactly as specified)  
+✅ **One script tag + custom elements** (plug-in pattern proven)
+
+---
+
 ## What Was Built
 
 ### 1. Sign Language Window (`<savanna-sign-window>`)
@@ -124,6 +135,46 @@ All Member 2 requirements delivered:
 | **Accessibility** | Shadow DOM + real semantic HTML + ARIA live regions | Screen reader announces state changes without focus loss. Focus ring always visible (3px #ffbf47). |
 | **Bundle size** | Lit 3 (6 KB runtime) + TypeScript + Vite | No React. No framework lock-in. Member 2 adds only 20 KB gzipped. |
 | **Multilingual** | `lang` attribute + external JSON strings | Adding Afaan Oromo or Tigrinya = one new JSON file. |
+
+---
+
+## Files Judges Will See
+
+```
+savanna-access-kit/
+├── CONFORMANCE.md              ← WCAG 2.2 AA report with testing evidence
+├── DEMO_SCRIPT_MEMBER2.md      ← 3-minute demo walkthrough
+├── MEMBER2_FINAL_STATUS.md     ← This file
+├── savanna/pages/
+│   └── concept-with-navigation.html  ← ✅ MEMBER 2 INTEGRATED HERE (REQUIRED!)
+├── module/src/
+│   ├── sign-window/            ← Draggable ESL window (keyboard, touch, snap)
+│   ├── audio-description/      ← Recorded + text AD, D-key toggle, visual badge
+│   └── offline/                ← Service worker, download with progress
+├── api/src/routes/pack.ts      ← Pack manifest + ZIP with byte-range
+├── pipeline/src/
+│   ├── ad/                     ← Audio description renderer
+│   └── pack/                   ← Pack builder (Opus, manifest, ZIP)
+└── demo/sandbox-media/         ← Isolated testing sandbox
+```
+
+---
+
+## How to Test the Integration (For Judges)
+
+### Option 1: Savanna Starter (REQUIRED test)
+```bash
+cd savanna/pages
+python3 -m http.server 8000
+# Open http://localhost:8000/concept-with-navigation.html
+# Scroll past banner image → See all 3 components
+```
+
+### Option 2: Isolated Sandbox (extra proof)
+```bash
+# Open demo/sandbox-media/index.html
+# Same components, no Savanna dependencies
+```
 
 ---
 
