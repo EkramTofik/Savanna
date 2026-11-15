@@ -187,11 +187,26 @@
 
         .lesson-nav-bar {
             display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
             justify-content: space-between;
             align-items: center;
             margin-top: 1rem;
             padding-top: 0.75rem;
             border-top: 1px solid var(--savanna-border);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                margin: 0.5rem auto;
+                padding: 0 0.25rem;
+            }
+            .lesson-main {
+                padding: 0.75rem 0.5rem;
+            }
+            .navbar {
+                padding: 0.5rem 0.75rem;
+            }
         }
 
         /* Small Written Learning Content */
@@ -201,7 +216,7 @@
             border-top: 1px solid var(--savanna-border);
         }
 
-        .learning-summary h3 {
+        .learning-summary h2 {
             font-size: 1.1rem;
             color: #0b2545;
             margin: 0 0 0.5rem 0;
@@ -266,7 +281,7 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
 
-        .side-card h4 {
+        .side-card h3 {
             margin: 0 0 0.65rem 0;
             font-size: 0.95rem;
             color: #0b2545;
@@ -495,7 +510,7 @@
 
             <!-- Small Written Summary & Concepts -->
             <section class="learning-summary" aria-labelledby="summary-heading">
-                <h3 id="summary-heading">Lesson Summary</h3>
+                <h2 class="summary-heading" id="summary-heading">Lesson Summary</h2>
                 <div class="summary-card" id="summary-card-text">
                     The Virtual Assistant profession is evolving rapidly. As businesses adopt AI and remote-first operations, routine tasks are automated while human skills—such as client care, judgment under ambiguity, and empathetic communication—become more valuable than ever.
                 </div>
@@ -522,7 +537,7 @@
         <!-- Right Sidebar: Clean Course Curriculum -->
         <aside class="sidebar">
             <div class="side-card">
-                <h4 id="sidebar-curriculum-heading">Module 2 Curriculum</h4>
+                <h3 id="sidebar-curriculum-heading">Module 2 Curriculum</h3>
                 <ul class="course-outline" id="curriculum-list">
                     <li class="completed" id="curr-0"><span>2.0 Module Overview</span> <span>✓</span></li>
                     <li class="completed" id="curr-1"><span>2.1 Evolution of Support Roles</span> <span>✓</span></li>
@@ -534,7 +549,7 @@
             </div>
 
             <div class="side-card" style="font-size: 0.8rem; color: var(--savanna-text-muted);">
-                <h4 style="margin-bottom: 0.4rem;" id="sidebar-details-heading">Lesson Details</h4>
+                <h3 style="margin-bottom: 0.4rem;" id="sidebar-details-heading">Lesson Details</h3>
                 <div id="side-track">Track: <strong>VA Foundations</strong></div>
                 <div id="side-access">Accessibility: <strong>ESL, AD, Captions</strong></div>
                 <div style="margin-top: 0.5rem; font-size: 0.75rem;" id="side-hint">
