@@ -2841,7 +2841,7 @@ export class SavannaPlayer extends LitElement {
       <div class="player-container ${this.isTranscriptOpen ? 'with-transcript' : ''}">
         <div class="player" @click=${() => this.focus()}>
         ${this.manifestLoadError && !this.src
-          ? html`
+        ? html`
               <div class="manifest-error-card" role="alert" aria-live="assertive">
                 <p class="error-msg">⚠️ ${this.t('player.errorManifestLoad')}</p>
                 <button
@@ -2854,7 +2854,7 @@ export class SavannaPlayer extends LitElement {
                 </button>
               </div>
             `
-          : ''}
+        : ''}
         <video
           src=${this.src}
           @play=${this.handlePlay}
@@ -2864,7 +2864,7 @@ export class SavannaPlayer extends LitElement {
           @error=${this.handleError}
         >
           ${this.manifestCaptions.map(
-      (c) => html`
+          (c) => html`
               <track
                 kind="subtitles"
                 srclang=${c.lang}
@@ -2873,7 +2873,7 @@ export class SavannaPlayer extends LitElement {
                 ?default=${c.lang === this.lang}
               />
             `
-    )}
+        )}
         </video>
 
         <div class="overlay">
@@ -2995,14 +2995,14 @@ export class SavannaPlayer extends LitElement {
               ${this.playbackRate === 1 ? '1x' : this.playbackRate + 'x'}
             </button>
             ${this.isSpeedMenuOpen
-              ? html`
+        ? html`
                   <div
                     class="speed-popover"
                     role="menu"
                     aria-label=${this.t('player.speed')}
                   >
                     ${[0.5, 0.75, 1, 1.25, 1.5, 2].map(
-                      (rate) => html`
+          (rate) => html`
                         <button
                           type="button"
                           role="menuitemradio"
@@ -3013,10 +3013,10 @@ export class SavannaPlayer extends LitElement {
                           ${rate === 1 ? `1.0x (${this.t('player.speedNormal')})` : `${rate}x`}
                         </button>
                       `
-                    )}
+        )}
                   </div>
                 `
-              : ''}
+        : ''}
           </div>
 
           <!-- Captions Toggle -->
