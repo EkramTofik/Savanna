@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import { loadConfig } from "../src/config";
 import { FIXTURES_DIR } from "../src/db/seedData";
@@ -14,6 +14,18 @@ const USER_A = { "X-Savanna-User": "user-token-aaaaaaaaaaaa" };
 const USER_B = { "X-Savanna-User": "user-token-bbbbbbbbbbbb" };
 const readJson = (f: string) => JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, f), "utf8"));
 const app = async () => createApp({ config: loadConfig({}) });
+
+beforeAll(() => {
+  const packZipPath = path.join(FIXTURES_DIR, "L-102/pack.zip");
+  if (!fs.existsSync(packZipPath)) {
+    // Valid minimal ZIP archive containing manifest.json
+    const minimalZip = Buffer.from(
+      "504b03040a0000000000000021000000000000000000000000000d0000006d616e69666573742e6a736f6e7b226964223a224c2d313032227d504b010214030a0000000000000021000000000000000000000000000d00000000000000000000008001000000006d616e69666573742e6a736f6e504b050600000000010001003b0000002b0000000000",
+      "hex"
+    );
+    fs.writeFileSync(packZipPath, minimalZip);
+  }
+});
 
 describe("contract C1: fixtures and API agree", () => {
   for (const id of ["L-102", "L-103"]) {
@@ -134,9 +146,11 @@ describe("FR-N3 API path aliases", () => {
   });
   it("serves GET /api/v1/lessons/:id/offline-pack as alias for pack.zip", async () => {
     const a = await app();
-    const res = await request(a).get("/api/v1/lessons/L-102/offline-pack").set(KEY);
-    expect(res.status).toBe(200);
-    expect(res.headers["content-type"]).toBe("application/zip");
+    const resZip = await request(a).get("/v1/lessons/L-102/pack.zip").set(KEY);
+    const resAlias = await request(a).get("/api/v1/lessons/L-102/offline-pack").set(KEY);
+    expect(resZip.status).toBe(200);
+    expect(resAlias.status).toBe(200);
+    expect(resAlias.headers["content-type"]).toBe("application/zip");
   });
 });
 
