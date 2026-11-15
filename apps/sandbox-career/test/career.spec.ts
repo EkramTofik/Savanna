@@ -115,6 +115,34 @@ test("Amharic job dates use the Ethiopian calendar", async ({ page }) => {
   await expect(credential.locator("article p").nth(1)).toContainText(calendar.credentialIssued);
 });
 
+test("language switch toggles the whole demo between Amharic and English", async ({ page }) => {
+  await page.goto("/");
+  const jobCard = page.locator("savanna-job-card").first();
+  const credential = page.locator("savanna-credential");
+  // Amharic is the default.
+  await expect(page.locator("html")).toHaveAttribute("lang", "am");
+  await expect(
+    jobCard.getByRole("heading", { name: "የተደራሽ ትምህርት ድጋፍ ባለሙያ" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "English" }).click();
+
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(
+    jobCard.getByRole("heading", { name: "Accessible Learning Support Associate" }),
+  ).toBeVisible();
+  await expect(jobCard.getByRole("link", { name: /Apply for this job/ })).toBeVisible();
+  await expect(credential.locator("article[lang='en']")).toBeVisible();
+  await expect(credential.getByText("Digital Bridge — Accessible Media Basics")).toBeVisible();
+
+  await page.getByRole("button", { name: "አማርኛ" }).click();
+
+  await expect(page.locator("html")).toHaveAttribute("lang", "am");
+  await expect(
+    jobCard.getByRole("heading", { name: "የተደራሽ ትምህርት ድጋፍ ባለሙያ" }),
+  ).toBeVisible();
+});
+
 test("verify page is readable and copy works", async ({ page }) => {
   await page.goto("http://localhost:4020/verify/C-7");
   await expect(page.getByRole("heading", { name: "የምስክር ወረቀት ማረጋገጫ" })).toBeVisible();

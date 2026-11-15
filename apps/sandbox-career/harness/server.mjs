@@ -119,23 +119,49 @@ const openApiDoc = {
 };
 
 const jobsList = JSON.parse(readFileSync(path.join(fixtures, "jobs.json"), "utf8"));
+
+// The localized fields also carry both languages under `i18n` so the demo can be
+// read in Amharic or English. The flat fields stay Amharic to match the API contract.
+function bilingual(en, am) {
+  if (en == null && am == null) return null;
+  return { en: en ?? am ?? null, am: am ?? en ?? null };
+}
+
 const jobs = Object.fromEntries(
-  jobsList.jobs.map((j) => [
-    j.id,
-    {
-      ...JSON.parse(readFileSync(path.join(fixtures, "jobs", `${j.id}.json`), "utf8")),
-      ...amharicContent.jobs[j.id],
-    },
-  ]),
+  jobsList.jobs.map((j) => {
+    const base = JSON.parse(readFileSync(path.join(fixtures, "jobs", `${j.id}.json`), "utf8"));
+    const am = amharicContent.jobs[j.id] ?? {};
+    return [
+      j.id,
+      {
+        ...base,
+        ...am,
+        i18n: {
+          title: bilingual(base.title, am.title),
+          employer: bilingual(base.employer, am.employer),
+          location: bilingual(base.location, am.location),
+          payText: bilingual(base.payText, am.payText),
+        },
+      },
+    ];
+  }),
 );
 const rawSeed = JSON.parse(readFileSync(path.join(fixtures, "credentials", "C-7.json"), "utf8"));
-const seed = { ...rawSeed, ...amharicContent.credentials[rawSeed.id] };
+const seedAm = amharicContent.credentials[rawSeed.id] ?? {};
+const seed = {
+  ...rawSeed,
+  ...seedAm,
+  i18n: {
+    achievement: bilingual(rawSeed.achievement, seedAm.achievement),
+    recipientName: bilingual(rawSeed.recipientName, seedAm.recipientName),
+  },
+};
 let credentials = { [seed.id]: seed };
 if (existsSync(credFile)) {
   credentials = { ...credentials, ...JSON.parse(readFileSync(credFile, "utf8")) };
 }
 if (credentials[seed.id]) {
-  credentials[seed.id] = { ...credentials[seed.id], ...amharicContent.credentials[seed.id] };
+  credentials[seed.id] = { ...credentials[seed.id], ...seedAm, i18n: seed.i18n };
 }
 
 const DEMO_JWK = {
@@ -194,6 +220,7 @@ function toBadge(record) {
     id: verifyUrl,
     type: ["VerifiableCredential", "OpenBadgeCredential"],
     name: record.achievement,
+    ...(record.i18n ? { i18n: record.i18n } : {}),
     issuer: { id: "did:web:localhost%3A4020", type: ["Profile"], name: amharicContent.issuerName },
     validFrom: record.validFrom,
     credentialStatus: {

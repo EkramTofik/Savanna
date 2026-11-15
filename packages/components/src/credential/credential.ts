@@ -6,10 +6,13 @@ import { resolveLang } from "./prefs.js";
 
 type Strings = typeof en;
 
+type Localized = { en?: string | null; am?: string | null };
+
 type Badge = {
   id: string;
   name?: string;
   validFrom?: string;
+  i18n?: { achievement?: Localized; recipientName?: Localized };
   credentialStatus?: { status?: string };
   credentialSubject?: {
     name?: string;
@@ -130,6 +133,16 @@ export class SavannaCredential extends LitElement {
     return resolveLang(this, this.lang);
   }
 
+  /** Prefer the bilingual `i18n` value; fall back to the badge's flat name. */
+  private achievementName(): string {
+    return (
+      this.data?.i18n?.achievement?.[this.activeLang()] ??
+      this.data?.credentialSubject?.achievement?.name ??
+      this.data?.name ??
+      ""
+    );
+  }
+
   private apiRoot(): string {
     return (this.api || "").replace(/\/$/, "");
   }
@@ -200,8 +213,7 @@ export class SavannaCredential extends LitElement {
   }
 
   private linkedInHref(): string {
-    const name =
-      this.data?.credentialSubject?.achievement?.name ?? this.data?.name ?? "Savanna credential";
+    const name = this.achievementName() || "Savanna credential";
     const year = this.data?.validFrom
       ? new Date(this.data.validFrom).getFullYear()
       : new Date().getFullYear();
@@ -224,8 +236,7 @@ export class SavannaCredential extends LitElement {
     }
     if (!this.data) return html`<p>${this.t("cred.loading")}</p>`;
     const lang = this.activeLang();
-    const achievement =
-      this.data.credentialSubject?.achievement?.name ?? this.data.name ?? "Credential";
+    const achievement = this.achievementName() || "Credential";
     const issued = this.data.validFrom
       ? new Intl.DateTimeFormat(lang === "am" ? "am-ET-u-ca-ethiopic" : "en-GB", {
           day: "numeric",

@@ -7,6 +7,8 @@ import { readJobsPrefs, resolveLang, writeJobsPrefs } from "./prefs.js";
 
 type Strings = typeof en;
 
+type Localized = { en?: string | null; am?: string | null };
+
 type JobPayload = {
   id: string;
   title: string;
@@ -16,6 +18,12 @@ type JobPayload = {
   payText?: string | null;
   validThrough?: string | null;
   applyUrl: string;
+  i18n?: {
+    title?: Localized;
+    employer?: Localized;
+    location?: Localized;
+    payText?: Localized;
+  };
   description: {
     en: string;
     am: string;
@@ -196,6 +204,11 @@ export class SavannaJobCard extends LitElement {
     return resolveLang(this, this.lang);
   }
 
+  /** Prefer the bilingual `i18n` value; fall back to the flat (server) field. */
+  private localized(key: "title" | "employer" | "location" | "payText"): string | null {
+    return this.data?.i18n?.[key]?.[this.activeLang()] ?? null;
+  }
+
   private apiRoot(): string {
     return (this.api || "").replace(/\/$/, "");
   }
@@ -252,13 +265,13 @@ export class SavannaJobCard extends LitElement {
       "@context": "https://schema.org/",
       "@type": "JobPosting",
       identifier: job.id,
-      title: job.title,
+      title: this.localized("title") ?? job.title,
       description: job.description[this.activeLang()],
       validThrough: job.validThrough,
       employmentType: "FULL_TIME",
-      hiringOrganization: { "@type": "Organization", name: job.employer },
+      hiringOrganization: { "@type": "Organization", name: this.localized("employer") ?? job.employer },
       jobLocationType: job.remote ? "TELECOMMUTE" : "ON_SITE",
-      jobLocation: { "@type": "Place", name: job.location },
+      jobLocation: { "@type": "Place", name: this.localized("location") ?? job.location },
     });
     this.appendChild(script);
   }
@@ -321,25 +334,29 @@ export class SavannaJobCard extends LitElement {
     }
     const lang = this.activeLang();
     const desc = this.data.description[lang];
+    const title = this.localized("title") ?? this.data.title;
+    const employer = this.localized("employer") ?? this.data.employer;
+    const location = this.localized("location") ?? this.data.location;
+    const payText = this.localized("payText") ?? this.data.payText;
     const reqs = this.data.description.requirements?.[lang] ?? [];
     const audio = this.audio();
     const prefs = readJobsPrefs();
     return html`
       <div class="wrap">
         <article lang=${lang}>
-          <h2>${this.data.title}</h2>
+          <h2>${title}</h2>
           <p>${desc}</p>
           <dl>
             <dt>${this.t("job.employer")}</dt>
-            <dd>${this.data.employer}</dd>
+            <dd>${employer}</dd>
             <dt>${this.t("job.location")}</dt>
             <dd>
-              ${this.data.location}${this.data.remote ? ` (${this.t("job.remote")})` : nothing}
+              ${location}${this.data.remote ? ` (${this.t("job.remote")})` : nothing}
             </dd>
             ${
-              this.data.payText
+              payText
                 ? html`<dt>${this.t("job.pay")}</dt>
-                    <dd>${this.data.payText}</dd>`
+                    <dd>${payText}</dd>`
                 : nothing
             }
             <dt>${this.t("job.deadline")}</dt>
