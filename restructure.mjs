@@ -20,14 +20,14 @@ if (!FIX && (fs.existsSync("api") || fs.existsSync("module") || fs.existsSync("s
 }
 
 const MOVES = [
-  ["apps/api", "api"],
-  ["packages/components", "module"],
-  ["packages/pipeline", "pipeline"],
-  ["packages/sdk", "sdk"],
-  ["apps/demo", "savanna"],
-  ["apps/sandbox-player", "demo/sandbox-player"],
-  ["apps/sandbox-media", "demo/sandbox-media"],
-  ["apps/sandbox-career", "demo/sandbox-career"],
+  ["api", "api"],
+  ["module", "module"],
+  ["pipeline", "pipeline"],
+  ["sdk", "sdk"],
+  ["savanna", "savanna"],
+  ["demo/sandbox-player", "demo/sandbox-player"],
+  ["demo/sandbox-media", "demo/sandbox-media"],
+  ["demo/sandbox-career", "demo/sandbox-career"],
 ];
 const mapPath = (p) => {
   for (const [from, to] of MOVES) if (p === from || p.startsWith(from + "/")) return to + p.slice(from.length);
@@ -45,17 +45,17 @@ if (!FIX) {
 // ---------- 2. rewrite paths in file contents (while files are still at their old locations) ----------
 const TEXT = /\.(md|ts|mts|cts|tsx|jsx|js|mjs|cjs|json|ya?ml|html|css|txt|prisma|sql|sh|ps1|toml)$|CODEOWNERS$|\.gitignore$|\.env\.example$/;
 const SKIP = (f) =>
-  f.startsWith("apps/demo/") || f.startsWith("savanna/") || // the starter stays byte-for-byte unchanged
+  f.startsWith("savanna/") || f.startsWith("savanna/") || // the starter stays byte-for-byte unchanged
   /(^|\/)(pnpm-lock\.yaml|package-lock\.json|pnpm-workspace\.yaml)$/.test(f) ||
   f === "docs/openapi.json" || f.endsWith("schema.d.ts") || !TEXT.test(f);
 
 const LITERALS = [
-  ["apps/sandbox-", "demo/sandbox-"],
-  ["apps/api", "api"],
-  ["apps/demo", "savanna"],
-  ["packages/components", "module"],
-  ["packages/pipeline", "pipeline"],
-  ["packages/sdk", "sdk"],
+  ["demo/sandbox-", "demo/sandbox-"],
+  ["api", "api"],
+  ["savanna", "savanna"],
+  ["module", "module"],
+  ["pipeline", "pipeline"],
+  ["sdk", "sdk"],
 ];
 // ../../something  (relative paths that climb out of the current folder)
 const REL = /(?<![\w.\/-])(\.\.(?:\/\.\.)*)(?=[\/\s"'`<>()\[\]{},;|*]|$)((?:\/[^\s"'`<>()\[\]{},;|*]*)?)/g;

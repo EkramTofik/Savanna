@@ -1,5 +1,5 @@
-import '../../../packages/components/src/player/savanna-player.ts';
-import type { SavannaPlayer } from '../../../packages/components/src/player/savanna-player.ts';
+import '../../../module/src/player/savanna-player.ts';
+import type { SavannaPlayer } from '../../../module/src/player/savanna-player.ts';
 
 const player = document.getElementById('lesson-player') as SavannaPlayer | null;
 const eventLog = document.getElementById('event-log');
