@@ -4,6 +4,7 @@ const en = {
   "job.retry": "Try again",
   "job.employer": "Employer",
   "job.location": "Location",
+  "job.employment": "Employment type",
   "job.pay": "Pay",
   "job.deadline": "Apply by",
   "job.remote": "Remote-friendly",
@@ -21,6 +22,7 @@ const am = {
   "job.retry": "እንደገና ሞክር",
   "job.employer": "አሰሪ",
   "job.location": "ቦታ",
+  "job.employment": "የሥራ ዓይነት",
   "job.pay": "ክፍያ",
   "job.deadline": "የመጨረሻ ቀን",
   "job.remote": "ከርቀት ተስማሚ",
@@ -152,25 +154,42 @@ class SavannaJobCard extends HTMLElement {
       "@context": "https://schema.org/",
       "@type": "JobPosting",
       identifier: job.id,
-      title: job.title,
+      title: this._localized("title", job.title),
       description: job.description[langOf(this)],
       validThrough: job.validThrough,
       employmentType: job.employmentType || "FULL_TIME",
-      hiringOrganization: { "@type": "Organization", name: job.employer },
+      hiringOrganization: { "@type": "Organization", name: this._localized("employer", job.employer) },
       jobLocationType: job.remote ? "TELECOMMUTE" : "ON_SITE",
-      jobLocation: { "@type": "Place", name: job.location },
+      jobLocation: { "@type": "Place", name: this._localized("location", job.location) },
     });
     this.appendChild(script);
+  }
+
+  _localized(key, fallback) {
+    return this._data?.i18n?.[key]?.[langOf(this)] ?? fallback ?? "";
   }
 
   _render() {
     const lang = langOf(this);
     const job = this._data;
     const desc = job.description[lang];
+    const title = this._localized("title", job.title);
+    const employer = this._localized("employer", job.employer);
+    const location = this._localized("location", job.location);
+    const payText = this._localized("payText", job.payText);
+    const employmentLabels = {
+      FULL_TIME: { en: "Full-time", am: "ሙሉ ጊዜ" },
+      PART_TIME: { en: "Part-time", am: "የትርፍ ጊዜ" },
+      CONTRACT: { en: "Contract", am: "ውል" },
+      TEMPORARY: { en: "Temporary", am: "ጊዜያዊ" },
+      INTERN: { en: "Internship", am: "ልምምድ" },
+    };
+    const employmentType = job.employmentType || "FULL_TIME";
+    const employment =
+      employmentLabels[employmentType]?.[lang] ?? employmentType.replaceAll("_", " ");
     const reqs = job.description.requirements?.[lang] || [];
     const audio = job.audioSummary[lang];
     const audioUrl = audio.url.startsWith("http") ? audio.url : `${this._root()}${audio.url}`;
-    const apply = job.applyUrl.startsWith("http") ? job.applyUrl : `${this._root()}${job.applyUrl}`;
     const locale = lang === "am" ? "am-ET-u-ca-ethiopic" : "en-GB";
     const deadline = job.validThrough
       ? new Intl.DateTimeFormat(locale, {
@@ -183,14 +202,21 @@ class SavannaJobCard extends HTMLElement {
     const reqHtml = reqs.length
       ? `<h3>${t(this, "job.requirements")}</h3><ul>${reqs.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`
       : "";
-    const pay = job.payText ? `<dt>${t(this, "job.pay")}</dt><dd>${esc(job.payText)}</dd>` : "";
+    const pay = payText ? `<dt>${t(this, "job.pay")}</dt><dd>${esc(payText)}</dd>` : "";
+    const applyPath = job.applyUrl.startsWith("http")
+      ? job.applyUrl
+      : `${this._root()}${job.applyUrl.startsWith("/") ? "" : "/"}${job.applyUrl}`;
+    const apply = job.applyUrl.startsWith("/apply/")
+      ? `${applyPath}${job.applyUrl.includes("?") ? "&" : "?"}lang=${lang}`
+      : applyPath;
     this.shadowRoot.innerHTML = `<style>${css}</style>
       <div class="wrap"><article lang="${lang}">
-        <h2>${esc(job.title)}</h2>
+        <h2>${esc(title)}</h2>
         <p>${esc(desc)}</p>
         <dl>
-          <dt>${t(this, "job.employer")}</dt><dd>${esc(job.employer)}</dd>
-          <dt>${t(this, "job.location")}</dt><dd>${esc(job.location)}${job.remote ? ` (${t(this, "job.remote")})` : ""}</dd>
+          <dt>${t(this, "job.employer")}</dt><dd>${esc(employer)}</dd>
+          <dt>${t(this, "job.location")}</dt><dd>${esc(location)}${job.remote ? ` (${t(this, "job.remote")})` : ""}</dd>
+          <dt>${t(this, "job.employment")}</dt><dd>${esc(employment)}</dd>
           ${pay}
           <dt>${t(this, "job.deadline")}</dt><dd>${esc(deadline)}</dd>
         </dl>

@@ -4,6 +4,7 @@
   "job.retry": "Try again",
   "job.employer": "Employer",
   "job.location": "Location",
+  "job.employment": "Employment type",
   "job.pay": "Pay",
   "job.deadline": "Apply by",
   "job.remote": "Remote-friendly",

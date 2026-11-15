@@ -17,6 +17,7 @@ type JobPayload = {
   remote: boolean;
   payText?: string | null;
   validThrough?: string | null;
+  employmentType?: string;
   applyUrl: string;
   i18n?: {
     title?: Localized;
@@ -179,6 +180,7 @@ export class SavannaJobCard extends LitElement {
   }
 
   protected updated(changed: PropertyValues<this>): void {
+    if (changed.has("lang")) this.injectJsonLd();
     if (
       !this.hasLoaded ||
       changed.has("job") ||
@@ -207,6 +209,18 @@ export class SavannaJobCard extends LitElement {
   /** Prefer the bilingual `i18n` value; fall back to the flat (server) field. */
   private localized(key: "title" | "employer" | "location" | "payText"): string | null {
     return this.data?.i18n?.[key]?.[this.activeLang()] ?? null;
+  }
+
+  private employmentType(): string {
+    const type = this.data?.employmentType ?? "FULL_TIME";
+    const labels: Record<string, { en: string; am: string }> = {
+      FULL_TIME: { en: "Full-time", am: "ሙሉ ጊዜ" },
+      PART_TIME: { en: "Part-time", am: "የትርፍ ጊዜ" },
+      CONTRACT: { en: "Contract", am: "ውል" },
+      TEMPORARY: { en: "Temporary", am: "ጊዜያዊ" },
+      INTERN: { en: "Internship", am: "ልምምድ" },
+    };
+    return labels[type]?.[this.activeLang()] ?? type.replaceAll("_", " ");
   }
 
   private apiRoot(): string {
@@ -308,7 +322,9 @@ export class SavannaJobCard extends LitElement {
     if (!this.data) return "#";
     const apply = this.data.applyUrl;
     if (apply.startsWith("http")) return apply;
-    return `${this.apiRoot()}${apply.startsWith("/") ? "" : "/"}${apply}`;
+    const href = `${this.apiRoot()}${apply.startsWith("/") ? "" : "/"}${apply}`;
+    if (!apply.startsWith("/apply/")) return href;
+    return `${href}${apply.includes("?") ? "&" : "?"}lang=${this.activeLang()}`;
   }
 
   private formatDate(iso?: string | null): string {
@@ -338,6 +354,7 @@ export class SavannaJobCard extends LitElement {
     const employer = this.localized("employer") ?? this.data.employer;
     const location = this.localized("location") ?? this.data.location;
     const payText = this.localized("payText") ?? this.data.payText;
+    const employment = this.employmentType();
     const reqs = this.data.description.requirements?.[lang] ?? [];
     const audio = this.audio();
     const prefs = readJobsPrefs();
@@ -353,6 +370,8 @@ export class SavannaJobCard extends LitElement {
             <dd>
               ${location}${this.data.remote ? ` (${this.t("job.remote")})` : nothing}
             </dd>
+            <dt>${this.t("job.employment")}</dt>
+            <dd>${employment}</dd>
             ${
               payText
                 ? html`<dt>${this.t("job.pay")}</dt>
