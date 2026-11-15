@@ -173,7 +173,7 @@ export class SavannaPlayer extends LitElement {
 
   /** Whether the interactive transcript panel is open (SRS FR-P8) */
   @state()
-  private isTranscriptOpen = false;
+  private isTranscriptOpen = true;
 
   /** Transcript lines array */
   @state()
@@ -858,17 +858,24 @@ export class SavannaPlayer extends LitElement {
       display: flex;
       flex-direction: column;
       width: 100%;
-      gap: 1.25rem;
+      gap: 1.5rem;
     }
 
     .player-container.with-transcript {
       display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 1fr);
+      grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr);
       align-items: stretch;
-      gap: 1.25rem;
+      gap: 1.5rem;
+      max-width: 100%;
     }
 
-    @media (max-width: 768px) {
+    .player,
+    .transcript-panel {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    @media (max-width: 900px) {
       .player-container.with-transcript {
         display: flex;
         flex-direction: column;
@@ -877,28 +884,29 @@ export class SavannaPlayer extends LitElement {
 
     /* Transcript Panel (SRS FR-P8) */
     .transcript-panel {
-      background: #0b192c;
+      background: #0f172a;
       color: #f8fafc;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: var(--savanna-radius, 6px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
       display: flex;
       flex-direction: column;
       height: 100%;
-      min-height: 480px;
-      max-height: 600px;
+      min-height: 520px;
+      max-height: 640px;
       box-sizing: border-box;
       overflow: hidden;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
 
     .transcript-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.6rem 0.85rem;
-      background: #142742;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: #1e293b;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      gap: 0.6rem;
+      flex-wrap: wrap;
     }
 
     .transcript-title {
@@ -908,43 +916,82 @@ export class SavannaPlayer extends LitElement {
       color: #ffffff;
       display: flex;
       align-items: center;
-      gap: 0.45rem;
+      gap: 0.5rem;
     }
 
     .transcript-header-actions {
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
     }
 
     .transcript-action-btn {
       min-height: 38px;
       min-width: 38px;
-      padding: 0 0.55rem;
-      background: rgba(255, 255, 255, 0.12);
+      padding: 0 0.65rem;
+      background: rgba(255, 255, 255, 0.1);
       color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      border-radius: var(--savanna-radius, 4px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
       font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.35rem;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
       box-sizing: border-box;
     }
 
     .transcript-action-btn:hover {
-      background: rgba(255, 255, 255, 0.24);
-      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.22);
+      border-color: rgba(255, 255, 255, 0.45);
     }
 
     .transcript-action-btn.is-active-btn,
     .transcript-action-btn[aria-pressed='true'] {
       background: var(--savanna-accent, #0f4c81);
-      border-color: #ffffff;
+      border-color: #38bdf8;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+    }
+
+    /* Redesigned Download Buttons (Requirement 2) */
+    .btn-braille-transcript {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.35) !important;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+      font-weight: 700 !important;
+      padding: 0 0.85rem !important;
+    }
+
+    .btn-braille-transcript:hover {
+      background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .btn-braille-badge {
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-download-transcript {
+      background: rgba(255, 255, 255, 0.14) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.28) !important;
+      padding: 0 0.75rem !important;
+    }
+
+    .btn-download-transcript:hover {
+      background: rgba(255, 255, 255, 0.24) !important;
+      border-color: rgba(255, 255, 255, 0.5) !important;
+      transform: translateY(-1px);
     }
 
     .transcript-action-btn:focus-visible,
@@ -2728,7 +2775,9 @@ export class SavannaPlayer extends LitElement {
               aria-label=${this.t('player.transcriptAutoScroll')}
               title=${this.t('player.transcriptAutoScroll')}
             >
-              🔄
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
             </button>
 
             <!-- Download Transcript Button (SRS FR-P8) -->
@@ -2739,7 +2788,12 @@ export class SavannaPlayer extends LitElement {
               aria-label=${this.t('player.transcriptDownload')}
               title=${this.t('player.transcriptDownload')}
             >
-              📥 ${this.t('player.transcriptDownload')}
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>${this.t('player.transcriptDownload')}</span>
             </button>
 
             <!-- Download Braille (.brf) Button (SRS FR-S1, Task 1.8) -->
@@ -2750,7 +2804,13 @@ export class SavannaPlayer extends LitElement {
               aria-label=${this.t('player.transcriptDownloadBraille')}
               title=${this.t('player.transcriptDownloadBraille')}
             >
-              ⠃⠗ ${this.t('player.transcriptDownloadBraille')}
+              <span class="btn-braille-badge" aria-hidden="true">⠃⠗</span>
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>${this.t('player.transcriptDownloadBraille')}</span>
             </button>
 
             <!-- Close Panel Button -->
@@ -2761,7 +2821,10 @@ export class SavannaPlayer extends LitElement {
               aria-label="${this.t('player.transcriptClose')} ✕"
               title="${this.t('player.transcriptClose')} (Esc)"
             >
-              ✕
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
           </div>
         </div>
@@ -2912,7 +2975,15 @@ export class SavannaPlayer extends LitElement {
             aria-pressed=${this.isPlaying ? 'true' : 'false'}
             title="${this.t('player.play')} (K)"
           >
-            ${this.isPlaying ? '⏸' : '▶'}
+            ${this.isPlaying
+              ? html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                  <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                </svg>`
+              : html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>`
+            }
           </button>
 
           <!-- Rewind 10s (Action) -->
@@ -2938,7 +3009,7 @@ export class SavannaPlayer extends LitElement {
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
               <polyline points="3 3 3 8 8 8"></polyline>
             </svg>
-            10s
+            <span style="font-size: 0.8rem; font-weight: 700;">10s</span>
           </button>
 
           <!-- Position Slider -->
@@ -2968,7 +3039,17 @@ export class SavannaPlayer extends LitElement {
             aria-pressed=${this.isMuted || (this.media ? this.media.muted : false) ? 'true' : 'false'}
             title="${this.t('player.mute')} (M)"
           >
-            ${this.isMuted || this.volume === 0 ? '🔇' : '🔊'}
+            ${this.isMuted || this.volume === 0
+              ? html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
+                  <line x1="23" y1="9" x2="17" y2="15"></line>
+                  <line x1="17" y1="9" x2="23" y2="15"></line>
+                </svg>`
+              : html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>`
+            }
           </button>
 
           <!-- Volume Slider -->
@@ -3031,8 +3112,10 @@ export class SavannaPlayer extends LitElement {
             aria-pressed=${this.captionsShowing ? 'true' : 'false'}
             aria-expanded=${this.captionsShowing ? 'true' : 'false'}
             title="${this.t('player.captions')} (C)"
+            style="position: relative;"
           >
-            CC
+            <span style="font-weight: 800; font-size: 0.85rem; border: 1.5px solid currentColor; border-radius: 3px; padding: 1px 4px; line-height: 1;">CC</span>
+            ${this.captionsShowing ? html`<span style="position: absolute; bottom: 4px; left: 10px; right: 10px; height: 2px; background: #e11d48; border-radius: 1px;"></span>` : ''}
           </button>
 
           <!-- Preferences Settings Dialog Trigger (SRS FR-P3, FR-P9, Contract C3/C4) -->
@@ -3045,7 +3128,10 @@ export class SavannaPlayer extends LitElement {
             aria-expanded=${this.showPreferencesDialog ? 'true' : 'false'}
             title="${this.t('player.preferences')} (P)"
           >
-            ⚙️
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
           </button>
 
           <!-- Interactive Transcript Toggle Button (SRS FR-P8) -->
@@ -3059,24 +3145,12 @@ export class SavannaPlayer extends LitElement {
             aria-pressed=${this.isTranscriptOpen ? 'true' : 'false'}
             title="${this.t('player.transcript')} (T)"
           >
-            <svg
-              aria-hidden="true"
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              style="margin-right: 3px;"
-            >
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
               <line x1="16" y1="13" x2="8" y2="13"></line>
               <line x1="16" y1="17" x2="8" y2="17"></line>
             </svg>
-            📝
           </button>
 
           <!-- Sign Language Window Toggle (Step 6 Null-Safe) -->
@@ -3092,7 +3166,7 @@ export class SavannaPlayer extends LitElement {
             aria-pressed=${this.hasSignTrack && this.showSignWindow ? 'true' : 'false'}
             title="${this.t('player.sign')} (S)${!this.hasSignTrack ? ' ' + this.t('player.notAvailableSuffix') : ''}"
           >
-            🤟
+            <span style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;">ESL</span>
           </button>
 
           <!-- Audio Description Toggle (Step 6 Null-Safe) -->
@@ -3108,7 +3182,7 @@ export class SavannaPlayer extends LitElement {
             aria-pressed=${this.hasAdTrack && this.audioDescriptionEnabled ? 'true' : 'false'}
             title="${this.t('player.audioDescription')} (D)${!this.hasAdTrack ? ' ' + this.t('player.notAvailableSuffix') : ''}"
           >
-            AD
+            <span style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;">AD</span>
           </button>
 
           <!-- Fullscreen Toggle -->
@@ -3120,7 +3194,14 @@ export class SavannaPlayer extends LitElement {
             aria-pressed=${this.isFullscreen ? 'true' : 'false'}
             title="${this.t('player.fullscreen')} (F)"
           >
-            ⛶
+            ${this.isFullscreen
+              ? html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                </svg>`
+              : html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>`
+            }
           </button>
 
           <!-- Keyboard Shortcuts Help (Step 7) -->
@@ -3133,7 +3214,11 @@ export class SavannaPlayer extends LitElement {
             aria-expanded=${this.showHelpDialog ? 'true' : 'false'}
             title="${this.t('player.help')} (?)"
           >
-            ?
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
           </button>
         </div>
 
