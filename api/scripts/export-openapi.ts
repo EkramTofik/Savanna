@@ -6,8 +6,9 @@ import { createApp } from "../src/app";
 import { loadConfig } from "../src/config";
 
 async function getYamlStringifier(): Promise<(obj: unknown) => string> {
+  const dynamicImport = new Function("specifier", "return import(specifier)") as (s: string) => Promise<any>;
   try {
-    const mod = await import("yaml");
+    const mod = await dynamicImport("yaml");
     if (mod && typeof mod.stringify === "function") return mod.stringify;
     if (mod.default && typeof mod.default.stringify === "function") return mod.default.stringify;
   } catch {
@@ -22,7 +23,7 @@ async function getYamlStringifier(): Promise<(obj: unknown) => string> {
 
   for (const p of candidatePaths) {
     if (fs.existsSync(p)) {
-      const mod = await import(pathToFileURL(p).href);
+      const mod = await dynamicImport(pathToFileURL(p).href);
       const stringify = mod.stringify || (mod.default && mod.default.stringify);
       if (typeof stringify === "function") return stringify;
     }
