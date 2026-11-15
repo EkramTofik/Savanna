@@ -10,11 +10,12 @@
   "scripts": {
     "mock": "node contracts/mock/server.js",
     "format": "prettier --write .",
-    "test": "node --test packages/pipeline/src/pack/*.test.mjs packages/components/src/**/*.test.ts packages/components/src/member2-a11y.test.ts",
+    "test": "node --test pipeline/src/pack/*.test.mjs module/src/**/*.test.ts module/src/member2-a11y.test.ts",
     "ui": "pnpm --filter sandbox-career ui",
     "career": "pnpm --filter sandbox-career dev",
     "dev:api": "pnpm --filter @savanna/api dev",
-    "openapi": "pnpm --filter @savanna/api openapi:export && pnpm --filter @savanna/sdk generate"
+    "openapi": "pnpm --filter @savanna/api openapi:export && pnpm --filter @savanna/sdk generate",
+    "pipeline": "pnpm --filter @savanna/pipeline cli"
   },
   "dependencies": {
     "cors": "^2.8.5",

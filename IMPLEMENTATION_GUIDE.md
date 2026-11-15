@@ -93,7 +93,7 @@ npx http-server -p 3001
 
 **Open browser:**
 ```
-http://localhost:3001/apps/sandbox-media/simple-test.html
+http://localhost:3001/demo/sandbox-media/simple-test.html
 ```
 
 **Test these:**
@@ -110,7 +110,7 @@ http://localhost:3001/apps/sandbox-media/simple-test.html
 ### Components (3)
 
 #### 1. `<savanna-sign-window>`
-**File:** `packages/components/src/sign-window/sign-window.ts`
+**File:** `module/src/sign-window/sign-window.ts`
 
 **Features:**
 - Draggable floating panel
@@ -128,7 +128,7 @@ http://localhost:3001/apps/sandbox-media/simple-test.html
 ---
 
 #### 2. `<savanna-audio-description>`
-**File:** `packages/components/src/audio-description/audio-description.ts`
+**File:** `module/src/audio-description/audio-description.ts`
 
 **Features:**
 - Recorded audio mode (MP3/Opus)
@@ -147,7 +147,7 @@ http://localhost:3001/apps/sandbox-media/simple-test.html
 ---
 
 #### 3. `<savanna-offline>`
-**File:** `packages/components/src/offline/offline.ts`
+**File:** `module/src/offline/offline.ts`
 
 **Features:**
 - Download lesson packs for offline use
@@ -167,7 +167,7 @@ http://localhost:3001/apps/sandbox-media/simple-test.html
 
 ### API Route (1)
 
-**File:** `apps/api/src/routes/pack.ts`
+**File:** `api/src/routes/pack.ts`
 
 **Endpoints:**
 - `GET /v1/lessons/:id/pack` - Returns manifest JSON
@@ -184,7 +184,7 @@ http://localhost:3001/apps/sandbox-media/simple-test.html
 ### Pipeline Scripts (3)
 
 #### 1. `build-pack.mjs`
-**Location:** `packages/pipeline/src/pack/build-pack.mjs`
+**Location:** `pipeline/src/pack/build-pack.mjs`
 
 **Usage:**
 ```bash
@@ -205,7 +205,7 @@ node build-pack.mjs --input ./lesson-source/L-102 --output ./packs --lesson L-10
 ---
 
 #### 2. `render-ad.mjs`
-**Location:** `packages/pipeline/src/ad/render-ad.mjs`
+**Location:** `pipeline/src/ad/render-ad.mjs`
 
 **Usage:**
 ```bash
@@ -230,7 +230,7 @@ PIPER_BIN=piper PIPER_VOICE=/path/to/voice.onnx \
 ---
 
 #### 3. `sign-metadata.mjs`
-**Location:** `packages/pipeline/src/pack/sign-metadata.mjs`
+**Location:** `pipeline/src/pack/sign-metadata.mjs`
 
 **Usage:**
 ```bash
@@ -432,15 +432,15 @@ cd C:\Users\ekru6\Downloads\savanna-access-kit
 python -m http.server 3001
 
 # Browser: Open Sandbox
-# http://127.0.0.1:3001/apps/sandbox-media/
-# OR: http://localhost:3001/apps/sandbox-media/
+# http://127.0.0.1:3001/demo/sandbox-media/
+# OR: http://localhost:3001/demo/sandbox-media/
 
 # Run Specific Tests
 cd C:\Users\ekru6\Downloads\savanna-access-kit
-node --test packages/components/src/sign-window/sign-window.test.ts
-node --test packages/components/src/audio-description/audio-description.test.ts
-node --test packages/components/src/offline/offline.test.ts
-node --test packages/components/src/member2-a11y.test.ts
+node --test module/src/sign-window/sign-window.test.ts
+node --test module/src/audio-description/audio-description.test.ts
+node --test module/src/offline/offline.test.ts
+node --test module/src/member2-a11y.test.ts
 
 # Format Code
 npm run format

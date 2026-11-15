@@ -1,8 +1,0 @@
-{
-  "name": "@savanna/components",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "lit": "^3.2.1"
-  }
-}

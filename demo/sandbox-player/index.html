@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Future of the VA Industry | Savanna Learning Portal</title>
+    <style>
+        :root {
+            --savanna-primary: #0b2545;
+            --savanna-primary-hover: #133a68;
+            --savanna-accent: #f59e0b;
+            --savanna-focus: #005fcc;
+            --savanna-bg: #f8fafc;
+            --savanna-surface: #ffffff;
+            --savanna-border: #e2e8f0;
+            --savanna-text-main: #0f172a;
+            --savanna-text-muted: #64748b;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--savanna-text-main);
+            background-color: var(--savanna-bg);
+            line-height: 1.6;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--savanna-bg);
+        }
+
+        /* Top Navigation Bar */
+        .navbar {
+            background-color: var(--savanna-primary);
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .navbar-brand .logo-tag {
+            background-color: var(--savanna-accent);
+            color: #0b2545;
+            font-size: 0.75rem;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .navbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .badge-learner {
+            background-color: rgba(255, 255, 255, 0.16);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        /* Page Layout */
+        .container {
+            max-width: 1440px;
+            margin: 1.5rem auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 860px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Breadcrumb */
+        .breadcrumb {
+            grid-column: 1 / -1;
+            font-size: 0.85rem;
+            color: var(--savanna-text-muted);
+            margin-bottom: -0.5rem;
+        }
+
+        .breadcrumb a {
+            color: #0369a1;
+            text-decoration: underline;
+        }
+
+        .breadcrumb a:hover,
+        .breadcrumb a:focus-visible {
+            color: #0c4a6e;
+        }
+
+        /* Main Lesson Area */
+        .lesson-main {
+            background-color: var(--savanna-surface);
+            border: 1px solid var(--savanna-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .lesson-header {
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--savanna-border);
+            padding-bottom: 0.75rem;
+        }
+
+        .lesson-meta {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            font-size: 0.82rem;
+            color: var(--savanna-text-muted);
+            margin-bottom: 0.35rem;
+        }
+
+        .badge-lesson-id {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 4px;
+        }
+
+        .lesson-title {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #0b2545;
+            font-weight: 700;
+        }
+
+        .lesson-title-am {
+            font-size: 1rem;
+            color: var(--savanna-text-muted);
+            font-weight: 400;
+            margin: 0.2rem 0 0 0;
+        }
+
+        /* Video Player Wrapper */
+        .video-wrapper {
+            margin: 1rem 0;
+            background: transparent;
+            position: relative;
+            width: 100%;
+        }
+
+        /* Navigation Buttons */
+        button {
+            background-color: var(--savanna-primary);
+            color: #ffffff;
+            border: none;
+            padding: 0.45rem 0.9rem;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        button:hover {
+            background-color: var(--savanna-primary-hover);
+        }
+
+        button:focus-visible,
+        input:focus-visible {
+            outline: 3px solid var(--savanna-focus);
+            outline-offset: 2px;
+        }
+
+        .lesson-nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--savanna-border);
+        }
+
+        /* Small Written Learning Content */
+        .learning-summary {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--savanna-border);
+        }
+
+        .learning-summary h3 {
+            font-size: 1.1rem;
+            color: #0b2545;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .summary-card {
+            background-color: #f8fafc;
+            border-left: 4px solid var(--savanna-primary);
+            padding: 0.85rem 1rem;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.9rem;
+            color: #334155;
+            line-height: 1.55;
+            margin-bottom: 1rem;
+        }
+
+        .key-points {
+            font-size: 0.875rem;
+            color: #334155;
+            margin: 0 0 1.25rem 0;
+            padding-left: 1.25rem;
+            line-height: 1.6;
+        }
+
+        /* Small Notes / Reflection Field (Input Safety Test) */
+        .notes-box {
+            background-color: #faf5ff;
+            border: 1px solid #e9d5ff;
+            border-radius: 6px;
+            padding: 0.85rem 1rem;
+        }
+
+        .notes-box label {
+            display: block;
+            font-weight: 600;
+            color: #6b21a8;
+            margin-bottom: 0.4rem;
+            font-size: 0.875rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            background: #fff;
+        }
+
+        /* Sidebar: Course Curriculum */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .side-card {
+            background: var(--savanna-surface);
+            border: 1px solid var(--savanna-border);
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .side-card h4 {
+            margin: 0 0 0.65rem 0;
+            font-size: 0.95rem;
+            color: #0b2545;
+        }
+
+        .course-outline {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.82rem;
+        }
+
+        .course-outline li {
+            padding: 0.45rem 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 0.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .course-outline li.active {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            font-weight: 600;
+        }
+
+        .course-outline li.completed {
+            color: #166534;
+        }
+
+        /* Mock Sign Language Overlay */
+        .mock-sign-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(11, 37, 69, 0.92);
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.72rem;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        }
+
+        /* Noscript Fallback Card (SRS FR-P11, Task 1.7) */
+        .noscript-fallback-card {
+            background-color: #f8fafc;
+            border: 2px solid #0284c7;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .noscript-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .noscript-icon {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .noscript-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .noscript-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 0.6rem 0.85rem;
+            color: #0369a1;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+
+        .noscript-link:hover {
+            border-color: #0284c7;
+            background: #f0f9ff;
+            text-decoration: underline;
+        }
+
+        .noscript-link:focus-visible {
+            outline: 3px solid #005fcc;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar" role="banner">
+        <div class="navbar-brand">
+            <span class="logo-tag">Savanna</span>
+            <span id="nav-brand-title">Learning Portal</span>
+        </div>
+        <div class="navbar-nav" style="display: flex; align-items: center; gap: 0.75rem;">
+            <button
+                type="button"
+                id="btn-lang-toggle"
+                class="btn-lang-pill"
+                title="Switch UI Language (English / አማርኛ)"
+                style="background: rgba(255, 255, 255, 0.16); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 20px; padding: 4px 12px; font-size: 0.82rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;"
+            >
+                🌐 አማርኛ (AM)
+            </button>
+            <span class="badge-learner" id="nav-learner-badge">Learner: Kidus T.</span>
+        </div>
+    </header>
+    <div class="container">
+        <!-- Breadcrumb Navigation -->
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="#" id="crumb-courses">Courses</a> &gt; 
+            <a href="#" id="crumb-track">VA-1 Foundations</a> &gt; 
+            <a href="#" id="crumb-module">Module 2</a> &gt; 
+            <span id="breadcrumb-lesson">The Future of the VA Industry</span>
+        </nav>
+
+        <!-- Main Video & Lesson Content -->
+        <main class="lesson-main" id="content">
+            <div class="lesson-header">
+                <div class="lesson-meta">
+                    <span class="badge-lesson-id" id="badge-lesson-id">Module 2 · Concept 2.1</span>
+                    <span id="lesson-duration">Duration: <strong>12s (Full Lesson)</strong></span>
+                </div>
+                <h1 class="lesson-title" id="page-lesson-title">The Future of the VA Industry</h1>
+            </div>
+
+            <!-- Video Player Area -->
+            <div class="video-wrapper">
+                <!-- Fallback when JavaScript is disabled (SRS FR-P11, Task 1.7) -->
+                <noscript>
+                    <div class="noscript-fallback-card" role="region" aria-label="Non-JavaScript Lesson Access">
+                        <div class="noscript-header">
+                            <span class="noscript-icon">ℹ️</span>
+                            <div>
+                                <h2 style="font-size: 1.15rem; margin: 0 0 0.25rem 0; color: #0b2545;">JavaScript is disabled in your browser</h2>
+                                <p style="margin: 0; font-size: 0.88rem; color: #475569;">
+                                    You can still follow this lesson completely using the direct media, caption, and transcript links below:
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Direct media player fallback -->
+                        <div style="margin: 1rem 0;">
+                            <video controls preload="metadata" style="width: 100%; max-height: 380px; border-radius: 6px; background: #000;">
+                                <source src="http://localhost:4010/media/lesson.mp4" type="video/mp4" />
+                                <track kind="subtitles" srclang="en" src="http://localhost:4010/media/en.vtt" label="English" default />
+                                <track kind="subtitles" srclang="am" src="http://localhost:4010/media/am.vtt" label="Amharic" />
+                                Your browser does not support HTML5 video.
+                            </video>
+                        </div>
+
+                        <!-- Working links list (Done when: Page shows working links when JS is off) -->
+                        <div class="noscript-links-grid">
+                            <a href="http://localhost:4010/media/lesson.mp4" class="noscript-link" download>
+                                🎥 <strong>Direct Video:</strong> lesson.mp4 (720p)
+                            </a>
+                            <a href="http://localhost:4010/media/lesson.opus" class="noscript-link" download>
+                                🎵 <strong>Audio Only:</strong> lesson.opus (Low bandwidth)
+                            </a>
+                            <a href="http://localhost:4010/media/en.vtt" class="noscript-link" download>
+                                📝 <strong>English Captions:</strong> en.vtt (WebVTT)
+                            </a>
+                            <a href="http://localhost:4010/media/am.vtt" class="noscript-link" download>
+                                📝 <strong>Amharic Captions:</strong> am.vtt (የአማርኛ የግርጌ ጽሑፍ)
+                            </a>
+                            <a href="http://localhost:4010/media/esl-placeholder.mp4" class="noscript-link" download>
+                                🤟 <strong>Sign Language (ESL):</strong> esl-placeholder.mp4
+                            </a>
+                            <a href="http://localhost:4010/media/ad.opus" class="noscript-link" download>
+                                🎙️ <strong>Audio Description:</strong> ad.opus
+                            </a>
+                            <a href="http://localhost:4010/v1/lessons/L-103/transcript" class="noscript-link" target="_blank" rel="noopener">
+                                📄 <strong>Full Transcript:</strong> Plain-Language JSON / Text
+                            </a>
+                            <a href="/samples/L-103.en.brf" class="noscript-link" download>
+                                ⠃⠗ <strong>Braille Transcript (EN .brf):</strong> 40 cells × 25 lines
+                            </a>
+                            <a href="/samples/L-103.am.brf" class="noscript-link" download>
+                                ⠃⠗ <strong>Braille Transcript (AM .brf):</strong> 40 cells × 25 lines (Ethiopic)
+                            </a>
+                        </div>
+                    </div>
+                </noscript>
+
+                <savanna-player
+                    id="lesson-player"
+                    lesson="L-103"
+                    api="http://localhost:4010"
+                    lang="en"
+                >
+                    <!-- Slotted ESL Sign Window Stub with actual ESL video from L-103 -->
+                    <div slot="overlay" data-sign-window id="mock-sign-window" class="mock-sign-overlay">
+                        <div id="mock-sign-title" style="font-weight: 700; margin-bottom: 3px;">ESL Sign Window</div>
+                        <video src="http://localhost:4010/media/esl-placeholder.mp4" loop muted playsinline style="width: 120px; height: 80px; object-fit: cover; border-radius: 4px; display: block;"></video>
+                        <div id="mock-sign-hint" style="font-size: 0.68rem; opacity: 0.9; margin-top: 2px;">(Press S to toggle)</div>
+                    </div>
+                    <!-- Slotted Audio Description from L-103 -->
+                    <audio data-ad id="mock-ad-track" src="http://localhost:4010/media/ad.opus" preload="none"></audio>
+                </savanna-player>
+            </div>
+
+            <!-- Lesson Navigation & Lesson Switcher -->
+            <div class="lesson-nav-bar">
+                <button type="button" id="btn-before">← Previous Concept</button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" id="btn-load-l103" style="background-color: #0369a1; font-weight: 600;">★ Full Lesson (L-103)</button>
+                    <button type="button" id="btn-load-l102" style="background-color: #475569;">Minimal Lesson (L-102)</button>
+                </div>
+                <button type="button" id="btn-after">Next Concept →</button>
+            </div>
+
+            <!-- Small Written Summary & Concepts -->
+            <section class="learning-summary" aria-labelledby="summary-heading">
+                <h3 id="summary-heading">Lesson Summary</h3>
+                <div class="summary-card" id="summary-card-text">
+                    The Virtual Assistant profession is evolving rapidly. As businesses adopt AI and remote-first operations, routine tasks are automated while human skills—such as client care, judgment under ambiguity, and empathetic communication—become more valuable than ever.
+                </div>
+
+                <ul class="key-points" id="key-points-list">
+                    <li id="kp-1"><strong>Human-in-the-loop:</strong> AI tools assist with research, drafting, and scheduling; human professionals provide trust and critical thinking.</li>
+                    <li id="kp-2"><strong>Specialization:</strong> Growing demand for specialized remote support in digital workflows, CRM management, and project coordination.</li>
+                    <li id="kp-3"><strong>Accessibility:</strong> Press <kbd>C</kbd> for captions, <kbd>S</kbd> for sign language, and <kbd>D</kbd> for Audio Description.</li>
+                </ul>
+
+                <!-- Small Learner Notes / Reflection (Typing Safety Test) -->
+                <div class="notes-box">
+                    <label for="test-input" id="lbl-study-notes">Learner Study Notes:</label>
+                    <input
+                        id="test-input"
+                        type="text"
+                        placeholder="Type personal study notes here (player shortcuts are safely disabled while typing)..."
+                        aria-label="Learner study notes"
+                    />
+                </div>
+            </section>
+        </main>
+
+        <!-- Right Sidebar: Clean Course Curriculum -->
+        <aside class="sidebar">
+            <div class="side-card">
+                <h4 id="sidebar-curriculum-heading">Module 2 Curriculum</h4>
+                <ul class="course-outline" id="curriculum-list">
+                    <li class="completed" id="curr-0"><span>2.0 Module Overview</span> <span>✓</span></li>
+                    <li class="completed" id="curr-1"><span>2.1 Evolution of Support Roles</span> <span>✓</span></li>
+                    <li class="active" id="curr-2"><span>2.2 The Future of the VA Industry</span> <span id="curr-2-status">Current</span></li>
+                    <li id="curr-3"><span>2.3 AI Tools & Prompting</span> <span id="curr-3-status">Next</span></li>
+                    <li id="curr-4"><span>2.4 Case Study & Reflection</span> <span id="curr-4-status">Upcoming</span></li>
+                    <li id="curr-5"><span>2.5 Knowledge Check</span> <span id="curr-5-status">Locked</span></li>
+                </ul>
+            </div>
+
+            <div class="side-card" style="font-size: 0.8rem; color: var(--savanna-text-muted);">
+                <h4 style="margin-bottom: 0.4rem;" id="sidebar-details-heading">Lesson Details</h4>
+                <div id="side-track">Track: <strong>VA Foundations</strong></div>
+                <div id="side-access">Accessibility: <strong>ESL, AD, Captions</strong></div>
+                <div style="margin-top: 0.5rem; font-size: 0.75rem;" id="side-hint">
+                    Press <kbd>?</kbd> anytime on the player for keyboard shortcuts help.
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Hidden elements kept for testing hooks without cluttering the UI -->
+    <div style="display: none;" id="hidden-test-harness">
+        <div id="event-log"></div>
+        <div id="state-text"></div>
+        <div id="time-text"></div>
+        <div id="duration-text"></div>
+        <div id="volume-text"></div>
+        <div id="captions-text"></div>
+        <div id="sign-text"></div>
+        <div id="ad-text"></div>
+        <input type="checkbox" id="toggle-shortcuts" />
+        <div id="checklist-score"></div>
+        <div id="mock-data-title"></div>
+        <a id="mock-raw-link" href="#"></a>
+        <div id="mock-json-display"></div>
+        <div class="checklist-item" data-key="K"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="Space"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="J"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="L"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="ArrowLeft"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="ArrowRight"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="ArrowUp"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="ArrowDown"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="M"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="C"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="S"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="D"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="F"><span class="check-status"></span></div>
+        <div class="checklist-item" data-key="?"><span class="check-status"></span></div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
