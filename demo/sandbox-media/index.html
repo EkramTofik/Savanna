@@ -9,9 +9,7 @@
 
   <!--
     Import map: maps every bare specifier that Lit's own modules use.
-    "lit" itself re-exports from lit-element/lit-html which in turn use
-    @lit/reactive-element. All four must be in the map, pointing to the
-    esm.sh self-contained bundles that carry NO further bare imports.
+    All entries point to esm.sh self-contained bundles that carry NO further bare imports.
   -->
   <script type="importmap">
   {
@@ -35,13 +33,13 @@
     }
     main { max-width: 1200px; margin: 0 auto; }
     h1   { color:#5b3477; margin:0 0 4px; font-size:26px; }
-    .sub { color:#888; font-size:13px; margin:0 0 20px; }
+    .sub { color:#5a5260; font-size:13px; margin:0 0 20px; }
 
     .grid  { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
     .full  { grid-column:1/-1; }
     @media(max-width:900px){ .grid{ grid-template-columns:1fr; } }
 
-    .card  { background:#fff; border:1px solid #e0d5e8; border-radius:12px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+    .card  { min-width:0; background:#fff; border:1px solid #e0d5e8; border-radius:12px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,.04); }
     .card h2 { margin:0 0 14px; color:#5b3477; font-size:17px; }
 
     /* ── video ── */
@@ -53,14 +51,14 @@
     button,select { min-height:44px; padding:8px 14px; border:1px solid #d0c0dc; border-radius:8px; font:14px system-ui; cursor:pointer; }
     button { background:#5b3477; color:#fff; }
     button:hover { background:#4a2a62; }
-    button:focus-visible { outline:3px solid #e09b00; outline-offset:2px; }
+    button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline:3px solid #e09b00; outline-offset:2px; }
     button:disabled { opacity:.5; cursor:not-allowed; }
     select { background:#fff; color:#241b2b; }
-    label  { display:block; margin:10px 0 4px; font-weight:600; font-size:13px; color:#5b3477; }
+    label, .field-label { display:block; margin:10px 0 4px; font-weight:600; font-size:13px; color:#5b3477; }
 
-    .mono  { background:#f0e6f6; border:1px solid #d0c0dc; border-radius:8px; padding:10px 12px; font:13px monospace; color:#5b3477; word-break:break-all; margin:8px 0; }
+    .mono  { display:block; background:#f0e6f6; border:1px solid #d0c0dc; border-radius:8px; padding:10px 12px; font:13px monospace; color:#5b3477; word-break:break-all; margin:8px 0; }
     .info  { background:#e3f2fd; border-left:4px solid #2196f3; border-radius:4px; padding:10px 12px; font-size:13px; color:#0d47a1; margin:10px 0; }
-    .warn  { background:#fff8e1; border-left:4px solid #f9a825; border-radius:4px; padding:10px 12px; font-size:13px; color:#5d4037; margin:10px 0; }
+    .warn  { background:#fff8e1; border-left:4px solid #f9a825; border-radius:4px; padding:10px 12px; font-size:13px; color:#5d4037; margin:10px 0 20px; }
 
     .log   { font:12px monospace; background:#111; color:#0f0; border-radius:8px; padding:10px; height:120px; overflow-y:auto; margin:8px 0; }
     .log .ev { color:#ff0; display:block; }
@@ -78,6 +76,29 @@
 
     /* ── sign cue + AD cue display ── */
     .cue-box { background:#1a1a2e; color:#e0e0ff; border-radius:8px; padding:10px 14px; font-size:14px; min-height:40px; margin:8px 0; }
+
+    /* ── Audio Description: directly below the video controls ── */
+    .ad-section { width:100%; margin:18px 0 20px; padding:18px; background:#f8f5fb; border:1px solid #ded2e8; border-left:5px solid #5b3477; border-radius:12px; }
+    .ad-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+    .ad-heading h3 { margin:0; color:#5b3477; font-size:18px; }
+    .ad-context, .ad-shortcut { color:#5f5568; font-size:12px; }
+    .ad-shortcut { margin:10px 0 0; }
+    #ad-host, #ad-host savanna-audio-description { display:block; width:100%; }
+
+    /* ── Full text transcript (fallback for deaf-blind users and readers) ── */
+    .ad-transcript { margin-top:14px; background:#fff; border:1px solid #e2d9e9; border-radius:8px; }
+    .ad-transcript summary { cursor:pointer; padding:12px 14px; min-height:44px; font-weight:600; font-size:14px; color:#5b3477; }
+    .ad-transcript .tr-body { padding:0 14px 12px; font-size:14px; }
+    .ad-transcript ol { margin:0; padding:0; list-style:none; }
+    .ad-transcript li { display:flex; gap:10px; padding:6px 0; border-top:1px solid #f0e8f5; }
+    .ad-transcript .tc { flex:0 0 auto; font:12px monospace; color:#5f5568; padding-top:2px; }
+
+    @media(max-width:600px){
+      body { padding:12px; }
+      .card { padding:14px; }
+      .ad-section { padding:12px; margin:14px 0; }
+      .ad-heading h3 { font-size:16px; }
+    }
   </style>
 </head>
 <body>
@@ -101,10 +122,10 @@
     that carry no further bare specifiers, eliminating the need to map every transitive sub-package.
   </div>
 
-  <!-- ═══════════════ VIDEO PLAYER ═══════════════ -->
+  <!-- ═══════════════ LESSON: VIDEO + CONTROLS + AUDIO DESCRIPTION ═══════════════ -->
   <div class="grid">
-    <div class="card full">
-      <h2>▶️ Main Lesson Video (Fake C2 Player)</h2>
+    <section class="card full" aria-labelledby="lesson-heading">
+      <h2 id="lesson-heading">▶️ Main Lesson Video (Fake C2 Player)</h2>
       <div class="info">
         Real file: <code>contracts/fixtures/media/lesson.mp4</code> (161 KB) ·
         Emits <code>savanna:timeupdate / play / pause / seeked</code> to
@@ -114,14 +135,15 @@
       <div class="player-wrap">
         <video id="vid" controls playsinline preload="metadata">
           <source src="../../contracts/fixtures/media/lesson.mp4" type="video/mp4">
+          Your browser does not support HTML video.
         </video>
-        <div id="sign-host" aria-label="Sign language overlay"></div>
+        <div id="sign-host" role="group" aria-label="Sign language overlay"></div>
       </div>
 
-      <div class="row">
-        <button id="btnPlay">▶ Play</button>
-        <button id="btnPause">⏸ Pause</button>
-        <button id="btnReset">⏮ Reset</button>
+      <div class="row" role="group" aria-label="Lesson playback controls">
+        <button id="btnPlay" type="button">▶ Play</button>
+        <button id="btnPause" type="button">⏸ Pause</button>
+        <button id="btnReset" type="button">⏮ Reset</button>
         <label style="margin:0">Speed
           <select id="selSpeed">
             <option value="0.5">0.5×</option>
@@ -132,45 +154,54 @@
         </label>
       </div>
 
-      <label>Playback time</label>
-      <div class="mono" id="timeDisp">0:00 / 0:00</div>
+      <!-- AUDIO DESCRIPTION: directly below the video controls -->
+      <section class="ad-section" aria-labelledby="ad-heading">
+        <div class="ad-heading">
+          <h3 id="ad-heading">🔊 Audio Description</h3>
+          <span class="ad-context">Recorded: <code>ad.opus</code> · Text: <code>ad.vtt</code></span>
+        </div>
+        <div id="ad-host"></div>
+        <p class="ad-shortcut">
+          Keyboard shortcut: <kbd>D</kbd> toggles Audio Description while focus is
+          inside this lesson. It is ignored while typing in form fields, and you can
+          turn it off with the checkbox above.
+        </p>
 
-      <label>Current sign cue</label>
-      <div class="cue-box" id="signCueDisp" aria-live="polite">—</div>
+        <details class="ad-transcript">
+          <summary>Audio description transcript (text)</summary>
+          <div class="tr-body" id="adTranscriptBody"><p>Loading transcript…</p></div>
+        </details>
+      </section>
 
-      <label>Current AD cue</label>
-      <div class="cue-box" id="adCueDisp" aria-live="polite">—</div>
+      <span class="field-label" id="lbl-time">Playback time</span>
+      <output class="mono" id="timeDisp" aria-labelledby="lbl-time" aria-live="off">0:00 / 0:00</output>
 
-      <label>Event log (last 6)</label>
-      <div class="log" id="evLog"><span>Waiting for events…</span></div>
-    </div>
+      <span class="field-label" id="lbl-sign">Current sign cue</span>
+      <div class="cue-box" id="signCueDisp" role="group" aria-labelledby="lbl-sign">—</div>
+
+      <span class="field-label" id="lbl-ad">Current AD cue</span>
+      <div class="cue-box" id="adCueDisp" role="group" aria-labelledby="lbl-ad">—</div>
+
+      <span class="field-label" id="lbl-log">Event log (last 6)</span>
+      <div class="log" id="evLog" role="group" aria-labelledby="lbl-log"><span>Waiting for events…</span></div>
+    </section>
   </div>
 
-  <!-- ═══════════════ SIGN WINDOW ═══════════════ -->
-  <!-- ═══════════════ AUDIO DESC + OFFLINE ═══════════════ -->
+  <!-- ═══════════════ OFFLINE ═══════════════ -->
   <div class="grid">
-    <div class="card">
-      <h2>🔊 Audio Description — <code>&lt;savanna-audio-description&gt;</code></h2>
-      <div class="info">
-        Recorded: <code>ad.opus</code> · Text: <code>ad.vtt</code> ·
-        Press <kbd>D</kbd> anywhere (not in a text field) to toggle.
-      </div>
-      <div id="ad-host"></div>
-    </div>
-
-    <div class="card">
-      <h2>💾 Offline Save — <code>&lt;savanna-offline&gt;</code></h2>
+    <section class="card full" aria-labelledby="offline-heading">
+      <h2 id="offline-heading">💾 Offline Save — <code>&lt;savanna-offline&gt;</code></h2>
       <div class="info">
         API at <code>localhost:4010</code>.
         Run <code>npm run mock</code> to start. The pack manifest at
         <code>/v1/lessons/L-102/pack</code> now returns real fixture data.
       </div>
       <div id="ol-host"></div>
-    </div>
+    </section>
   </div>
 
   <!-- ═══════════════ TEST CHECKLIST ═══════════════ -->
-  <div class="card">
+  <section class="card">
     <h2>✅ Interactive Test Checklist</h2>
     <div style="columns:3;gap:24px;font-size:13px">
       <div>
@@ -181,7 +212,7 @@
           <li>Tab focus + arrow keys</li>
           <li>Shift+arrows (100 px step)</li>
           <li>Alt+arrows (resize)</li>
-          <li>↗ ↘ snap corners</li>
+          <li>↗ ↘ snap corners (inside video)</li>
           <li>Position persists on reload</li>
           <li>Fallback "No sign video yet"</li>
           <li>Loading → Ready states</li>
@@ -190,13 +221,15 @@
       <div>
         <strong>Audio description</strong>
         <ul style="padding-left:18px;margin:6px 0">
-          <li>D key toggles</li>
+          <li>D key toggles (only inside lesson)</li>
+          <li>D ignored on dropdown / checkbox</li>
+          <li>Shortcut checkbox turns D off</li>
           <li>Play / Stop buttons</li>
           <li>Text mode shows timed cues</li>
           <li>Audio mode plays ad.opus</li>
           <li>Extended pauses video</li>
-          <li>Status live-region</li>
-          <li>AD cue shown in debug panel</li>
+          <li>Status live-region (only one)</li>
+          <li>Transcript lists all cues</li>
         </ul>
       </div>
       <div>
@@ -218,17 +251,14 @@
         </ul>
       </div>
     </div>
-  </div>
+  </section>
 </main>
 
 <!-- ════════════════════════════════════════════════════════════════
      COMPONENTS + FAKE PLAYER  —  plain JS, Lit from esm.sh bundle
-     (no bare module specifiers, no local .ts imports)
 ════════════════════════════════════════════════════════════════ -->
 <script type="module">
 
-/* ── The esm.sh bundle URL is a self-contained file; importing it here
-   satisfies every sub-import that Lit uses internally. ── */
 import { LitElement, css, html } from 'lit';
 
 /* ──────────────────────────────────────────────
@@ -250,7 +280,7 @@ class SavannaSignWindow extends LitElement {
     src:      { type: String },
     offsetMs: { type: Number, attribute: 'offset-ms' },
     lang:     { type: String },
-     enabled:  { type: Boolean, reflect: true },
+    enabled:  { type: Boolean, reflect: true },
     /* reactive private state */
     _loadState: { state: true },  // 'idle'|'loading'|'ready'|'error'|'no-src'
     _p:         { state: true },  // { x, y, w, h }
@@ -266,10 +296,10 @@ class SavannaSignWindow extends LitElement {
       font: 15px/1.4 system-ui;
       touch-action: none;
     }
-     :host(:not([enabled])) { width: auto; }
-     :host(:not([enabled])) .body,
-     :host(:not([enabled])) .resize-btn,
-     :host(:not([enabled])) .snaps { display: none; }
+    :host(:not([enabled])) { width: auto; }
+    :host(:not([enabled])) .body,
+    :host(:not([enabled])) .resize-btn,
+    :host(:not([enabled])) .snaps { display: none; }
     section {
       background: #17131c;
       border: 2px solid rgba(255,255,255,.85);
@@ -293,9 +323,9 @@ class SavannaSignWindow extends LitElement {
       background: #49375a; color: #fff; font: inherit; cursor: pointer;
     }
     .snaps button:focus-visible { outline: 3px solid #ffbf47; outline-offset: 2px; }
-     .toggle { min-width:64px; min-height:36px; border:1px solid #bda8d0; border-radius:6px; background:#49375a; color:#fff; font:inherit; font-weight:700; cursor:pointer; }
-     .toggle[aria-pressed="true"] { background:#6e4a8e; }
-     .toggle:focus-visible { outline:3px solid #ffbf47; outline-offset:2px; }
+    .toggle { min-width:64px; min-height:36px; border:1px solid #bda8d0; border-radius:6px; background:#49375a; color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+    .toggle[aria-pressed="true"] { background:#6e4a8e; }
+    .toggle:focus-visible { outline:3px solid #ffbf47; outline-offset:2px; }
     .body {
       position: relative;
       background: #08070a;
@@ -338,7 +368,7 @@ class SavannaSignWindow extends LitElement {
       background: #49375a; color: #fff; font: inherit; cursor: nwse-resize;
     }
     .resize-btn:focus-visible { outline: 3px solid #ffbf47; outline-offset: 2px; }
-    #announcer { position: absolute; left: -9999px; }
+    #announcer { position: absolute; width:1px; height:1px; overflow:hidden; clip-path: inset(50%); }
   `;
 
   constructor() {
@@ -346,7 +376,7 @@ class SavannaSignWindow extends LitElement {
     this.src      = '';
     this.offsetMs = 0;
     this.lang     = '';
-     this.enabled  = true;
+    this.enabled  = true;
     const s       = readNs('sign');
     this._p       = { x: s.x ?? 8, y: s.y ?? 8, w: s.w ?? 320, h: s.h ?? 180 };
     this._loadState = 'idle';
@@ -401,12 +431,17 @@ class SavannaSignWindow extends LitElement {
     this.style.setProperty('--sw', w + 'px');
     this.style.setProperty('--sh', Math.max(80, h - 46) + 'px');
   }
+  // Clamp to the video overlay (parent), not the whole browser window.
   _clamp = () => {
+    const host = this.parentElement;
+    if (!host) return;
     const { w, h } = this._p;
+    const maxX = Math.max(0, host.clientWidth  - w);
+    const maxY = Math.max(0, host.clientHeight - h);
     this._p = {
       ...this._p,
-      x: Math.max(0, Math.min(this._p.x, innerWidth  - w - 4)),
-      y: Math.max(0, Math.min(this._p.y, innerHeight - h - 4)),
+      x: Math.max(0, Math.min(this._p.x, maxX)),
+      y: Math.max(0, Math.min(this._p.y, maxY)),
     };
     this._savePos();
     this._applyPos();
@@ -447,7 +482,8 @@ class SavannaSignWindow extends LitElement {
       w: Math.max(180, Math.min(640, this._p.w + dw)),
       h: Math.max(120, Math.min(500, this._p.h + dh)),
     };
-    this._savePos(); this._applyPos();
+    this._applyPos();
+    this._clamp();
   }
 
   /* ── pointer drag ── */
@@ -478,12 +514,14 @@ class SavannaSignWindow extends LitElement {
   }
   _endResize() { this._rsz = null; }
 
-  /* ── snap ── */
+  /* ── snap (to corners of the video, not the browser window) ── */
   _snap(corner) {
+    const host = this.parentElement;
+    if (!host) return;
     this._p = {
       ...this._p,
-      x: corner.includes('r') ? innerWidth  - this._p.w - 8 : 8,
-      y: corner.includes('b') ? innerHeight - this._p.h - 8 : 8,
+      x: corner.includes('r') ? Math.max(0, host.clientWidth  - this._p.w - 8) : 8,
+      y: corner.includes('b') ? Math.max(0, host.clientHeight - this._p.h - 8) : 8,
     };
     this._savePos(); this._applyPos();
   }
@@ -540,7 +578,7 @@ class SavannaSignWindow extends LitElement {
         overlayContent = html`
           <span>⚠ Sign video unavailable</span>
           ${this._retries < 3
-            ? html`<button style="margin-top:8px;min-height:32px;padding:4px 10px;border:1px solid #bda8d0;border-radius:6px;background:#49375a;color:#fff;cursor:pointer"
+            ? html`<button type="button" style="margin-top:8px;min-height:32px;padding:4px 10px;border:1px solid #bda8d0;border-radius:6px;background:#49375a;color:#fff;cursor:pointer"
                            @click=${this._retry}>Retry</button>`
             : html`<span style="font-size:12px;margin-top:4px;color:#aaa">Check network</span>`}
         `;
@@ -567,11 +605,11 @@ class SavannaSignWindow extends LitElement {
         >
           <strong>${lbl}</strong>
           <span class="snaps">
-            <button @click=${() => this._snap('tr')} aria-label="Snap top-right">↗</button>
-            <button @click=${() => this._snap('br')} aria-label="Snap bottom-right">↘</button>
-           </span>
-           <button class="toggle" type="button" aria-label="Sign language: ${this.enabled ? 'on' : 'off'}" aria-pressed=${String(this.enabled)} @click=${this._toggle}>${this.enabled ? 'On' : 'Off'}</button>
-         </header>
+            <button type="button" @click=${() => this._snap('tr')} aria-label="Snap top-right">↗</button>
+            <button type="button" @click=${() => this._snap('br')} aria-label="Snap bottom-right">↘</button>
+          </span>
+          <button class="toggle" type="button" aria-label="Sign language: ${this.enabled ? 'on' : 'off'}" aria-pressed=${String(this.enabled)} @click=${this._toggle}>${this.enabled ? 'On' : 'Off'}</button>
+        </header>
 
         <div class="body">
           ${hasV && this.src ? html`
@@ -589,6 +627,7 @@ class SavannaSignWindow extends LitElement {
         </div>
 
         <button
+          type="button"
           class="resize-btn"
           aria-label="Drag to resize, or focus and use Alt+Arrow keys"
           @pointerdown=${this._startResize}
@@ -626,15 +665,19 @@ class SavannaAudioDescription extends LitElement {
   };
 
   static styles = css`
-    :host { display:block; font:16px/1.5 system-ui; color:inherit; }
+    :host { display:block; width:100%; font:16px/1.5 system-ui; color:#241b2b; }
     button, select {
       min-height:44px; padding:8px 12px;
       border:1px solid #72548a; border-radius:8px;
       background:#fff; color:#241b2b; font:inherit; cursor:pointer;
     }
-    button:focus-visible, select:focus-visible { outline:3px solid #e09b00; outline-offset:2px; }
-    .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:8px 0; }
-    p[role="status"] { margin:8px 0; font-size:14px; }
+    button.primary { background:#5b3477; color:#fff; }
+    button:focus-visible, select:focus-visible, input:focus-visible { outline:3px solid #e09b00; outline-offset:2px; }
+    .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:0; }
+    .field { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; }
+    .field input[type="checkbox"] { width:20px; height:20px; }
+    .status { margin:12px 0 0; padding:10px 12px; border-radius:8px; background:#fff; border:1px solid #e2d9e9; font-size:14px; }
+    audio { display:none; }
   `;
 
   constructor() {
@@ -643,20 +686,23 @@ class SavannaAudioDescription extends LitElement {
     this.textVtt  = '';
     this.offsetMs = 0;
     const s       = readNs('ad');
-    this._prefs   = { enabled:false, extended:false, mode:'text', ...s };
+    this._prefs   = { enabled:false, extended:false, mode:'text', shortcut:true, ...s };
     this._status  = 'Audio description is off.';
     this._cues    = [];
     this._active  = '';
     this._wasPlaying = false;
     this._audio   = null;
     this._media   = null;
-    // Expose current cue text for sandbox debug display
-    this._currentCueText = '';
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this._media = this.closest('savanna-player')?.media ?? null;
+    // The sandbox uses a native <video id="vid">, not <savanna-player>.
+    // Falls back to the real player's .media when it exists.
+    this._media =
+      this.closest('savanna-player')?.media ??
+      this.closest('.card')?.querySelector('#vid') ??
+      document.getElementById('vid');
     window.addEventListener('keydown',              this._shortcut);
     window.addEventListener('savanna:timeupdate',   this._onTime);
     if (this.textVtt) this._loadVtt();
@@ -665,7 +711,7 @@ class SavannaAudioDescription extends LitElement {
   disconnectedCallback() {
     window.removeEventListener('keydown',             this._shortcut);
     window.removeEventListener('savanna:timeupdate',  this._onTime);
-    this._stop();
+    this._audio?.pause();
     super.disconnectedCallback();
   }
 
@@ -685,15 +731,17 @@ class SavannaAudioDescription extends LitElement {
       const r = await fetch(this.textVtt);
       if (!r.ok) throw new Error(`${r.status}`);
       this._cues = this._parseVtt(await r.text());
-    } catch {
+      window.dispatchEvent(new CustomEvent('savanna:ad-cues', { detail: { cues: this._cues } }));
+    } catch (err) {
       this._status = 'Text description file could not be loaded.';
+      window.dispatchEvent(new CustomEvent('savanna:ad-cues', { detail: { cues: [], error: err.message } }));
       this.requestUpdate();
     }
   }
 
   _parseVtt(text) {
     const toSec = (s) => {
-      const pts = s.trim().split(':').map(Number);
+      const pts = s.trim().split(/\s+/)[0].split(':').map(Number);
       return pts.length === 3 ? pts[0]*3600+pts[1]*60+pts[2] : pts[0]*60+pts[1];
     };
     return text.replace(/\r/g,'').split(/\n{2,}/).flatMap(b => {
@@ -708,7 +756,22 @@ class SavannaAudioDescription extends LitElement {
   _shortcut = (e) => {
     if (e.key.toLowerCase() !== 'd') return;
     if (e.altKey || e.ctrlKey || e.metaKey) return;
-    if (['INPUT','TEXTAREA','SELECT'].includes(e.target?.tagName)) return;
+
+    // WCAG 2.1.4: the user can turn the shortcut off.
+    if (this._prefs.shortcut === false) return;
+
+    // Shadow DOM retargets e.target, so read the real origin of the event.
+    const path   = e.composedPath();
+    const target = path[0];
+
+    // WCAG 2.1.4: only active while focus is inside this lesson card.
+    const card = this.closest('.card');
+    if (card && !path.includes(card)) return;
+
+    // Never steal the key while someone is typing or choosing a value.
+    if (target?.isContentEditable) return;
+    if (['INPUT','TEXTAREA','SELECT'].includes(target?.tagName)) return;
+
     e.preventDefault();
     this._prefs.enabled ? this._stop() : this._play();
   };
@@ -725,12 +788,9 @@ class SavannaAudioDescription extends LitElement {
       if (cue && cue.text !== this._active) {
         this._active = cue.text;
         this._status = cue.text;
-        this._currentCueText = cue.text;
-        // Push to sandbox debug display
         this.requestUpdate();
       } else if (!cue && this._active) {
         this._active = '';
-        this._currentCueText = '';
       }
       return;
     }
@@ -781,6 +841,16 @@ class SavannaAudioDescription extends LitElement {
     this.requestUpdate();
   }
 
+  _setMode(mode) {
+    this._audio?.pause();
+    this._prefs = { ...this._prefs, mode };
+    this._savePrefs();
+    this._status = mode === 'text'
+      ? 'Text descriptions selected. Play the lesson video.'
+      : 'Recorded audio selected. Press Play to start.';
+    this.requestUpdate();
+  }
+
   _setExtended(v) {
     this._prefs = { ...this._prefs, extended: v };
     this._savePrefs();
@@ -791,22 +861,34 @@ class SavannaAudioDescription extends LitElement {
     this.requestUpdate();
   }
 
+  _setShortcut(v) {
+    this._prefs = { ...this._prefs, shortcut: v };
+    this._savePrefs();
+    this._status = v ? 'The D keyboard shortcut is on.' : 'The D keyboard shortcut is off.';
+    this.requestUpdate();
+  }
+
   render() {
     return html`
       <div class="row">
-        <label style="margin:0">Mode
-          <select .value=${this._prefs.mode}
-            @change=${(e) => { this._prefs={...this._prefs,mode:e.target.value}; this._savePrefs(); this.requestUpdate(); }}>
+        <label class="field">Mode
+          <select aria-label="Audio description mode" .value=${this._prefs.mode}
+            @change=${(e) => this._setMode(e.target.value)}>
             <option value="text">Text descriptions</option>
             <option value="audio">Recorded audio</option>
           </select>
         </label>
-        <button @click=${this._play}>▶ Play</button>
-        <button @click=${this._stop}>⏹ Stop</button>
-        <label style="margin:0">
+        <button type="button" class="primary" @click=${this._play}>▶ Play AD</button>
+        <button type="button" @click=${this._stop}>⏹ Stop AD</button>
+        <label class="field">
           <input type="checkbox" .checked=${this._prefs.extended}
             @change=${(e) => this._setExtended(e.target.checked)}>
           Extended AD (pause video)
+        </label>
+        <label class="field">
+          <input type="checkbox" .checked=${this._prefs.shortcut !== false}
+            @change=${(e) => this._setShortcut(e.target.checked)}>
+          Enable D shortcut
         </label>
       </div>
 
@@ -826,11 +908,12 @@ class SavannaAudioDescription extends LitElement {
           this._status = 'Description finished.';
           this.requestUpdate();
         }}
-        @error=${() => { this._status = 'Recorded description failed to load.'; this.requestUpdate(); }}
+        @error=${() => { this._status = 'Recorded description failed to load. Check ad.opus.'; this.requestUpdate(); }}
       ></audio>
       ` : ''}
 
-      <p role="status" aria-live="polite">${this._status}</p>
+      <!-- The ONLY live region for audio description announcements -->
+      <p class="status" role="status" aria-live="polite">${this._status}</p>
     `;
   }
 }
@@ -916,9 +999,11 @@ class SavannaOffline extends LitElement {
     if (this._busy || !this._manifest) return;
     this._busy = true; this._progress = 0; this.requestUpdate();
     try {
+      if (!('caches' in window)) throw new Error('Cache Storage is not available in this browser.');
       const url = this._packUrl + '.zip';
       const r   = await fetch(url, { headers: this._headers });
       if (!r.ok) throw new Error(`Download failed (${r.status}).`);
+      if (!r.body) throw new Error('The browser did not provide a readable download stream.');
       const total  = Number(r.headers.get('content-length')) || this._manifest.sizeBytes || 0;
       const reader = r.body.getReader();
       const chunks = []; let got = 0;
@@ -928,7 +1013,7 @@ class SavannaOffline extends LitElement {
         if (value) {
           chunks.push(value);
           got += value.length;
-          this._progress = total ? Math.round(got / total * 100) : 0;
+          this._progress = total ? Math.min(100, Math.round(got / total * 100)) : 0;
           this.requestUpdate();
         }
       }
@@ -949,12 +1034,16 @@ class SavannaOffline extends LitElement {
   }
 
   async _remove() {
-    await caches.delete(this._CACHE_PFX + this.lessonId);
-    const ol = readNs('offline');
-    ol.savedLessons = (ol.savedLessons||[]).filter(x => x !== this.lessonId);
-    writeNs('offline', ol);
-    this._saved = false; this._progress = 0;
-    this._status = 'Offline copy deleted.';
+    try {
+      if ('caches' in window) await caches.delete(this._CACHE_PFX + this.lessonId);
+      const ol = readNs('offline');
+      ol.savedLessons = (ol.savedLessons||[]).filter(x => x !== this.lessonId);
+      writeNs('offline', ol);
+      this._saved = false; this._progress = 0;
+      this._status = 'Offline copy deleted.';
+    } catch (err) {
+      this._status = `Could not delete offline copy: ${err.message}`;
+    }
     this.requestUpdate();
   }
 
@@ -962,11 +1051,13 @@ class SavannaOffline extends LitElement {
     return html`
       <div>
         ${this._saved
-          ? html`<button @click=${this._remove} ?disabled=${this._busy}>Delete offline copy</button>`
-          : html`<button @click=${this._save}   ?disabled=${this._busy || !this._manifest}>Save for offline</button>`}
-        <button @click=${() => this._fetchManifest()} ?disabled=${this._busy}>↺ Refresh</button>
+          ? html`<button type="button" @click=${this._remove} ?disabled=${this._busy}>Delete offline copy</button>`
+          : html`<button type="button" @click=${this._save}   ?disabled=${this._busy || !this._manifest}>Save for offline</button>`}
+        <button type="button" @click=${() => this._fetchManifest()} ?disabled=${this._busy}>↺ Refresh</button>
       </div>
-      ${this._busy ? html`<progress max="100" .value=${this._progress}></progress>` : ''}
+      ${this._busy ? html`
+        <progress max="100" .value=${this._progress}></progress>
+        <p>${this._progress}% downloaded</p>` : ''}
       <p role="status" aria-live="polite">${this._status}</p>
     `;
   }
@@ -1019,7 +1110,7 @@ vid.addEventListener('loadedmetadata', () => {
 });
 
 /* ── wire up static buttons (no inline onclick, works in module scope) ── */
-document.getElementById('btnPlay').addEventListener('click',  () => vid.play());
+document.getElementById('btnPlay').addEventListener('click',  () => vid.play().catch(() => {}));
 document.getElementById('btnPause').addEventListener('click', () => vid.pause());
 document.getElementById('btnReset').addEventListener('click', () => { vid.currentTime = 0; });
 document.getElementById('selSpeed').addEventListener('change', (e) => {
@@ -1037,6 +1128,40 @@ window.addEventListener('offline', updateNet);
 updateNet();
 
 /* ══════════════════════════════════════════════
+   AD TRANSCRIPT (full text fallback under the AD controls)
+══════════════════════════════════════════════ */
+function renderTranscript(cues, error) {
+  const body = document.getElementById('adTranscriptBody');
+  if (!body) return;
+
+  if (error || !cues.length) {
+    const p = document.createElement('p');
+    p.textContent = error
+      ? `Transcript could not be loaded (${error}).`
+      : 'No audio description transcript is available for this lesson.';
+    body.replaceChildren(p);
+    return;
+  }
+
+  const list = document.createElement('ol');
+  list.setAttribute('aria-label', 'Audio description cues');
+  cues.forEach((cue) => {
+    const li   = document.createElement('li');
+    const time = document.createElement('span');
+    time.className = 'tc';
+    time.textContent = `${fmt(cue.start)}–${fmt(cue.end)}`;
+    const text = document.createElement('span');
+    text.textContent = cue.text;
+    li.append(time, text);
+    list.append(li);
+  });
+  body.replaceChildren(list);
+}
+window.addEventListener('savanna:ad-cues', (e) => {
+  renderTranscript(e.detail?.cues || [], e.detail?.error);
+});
+
+/* ══════════════════════════════════════════════
    MOUNT COMPONENTS
 ══════════════════════════════════════════════ */
 // Give custom element registry a tick to process, then mount
@@ -1049,17 +1174,18 @@ setTimeout(() => {
   // Use the ESL placeholder (small file) as sign video so metadata loads fast
   sw.setAttribute('src',  '../../contracts/fixtures/media/esl-placeholder.mp4');
   sw.setAttribute('lang', 'en');
-   signHost.appendChild(sw);
-   requestAnimationFrame(() => {
-     const saved = readNs('sign');
-     if (typeof saved.x !== 'number' || typeof saved.y !== 'number') {
-       sw._p = { x: Math.max(8, signHost.clientWidth - 328), y: 8, w: 320, h: 180 };
-       sw._savePos();
-       sw._applyPos();
-     }
-   });
+  signHost.appendChild(sw);
+  requestAnimationFrame(() => {
+    const saved = readNs('sign');
+    if (typeof saved.x !== 'number' || typeof saved.y !== 'number') {
+      sw._p = { x: Math.max(8, signHost.clientWidth - 328), y: 8, w: 320, h: 180 };
+      sw._savePos();
+      sw._applyPos();
+    }
+    sw._clamp();
+  });
 
-  // ── audio description ──
+  // ── audio description (inside the lesson card, under the video controls) ──
   const ad = document.createElement('savanna-audio-description');
   ad.setAttribute('src',      '../../contracts/fixtures/media/ad.opus');
   ad.setAttribute('text-vtt', '../../contracts/fixtures/media/ad.vtt');
@@ -1072,11 +1198,7 @@ setTimeout(() => {
   document.getElementById('ol-host').appendChild(ol);
 
   console.log('%c✓ Member 2 Sandbox Ready', 'color:#4caf50;font-weight:bold;font-size:15px');
-  console.log('  Three errors fixed:');
-  console.log('  • CSP: Chrome DevTools probe — browser-generated, not application code');
-  console.log('  • 404: L-102/pack.json fixture created');
-  console.log('  • Lit bare imports: switched to esm.sh self-contained bundles');
-  console.log('  Press D to toggle audio description');
+  console.log('  Press D to toggle audio description (while focus is inside the lesson card)');
   console.log('  Tab → sign-window header → Arrow keys to move');
 
 }, 0);
