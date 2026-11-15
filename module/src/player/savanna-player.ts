@@ -607,398 +607,40 @@ export class SavannaPlayer extends LitElement {
       box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
     }
 
-    /* Player Controls Bar - High-Tech Glow (Inspiration Design) */
+    /* Player Controls Bar */
     .player-controls {
       display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      padding: 1rem 1.25rem;
-      background: #090e17;
-      background: linear-gradient(180deg, #0b1322 0%, #070c17 100%);
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      color: #ffffff;
-      box-sizing: border-box;
-      width: 100%;
-    }
-
-    /* Top Row: Segmented Progress Bar & Meta */
-    .controls-timeline-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 0.45rem;
-      width: 100%;
-    }
-
-    .slider-seek-wrap {
-      position: relative;
-      width: 100%;
-      height: 14px;
-      display: flex;
-      align-items: center;
-    }
-
-    .slider-seek {
-      width: 100%;
-      height: 6px;
-      -webkit-appearance: none;
-      appearance: none;
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 9999px;
-      outline: none;
-      cursor: pointer;
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      transition: height 0.15s ease;
-    }
-
-    .slider-seek:hover {
-      height: 8px;
-    }
-
-    .slider-seek::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #22d3ee;
-      box-shadow: 0 0 10px #06b6d4, 0 0 20px rgba(6, 182, 212, 0.6);
-      cursor: pointer;
-      border: 2px solid #ffffff;
-      transition: transform 0.15s ease;
-    }
-
-    .slider-seek::-webkit-slider-thumb:hover {
-      transform: scale(1.2);
-    }
-
-    .slider-seek::-moz-range-thumb {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #22d3ee;
-      box-shadow: 0 0 10px #06b6d4;
-      cursor: pointer;
-      border: 2px solid #ffffff;
-    }
-
-    .slider-seek:focus-visible {
-      outline: 3px solid #22d3ee !important;
-      outline-offset: 2px;
-    }
-
-    /* Time & Chapter Metadata */
-    .controls-meta-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      font-size: 0.85rem;
-      line-height: 1.2;
-    }
-
-    .time-display {
-      display: flex;
-      align-items: baseline;
-      gap: 0.35rem;
-      font-variant-numeric: tabular-nums;
-      font-size: 0.85rem;
-      color: #94a3b8;
-    }
-
-    .time-elapsed-glow {
-      color: #22d3ee;
-      font-family: 'Consolas', 'Courier New', ui-monospace, monospace;
-      font-weight: 700;
-      text-shadow: 0 0 8px rgba(34, 211, 238, 0.45);
-      letter-spacing: 0.02em;
-    }
-
-    .time-chapter-title {
-      color: #94a3b8;
-      font-weight: 500;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 320px;
-    }
-
-    .time-remaining-glow {
-      color: #94a3b8;
-      font-family: 'Consolas', 'Courier New', ui-monospace, monospace;
-      font-size: 0.82rem;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-    }
-
-    /* Middle Row: Playback & Volume */
-    .controls-middle-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      width: 100%;
-    }
-
-    .controls-mid-left {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .controls-mid-center {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
-    .controls-mid-right {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    /* Speed Pill */
-    .btn-speed {
-      min-width: 52px;
-      height: 38px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #f1f5f9;
-      font-weight: 700;
-      font-size: 0.85rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s ease;
-      box-sizing: border-box;
-    }
-
-    .btn-speed:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.25);
-    }
-
-    /* Volume Pill Group */
-    .volume-pill-group {
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-      height: 38px;
-      padding: 0 0.65rem 0 0.4rem;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 12px;
-      box-sizing: border-box;
-    }
-
-    .btn-mute {
-      width: 30px;
-      height: 30px;
-      min-width: 30px;
-      min-height: 30px;
-      background: transparent;
-      border: none;
-      color: #cbd5e1;
-      border-radius: 6px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      transition: color 0.15s ease;
-    }
-
-    .btn-mute:hover {
-      color: #ffffff;
-    }
-
-    .slider-volume {
-      width: 60px;
-      height: 4px;
-      accent-color: #06b6d4;
-      cursor: pointer;
-      border-radius: 9999px;
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    /* Rewind / Forward Circle Buttons */
-    .btn-seek-circle {
-      width: 42px;
-      height: 42px;
-      min-width: 42px;
-      min-height: 42px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #f1f5f9;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      transition: all 0.15s ease;
-      box-sizing: border-box;
-    }
-
-    .btn-seek-circle:hover {
-      background: rgba(255, 255, 255, 0.14);
-      border-color: rgba(255, 255, 255, 0.3);
-      color: #ffffff;
-      transform: scale(1.05);
-    }
-
-    /* Hero Play Button (The Glowing Cyan/Teal Circle) */
-    .btn-play-hero {
-      width: 52px;
-      height: 52px;
-      min-width: 52px;
-      min-height: 52px;
-      border-radius: 50%;
-      background: #1cd0ba;
-      background: linear-gradient(135deg, #2dd4bf 0%, #06b6d4 100%);
-      border: none;
-      color: #042f2e;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      box-shadow: 0 0 18px rgba(28, 208, 186, 0.65), 0 0 35px rgba(6, 182, 212, 0.35);
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-      box-sizing: border-box;
-    }
-
-    .btn-play-hero:hover {
-      transform: scale(1.08);
-      box-shadow: 0 0 25px rgba(28, 208, 186, 0.85), 0 0 45px rgba(6, 182, 212, 0.55);
-    }
-
-    .btn-play-hero:active {
-      transform: scale(0.96);
-    }
-
-    /* Fullscreen Button */
-    .btn-fullscreen {
-      width: 42px;
-      height: 42px;
-      min-width: 42px;
-      min-height: 42px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #f1f5f9;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      transition: all 0.15s ease;
-      box-sizing: border-box;
-    }
-
-    .btn-fullscreen:hover {
-      background: rgba(255, 255, 255, 0.14);
-      border-color: rgba(255, 255, 255, 0.3);
-      color: #ffffff;
-    }
-
-    /* Bottom Row: Feature & Accessibility Pills */
-    .controls-bottom-row {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
       flex-wrap: wrap;
-      width: 100%;
-      padding-top: 0.2rem;
-    }
-
-    .ctrl-pill-btn {
-      height: 40px;
-      min-height: 40px;
-      min-width: 44px;
-      padding: 0 1.1rem;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #cbd5e1;
-      font-weight: 700;
-      font-size: 0.85rem;
-      cursor: pointer;
-      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: 0.45rem;
-      letter-spacing: 0.02em;
-      transition: all 0.15s ease;
+      gap: 0.4rem;
+      padding: 0.5rem 0.75rem;
+      background: var(--savanna-ctrl-bg, #0b192c);
+      color: var(--savanna-ctrl-text, #ffffff);
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
       box-sizing: border-box;
     }
 
-    .ctrl-pill-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.25);
-      color: #ffffff;
+    .ctrl-btn {
+      min-width: 44px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--savanna-btn-bg, rgba(255, 255, 255, 0.12));
+      color: var(--savanna-ctrl-text, #ffffff);
+      border: 1px solid var(--savanna-btn-border, rgba(255, 255, 255, 0.25));
+      border-radius: var(--savanna-radius, 4px);
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0 0.5rem;
+      box-sizing: border-box;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
 
-    /* Glowing Active State for Pills (Matching Inspiration Image) */
-    .ctrl-pill-btn.active,
-    .ctrl-pill-btn[aria-pressed='true'] {
-      border: 1.5px solid #06b6d4 !important;
-      color: #22d3ee !important;
-      background: rgba(6, 182, 212, 0.12) !important;
-      box-shadow: 0 0 14px rgba(6, 182, 212, 0.45) !important;
-    }
-
-    .ctrl-pill-btn.is-disabled,
-    .ctrl-pill-btn[aria-disabled='true'] {
-      opacity: 0.4;
-      cursor: not-allowed;
-      border-color: transparent !important;
-      box-shadow: none !important;
-    }
-
-    .ctrl-pill-btn:focus-visible,
-    .btn-seek-circle:focus-visible,
-    .btn-play-hero:focus-visible,
-    .btn-speed:focus-visible,
-    .btn-mute:focus-visible {
-      outline: 3px solid #22d3ee !important;
-      outline-offset: 2px;
-      box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.5);
-    }
-
-    @media (max-width: 600px) {
-      .player-controls {
-        padding: 0.75rem 0.65rem;
-        gap: 0.6rem;
-      }
-      .controls-middle-row {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.5rem;
-      }
-      .controls-mid-left, .controls-mid-right {
-        gap: 0.35rem;
-      }
-      .controls-bottom-row {
-        gap: 0.4rem;
-        justify-content: center;
-      }
-      .ctrl-pill-btn {
-        padding: 0 0.75rem;
-        height: 38px;
-        min-height: 38px;
-        font-size: 0.8rem;
-      }
-      .volume-pill-group {
-        padding: 0 0.4rem;
-      }
-      .slider-volume {
-        width: 45px;
-      }
+    .ctrl-btn:hover {
+      background: var(--savanna-btn-hover, rgba(255, 255, 255, 0.24));
+      border-color: rgba(255, 255, 255, 0.45);
     }
 
     /* Tab bar in Preferences Dialog */
@@ -1099,7 +741,25 @@ export class SavannaPlayer extends LitElement {
     }
 
     .ctrl-slider {
+      min-height: 44px;
       cursor: pointer;
+      accent-color: var(--savanna-accent, #0f4c81);
+    }
+
+    .slider-seek {
+      flex: 1 1 140px;
+    }
+
+    .slider-volume {
+      width: 75px;
+    }
+
+    .time-display {
+      font-size: 0.8rem;
+      font-variant-numeric: tabular-nums;
+      color: #cbd5e1;
+      padding: 0 0.25rem;
+      white-space: nowrap;
     }
 
     /* Speed Menu Popover (SRS FR-P9) */
@@ -3300,288 +2960,266 @@ export class SavannaPlayer extends LitElement {
           </div>
         </div>
 
-        <!-- Custom Native Accessible Controls Bar (Inspiration Design) -->
+        <!-- Custom Native Accessible Controls Bar (SRS FR-P2) -->
         <div
           class="player-controls"
           aria-label=${this.t('player.controlsLabel')}
           lang=${this.activeLang}
         >
-          <!-- 1. Top Row: Timeline & Progress Bar -->
-          <div class="controls-timeline-wrap">
-            <div class="slider-seek-wrap">
-              <input
-                type="range"
-                class="ctrl-slider slider-seek"
-                min="0"
-                max=${Number.isFinite(this.duration) && this.duration > 0 ? this.duration : 100}
-                step="0.1"
-                .value=${String(this.currentTime)}
-                @input=${this.handleSeekInput}
-                aria-label=${this.t('player.seekSlider')}
-                aria-valuetext=${this.positionValueText}
-                style="background: linear-gradient(to right, #00f2fe 0%, #06b6d4 ${this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0}%, rgba(255,255,255,0.12) ${this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0}%, rgba(255,255,255,0.12) 100%);"
-              />
-            </div>
+          <!-- Play / Pause (Toggle) -->
+          <button
+            type="button"
+            class="ctrl-btn btn-play"
+            @click=${this.togglePlay}
+            aria-label=${this.t('player.play')}
+            aria-pressed=${this.isPlaying ? 'true' : 'false'}
+            title="${this.t('player.play')} (K)"
+          >
+            ${this.isPlaying
+              ? html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                  <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                </svg>`
+              : html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>`
+            }
+          </button>
 
-            <!-- Time & Chapter Row -->
-            <div class="controls-meta-row">
-              <div class="time-display" aria-hidden="true">
-                <span class="time-elapsed-glow">${this.formatTime(this.currentTime)}</span>
-                <span class="time-chapter-title">/ ${this.lessonTitle ? this.lessonTitle : 'Ch 1: Foundation'}</span>
-              </div>
-              <div class="time-remaining-glow" aria-hidden="true">
-                -${this.formatTime(Math.max(0, this.duration - this.currentTime))}
-              </div>
-            </div>
-          </div>
+          <!-- Rewind 10s (Action) -->
+          <button
+            type="button"
+            class="ctrl-btn btn-back10"
+            @click=${() => this.seekBy(-10)}
+            aria-label="${this.t('player.back10')} 10s"
+            title="${this.t('player.back10')} (J)"
+          >
+            <svg
+              aria-hidden="true"
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="margin-right: 2px;"
+            >
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <polyline points="3 3 3 8 8 8"></polyline>
+            </svg>
+            <span style="font-size: 0.8rem; font-weight: 700;">10s</span>
+          </button>
 
-          <!-- 2. Middle Row: Playback & Volume Controls -->
-          <div class="controls-middle-row">
-            <!-- Left: Speed & Volume Group -->
-            <div class="controls-mid-left">
-              <div class="speed-menu-container">
-                <button
-                  type="button"
-                  class="ctrl-btn btn-speed ${this.isSpeedMenuOpen ? 'active' : ''}"
-                  @click=${this.toggleSpeedMenu}
-                  aria-haspopup="menu"
-                  aria-expanded=${this.isSpeedMenuOpen ? 'true' : 'false'}
-                  aria-label="${this.t('player.speed')}: ${this.playbackRate === 1 ? '1.0x' : this.playbackRate + 'x'}"
-                  title="${this.t('player.speed')}"
-                >
-                  ${this.playbackRate === 1 ? '1.0x' : this.playbackRate + 'x'}
-                </button>
-                ${this.isSpeedMenuOpen
+          <!-- Position Slider -->
+          <input
+            type="range"
+            class="ctrl-slider slider-seek"
+            min="0"
+            max=${Number.isFinite(this.duration) && this.duration > 0 ? this.duration : 100}
+            step="0.1"
+            .value=${String(this.currentTime)}
+            @input=${this.handleSeekInput}
+            aria-label=${this.t('player.seekSlider')}
+            aria-valuetext=${this.positionValueText}
+          />
+
+          <!-- Elapsed / Total time display -->
+          <span class="time-display" aria-hidden="true">
+            ${this.formatTime(this.currentTime)} / ${this.formatTime(this.duration)}
+          </span>
+
+          <!-- Mute Toggle -->
+          <button
+            type="button"
+            class="ctrl-btn btn-mute"
+            @click=${this.toggleMute}
+            aria-label=${this.t('player.mute')}
+            aria-pressed=${this.isMuted || (this.media ? this.media.muted : false) ? 'true' : 'false'}
+            title="${this.t('player.mute')} (M)"
+          >
+            ${this.isMuted || this.volume === 0
+              ? html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
+                  <line x1="23" y1="9" x2="17" y2="15"></line>
+                  <line x1="17" y1="9" x2="23" y2="15"></line>
+                </svg>`
+              : html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>`
+            }
+          </button>
+
+          <!-- Volume Slider -->
+          <input
+            type="range"
+            class="ctrl-slider slider-volume"
+            min="0"
+            max="100"
+            step="1"
+            .value=${String(this.isMuted ? 0 : Math.round(this.volume * 100))}
+            @input=${this.handleVolumeInput}
+            aria-label=${this.t('player.volumeSlider')}
+            aria-valuetext=${this.volumeValueText}
+          />
+
+          <!-- Playback Speed Menu (SRS FR-P9 & Stable Popover Buttons) -->
+          <div class="speed-menu-container">
+            <button
+              type="button"
+              class="ctrl-btn btn-speed ${this.isSpeedMenuOpen ? 'active' : ''}"
+              @click=${this.toggleSpeedMenu}
+              aria-haspopup="menu"
+              aria-expanded=${this.isSpeedMenuOpen ? 'true' : 'false'}
+              aria-label="${this.t('player.speed')}: ${this.playbackRate === 1 ? '1.0x' : this.playbackRate + 'x'}"
+              title="${this.t('player.speed')}"
+            >
+              ${this.playbackRate === 1 ? '1.0x' : this.playbackRate + 'x'}
+            </button>
+            ${this.isSpeedMenuOpen
         ? html`
-                    <div
-                      class="speed-popover"
-                      role="menu"
-                      aria-label=${this.t('player.speed')}
-                    >
-                      ${[0.5, 0.75, 1, 1.25, 1.5, 2].map(
+                  <div
+                    class="speed-popover"
+                    role="menu"
+                    aria-label=${this.t('player.speed')}
+                  >
+                    ${[0.5, 0.75, 1, 1.25, 1.5, 2].map(
           (rate) => html`
-                          <button
-                            type="button"
-                            role="menuitemradio"
-                            class="speed-opt-btn ${this.playbackRate === rate ? 'is-selected' : ''}"
-                            aria-checked=${this.playbackRate === rate ? 'true' : 'false'}
-                            @click=${() => this.setPlaybackRate(rate)}
-                          >
-                            ${rate === 1 ? `1.0x (${this.t('player.speedNormal')})` : `${rate}x`}
-                          </button>
-                        `
+                        <button
+                          type="button"
+                          role="menuitemradio"
+                          class="speed-opt-btn ${this.playbackRate === rate ? 'is-selected' : ''}"
+                          aria-checked=${this.playbackRate === rate ? 'true' : 'false'}
+                          @click=${() => this.setPlaybackRate(rate)}
+                        >
+                          ${rate === 1 ? `1.0x (${this.t('player.speedNormal')})` : `${rate}x`}
+                        </button>
+                      `
         )}
-                    </div>
-                  `
+                  </div>
+                `
         : ''}
-              </div>
-
-              <!-- Volume Pill Group -->
-              <div class="volume-pill-group">
-                <button
-                  type="button"
-                  class="ctrl-btn btn-mute"
-                  @click=${this.toggleMute}
-                  aria-label=${this.t('player.mute')}
-                  aria-pressed=${this.isMuted || (this.media ? this.media.muted : false) ? 'true' : 'false'}
-                  title="${this.t('player.mute')} (M)"
-                >
-                  ${this.isMuted || this.volume === 0
-        ? html`<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
-                        <line x1="23" y1="9" x2="17" y2="15"></line>
-                        <line x1="17" y1="9" x2="23" y2="15"></line>
-                      </svg>`
-        : html`<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
-                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                      </svg>`
-      }
-                </button>
-                <input
-                  type="range"
-                  class="ctrl-slider slider-volume"
-                  min="0"
-                  max="100"
-                  step="1"
-                  .value=${String(this.isMuted ? 0 : Math.round(this.volume * 100))}
-                  @input=${this.handleVolumeInput}
-                  aria-label=${this.t('player.volumeSlider')}
-                  aria-valuetext=${this.volumeValueText}
-                />
-              </div>
-            </div>
-
-            <!-- Center: Rewind, Hero Play, Forward -->
-            <div class="controls-mid-center">
-              <button
-                type="button"
-                class="ctrl-btn btn-back10 btn-seek-circle"
-                @click=${() => this.seekBy(-10)}
-                aria-label="${this.t('player.back10')} 10s"
-                title="${this.t('player.back10')} (J)"
-              >
-                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                  <polyline points="3 3 3 8 8 8"></polyline>
-                </svg>
-              </button>
-
-              <button
-                type="button"
-                class="ctrl-btn btn-play btn-play-hero"
-                @click=${this.togglePlay}
-                aria-label=${this.t('player.play')}
-                aria-pressed=${this.isPlaying ? 'true' : 'false'}
-                title="${this.t('player.play')} (K)"
-              >
-                ${this.isPlaying
-        ? html`<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                      <rect x="6" y="4" width="4" height="16" rx="1.5"></rect>
-                      <rect x="14" y="4" width="4" height="16" rx="1.5"></rect>
-                    </svg>`
-        : html`<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 2px;">
-                      <polygon points="6 4 20 12 6 20 6 4"></polygon>
-                    </svg>`
-      }
-              </button>
-
-              <button
-                type="button"
-                class="ctrl-btn btn-forward10 btn-seek-circle"
-                @click=${() => this.seekBy(10)}
-                aria-label="Forward 10 seconds"
-                title="Forward 10s (L)"
-              >
-                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
-                  <polyline points="21 3 21 8 16 8"></polyline>
-                </svg>
-              </button>
-            </div>
-
-            <!-- Right: Fullscreen Toggle -->
-            <div class="controls-mid-right">
-              <button
-                type="button"
-                class="ctrl-btn btn-fullscreen"
-                @click=${this.toggleFullscreen}
-                aria-label=${this.t('player.fullscreen')}
-                aria-pressed=${this.isFullscreen ? 'true' : 'false'}
-                title="${this.t('player.fullscreen')} (F)"
-              >
-                ${this.isFullscreen
-            ? html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-                    </svg>`
-            : html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                    </svg>`
-          }
-              </button>
-            </div>
           </div>
 
-          <!-- 3. Bottom Row: Feature & Accessibility Pills (Inspiration Design) -->
-          <div class="controls-bottom-row">
-            <!-- Sign Language Window Toggle (🤟 SIGN) -->
-            <button
-              type="button"
-              class="ctrl-btn ctrl-pill-btn btn-sign ${!this.hasSignTrack ? 'is-disabled' : ''} ${this.hasSignTrack && this.showSignWindow ? 'active' : ''}"
-              @click=${this.toggleSignWindow}
-              aria-label=${this.hasSignTrack
-            ? this.t('player.sign')
-            : `${this.t('player.sign')} ${this.t('player.notAvailableSuffix')}`.trim()}
-              aria-disabled=${!this.hasSignTrack ? 'true' : 'false'}
-              aria-expanded=${this.hasSignTrack && this.showSignWindow ? 'true' : 'false'}
-              aria-pressed=${this.hasSignTrack && this.showSignWindow ? 'true' : 'false'}
-              title="${this.t('player.sign')} (S)${!this.hasSignTrack ? ' ' + this.t('player.notAvailableSuffix') : ''}"
-            >
-              <span aria-hidden="true" style="font-size: 1rem; line-height: 1;">🤟</span>
-              <span>SIGN</span>
-            </button>
+          <!-- Captions Toggle -->
+          <button
+            type="button"
+            class="ctrl-btn btn-captions ${this.captionsShowing ? 'active' : ''}"
+            @click=${this.toggleCaptions}
+            aria-label="${this.t('player.captions')} CC"
+            aria-pressed=${this.captionsShowing ? 'true' : 'false'}
+            aria-expanded=${this.captionsShowing ? 'true' : 'false'}
+            title="${this.t('player.captions')} (C)"
+            style="position: relative;"
+          >
+            <span style="font-weight: 800; font-size: 0.85rem; border: 1.5px solid currentColor; border-radius: 3px; padding: 1px 4px; line-height: 1;">CC</span>
+            ${this.captionsShowing ? html`<span style="position: absolute; bottom: 4px; left: 10px; right: 10px; height: 2px; background: #e11d48; border-radius: 1px;"></span>` : ''}
+          </button>
 
-            <!-- Captions Toggle (CC) -->
-            <button
-              type="button"
-              class="ctrl-btn ctrl-pill-btn btn-captions ${this.captionsShowing ? 'active' : ''}"
-              @click=${this.toggleCaptions}
-              aria-label="${this.t('player.captions')} CC"
-              aria-pressed=${this.captionsShowing ? 'true' : 'false'}
-              aria-expanded=${this.captionsShowing ? 'true' : 'false'}
-              title="${this.t('player.captions')} (C)"
-            >
-              <span>CC</span>
-            </button>
+          <!-- Preferences Settings Dialog Trigger (SRS FR-P3, FR-P9, Contract C3/C4) -->
+          <button
+            type="button"
+            class="ctrl-btn btn-preferences btn-captions-settings ${this.showPreferencesDialog ? 'active' : ''}"
+            @click=${() => this.togglePreferences('general')}
+            aria-label=${this.t('player.preferences')}
+            aria-haspopup="dialog"
+            aria-expanded=${this.showPreferencesDialog ? 'true' : 'false'}
+            title="${this.t('player.preferences')} (P)"
+          >
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
 
-            <!-- Audio Description Toggle (AD) -->
-            <button
-              type="button"
-              class="ctrl-btn ctrl-pill-btn btn-ad ${!this.hasAdTrack ? 'is-disabled' : ''} ${this.hasAdTrack && this.audioDescriptionEnabled ? 'active' : ''}"
-              @click=${this.toggleAudioDescription}
-              aria-label=${this.hasAdTrack
-            ? `${this.t('player.audioDescription')} AD`
-            : `${this.t('player.audioDescription')} AD ${this.t('player.notAvailableSuffix')}`.trim()}
-              aria-disabled=${!this.hasAdTrack ? 'true' : 'false'}
-              aria-expanded=${this.hasAdTrack && this.audioDescriptionEnabled ? 'true' : 'false'}
-              aria-pressed=${this.hasAdTrack && this.audioDescriptionEnabled ? 'true' : 'false'}
-              title="${this.t('player.audioDescription')} (D)${!this.hasAdTrack ? ' ' + this.t('player.notAvailableSuffix') : ''}"
-            >
-              <span>AD</span>
-            </button>
+          <!-- Interactive Transcript Toggle Button (SRS FR-P8) -->
+          <button
+            type="button"
+            class="ctrl-btn btn-transcript ${this.isTranscriptOpen ? 'active' : ''}"
+            @click=${this.toggleTranscript}
+            aria-label="${this.t('player.transcript')} 📝"
+            aria-expanded=${this.isTranscriptOpen ? 'true' : 'false'}
+            aria-controls="transcript-panel"
+            aria-pressed=${this.isTranscriptOpen ? 'true' : 'false'}
+            title="${this.t('player.transcript')} (T)"
+          >
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+          </button>
 
-            <!-- Interactive Transcript Toggle Button (SRS FR-P8) -->
-            <button
-              type="button"
-              class="ctrl-btn ctrl-pill-btn btn-transcript ${this.isTranscriptOpen ? 'active' : ''}"
-              @click=${this.toggleTranscript}
-              aria-label="${this.t('player.transcript')} 📝"
-              aria-expanded=${this.isTranscriptOpen ? 'true' : 'false'}
-              aria-controls="transcript-panel"
-              aria-pressed=${this.isTranscriptOpen ? 'true' : 'false'}
-              title="${this.t('player.transcript')} (T)"
-            >
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-              </svg>
-            </button>
+          <!-- Sign Language Window Toggle (Step 6 Null-Safe) -->
+          <button
+            type="button"
+            class="ctrl-btn btn-sign ${!this.hasSignTrack ? 'is-disabled' : ''} ${this.hasSignTrack && this.showSignWindow ? 'active' : ''}"
+            @click=${this.toggleSignWindow}
+            aria-label=${this.hasSignTrack
+        ? `${this.t('player.sign')} ESL`
+        : `${this.t('player.sign')} ESL ${this.t('player.notAvailableSuffix')}`.trim()}
+            aria-disabled=${!this.hasSignTrack ? 'true' : 'false'}
+            aria-expanded=${this.hasSignTrack && this.showSignWindow ? 'true' : 'false'}
+            aria-pressed=${this.hasSignTrack && this.showSignWindow ? 'true' : 'false'}
+            title="${this.t('player.sign')} (S)${!this.hasSignTrack ? ' ' + this.t('player.notAvailableSuffix') : ''}"
+          >
+            <span style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;">ESL</span>
+          </button>
 
-            <!-- Preferences Settings Dialog Trigger (SRS FR-P3, FR-P9, Contract C3/C4) -->
-            <button
-              type="button"
-              class="ctrl-btn ctrl-pill-btn btn-preferences btn-captions-settings ${this.showPreferencesDialog ? 'active' : ''}"
-              @click=${() => this.togglePreferences('general')}
-              aria-label=${this.t('player.preferences')}
-              aria-haspopup="dialog"
-              aria-expanded=${this.showPreferencesDialog ? 'true' : 'false'}
-              title="${this.t('player.preferences')} (P)"
-            >
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-              </svg>
-            </button>
+          <!-- Audio Description Toggle (Step 6 Null-Safe) -->
+          <button
+            type="button"
+            class="ctrl-btn btn-ad ${!this.hasAdTrack ? 'is-disabled' : ''} ${this.hasAdTrack && this.audioDescriptionEnabled ? 'active' : ''}"
+            @click=${this.toggleAudioDescription}
+            aria-label=${this.hasAdTrack
+        ? `${this.t('player.audioDescription')} AD`
+        : `${this.t('player.audioDescription')} AD ${this.t('player.notAvailableSuffix')}`.trim()}
+            aria-disabled=${!this.hasAdTrack ? 'true' : 'false'}
+            aria-expanded=${this.hasAdTrack && this.audioDescriptionEnabled ? 'true' : 'false'}
+            aria-pressed=${this.hasAdTrack && this.audioDescriptionEnabled ? 'true' : 'false'}
+            title="${this.t('player.audioDescription')} (D)${!this.hasAdTrack ? ' ' + this.t('player.notAvailableSuffix') : ''}"
+          >
+            <span style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;">AD</span>
+          </button>
 
-            <!-- Keyboard Shortcuts Help (Step 7) -->
-            <button
-              type="button"
-              class="ctrl-btn ctrl-pill-btn btn-help ${this.showHelpDialog ? 'active' : ''}"
-              @click=${this.toggleShortcutsHelp}
-              aria-label=${this.t('player.help')}
-              aria-haspopup="dialog"
-              aria-expanded=${this.showHelpDialog ? 'true' : 'false'}
-              title="${this.t('player.help')} (?)"
-            >
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
-            </button>
-          </div>
+          <!-- Fullscreen Toggle -->
+          <button
+            type="button"
+            class="ctrl-btn btn-fullscreen"
+            @click=${this.toggleFullscreen}
+            aria-label=${this.t('player.fullscreen')}
+            aria-pressed=${this.isFullscreen ? 'true' : 'false'}
+            title="${this.t('player.fullscreen')} (F)"
+          >
+            ${this.isFullscreen
+              ? html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                </svg>`
+              : html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>`
+            }
+          </button>
+
+          <!-- Keyboard Shortcuts Help (Step 7) -->
+          <button
+            type="button"
+            class="ctrl-btn btn-help ${this.showHelpDialog ? 'active' : ''}"
+            @click=${this.toggleShortcutsHelp}
+            aria-label=${this.t('player.help')}
+            aria-haspopup="dialog"
+            aria-expanded=${this.showHelpDialog ? 'true' : 'false'}
+            title="${this.t('player.help')} (?)"
+          >
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </button>
         </div>
 
         <!-- Step 5: Persistent Polite Live Region (Screen Reader Only) -->
