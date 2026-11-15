@@ -220,4 +220,42 @@ test.describe("Savanna Player - Member 1 Accessibility & Functional Suite", () =
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(/\.brf$/i);
   });
+
+  test("1.11 Relative caption URL resolution, track normalization, and axe validation", async ({ page }) => {
+    const player = page.locator("savanna-player");
+    await expect(player).toBeVisible();
+
+    // 1. Verify track URL resolution and suppression of duplicate native subtitles
+    const trackInfo = await player.evaluate((el: any) => {
+      const tracks = Array.from(el.shadowRoot?.querySelectorAll("track") || []) as HTMLTrackElement[];
+      const textTracks = Array.from(el.media?.textTracks || []) as TextTrack[];
+      return {
+        trackUrls: tracks.map((t) => t.src),
+        trackModes: textTracks.map((t) => t.mode),
+        hasOverlay: Boolean(el.shadowRoot?.querySelector(".caption-overlay")),
+      };
+    });
+
+    // Tracks should exist and resolve to valid HTTP(S) URLs
+    expect(trackInfo.hasOverlay).toBe(true);
+    for (const url of trackInfo.trackUrls) {
+      expect(url).toMatch(/^https?:\/\//);
+    }
+    // Text tracks should not be 'showing' by default (prevents duplicate overlay collisions)
+    for (const mode of trackInfo.trackModes) {
+      expect(mode).not.toBe("showing");
+    }
+
+    // 2. Toggle captions on and verify axe-core compliance with active captions
+    await player.locator(".btn-captions").click();
+    const activeAxe = await new AxeBuilder({ page }).analyze();
+    const blocking = activeAxe.violations.filter(
+      (v) => v.impact === "critical" || v.impact === "serious"
+    );
+    expect(blocking).toEqual([]);
+    expect(activeAxe.violations).toEqual([]);
+
+    // Turn captions back off
+    await player.locator(".btn-captions").click();
+  });
 });

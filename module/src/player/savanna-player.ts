@@ -21,6 +21,12 @@ import {
   type CaptionsPreferences,
   type PlayerPreferences,
 } from './preferences-manager.js';
+import {
+  resolveCaptionUrl,
+  shouldSendApiKey,
+  fetchCaptionTrack,
+  formatPackSize,
+} from './caption-loader.js';
 
 @customElement('savanna-player')
 export class SavannaPlayer extends LitElement {
@@ -57,6 +63,18 @@ export class SavannaPlayer extends LitElement {
   /** Toggle state for audio description */
   @property({ type: Boolean, attribute: 'audio-description', reflect: true })
   audioDescriptionEnabled = false;
+
+  /** Exposes the offline pack metadata from the lesson manifest (Contract C1) */
+  public get offlinePack(): { manifestUrl?: string; sizeBytes?: number } | null {
+    return this.manifestData?.pack ?? null;
+  }
+
+  /**
+   * Dynamically formatted offline pack size (e.g. "1.72 MB" or "850 KB") without hardcoding.
+   */
+  public get formattedPackSize(): string {
+    return formatPackSize(this.manifestData?.pack?.sizeBytes);
+  }
 
   /** Whether the on-screen shortcuts help dialog is open */
   @state()
@@ -111,6 +129,9 @@ export class SavannaPlayer extends LitElement {
 
   /** In-memory cache of parsed WebVTT cues mapped by language */
   private vttCuesCache = new Map<string, VttCue[]>();
+
+  /** Map of active Object URLs generated for authenticated caption tracks (lang -> blobUrl) */
+  private captionBlobUrls = new Map<string, string>();
 
   /** Playback and controls reactive state */
   @state()
@@ -1610,6 +1631,36 @@ export class SavannaPlayer extends LitElement {
     window.removeEventListener('savanna:lang-change', this.handleLangChange);
     document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
     document.removeEventListener('click', this.handleDocumentClick);
+    if (this.videoElement?.textTracks) {
+      this.videoElement.textTracks.removeEventListener('change', this.handleCaptionChange);
+    }
+    this.revokeCaptionBlobUrls();
+  }
+
+  /**
+   * Safely revokes and clears any created Object URLs for caption tracks.
+   */
+  private revokeCaptionBlobUrls(): void {
+    for (const [, blobUrl] of this.captionBlobUrls) {
+      try {
+        URL.revokeObjectURL(blobUrl);
+      } catch { }
+    }
+    this.captionBlobUrls.clear();
+  }
+
+  /**
+   * Ensures native text tracks remain in 'hidden' mode so that browser
+   * default subtitles do not collide with our custom accessible overlay.
+   */
+  private suppressNativeSubtitles(): void {
+    if (this.videoElement?.textTracks) {
+      Array.from(this.videoElement.textTracks).forEach((t) => {
+        if (t.mode === 'showing') {
+          t.mode = 'hidden';
+        }
+      });
+    }
   }
 
   protected override updated(changedProps: PropertyValues): void {
@@ -1631,17 +1682,35 @@ export class SavannaPlayer extends LitElement {
     for (const track of this.manifestCaptions) {
       if (!track.url || this.vttCuesCache.has(track.lang)) continue;
       try {
-        const res = await fetch(track.url);
-        if (res.ok) {
-          const text = await res.text();
-          const cues = parseWebVtt(text);
-          this.vttCuesCache.set(track.lang, cues);
-          if (track.lang === this.activeLang && this.transcriptLines.length === 0) {
-            this.fallbackTranscriptFromCaptions();
+        const resolvedUrl = resolveCaptionUrl({ urlPath: track.url, apiBase: this.api });
+        const requiresAuth = shouldSendApiKey(resolvedUrl, this.apiKey, this.api);
+
+        const result = await fetchCaptionTrack({
+          url: resolvedUrl,
+          apiKey: this.apiKey,
+          apiBase: this.api,
+          createBlobUrl: requiresAuth,
+        });
+
+        if (result.blobUrl) {
+          const prevBlob = this.captionBlobUrls.get(track.lang);
+          if (prevBlob) {
+            try { URL.revokeObjectURL(prevBlob); } catch { }
           }
+          this.captionBlobUrls.set(track.lang, result.blobUrl);
+          this.requestUpdate();
         }
-      } catch { }
+
+        const cues = parseWebVtt(result.text);
+        this.vttCuesCache.set(track.lang, cues);
+        if (track.lang === this.activeLang && this.transcriptLines.length === 0) {
+          this.fallbackTranscriptFromCaptions();
+        }
+      } catch (err: any) {
+        console.warn(`[savanna-player] Failed to load caption track (${track.lang}):`, err?.message || err);
+      }
     }
+    this.suppressNativeSubtitles();
   }
 
   /**
@@ -1696,7 +1765,17 @@ export class SavannaPlayer extends LitElement {
       this.src = manifest.media.video;
     }
     if (Array.isArray(manifest?.captions)) {
-      this.manifestCaptions = manifest.captions;
+      this.revokeCaptionBlobUrls();
+      this.manifestCaptions = manifest.captions.map((c: { lang: string; url: string }) => {
+        try {
+          return {
+            lang: c.lang,
+            url: resolveCaptionUrl({ urlPath: c.url, apiBase: this.api }),
+          };
+        } catch {
+          return c;
+        }
+      });
       this.loadVttCues();
     }
 
@@ -2463,7 +2542,12 @@ export class SavannaPlayer extends LitElement {
   private handleCaptionChange = (): void => {
     if (this.videoElement?.textTracks) {
       const tracks = Array.from(this.videoElement.textTracks);
-      this.captionsShowing = tracks.some((t) => t.mode === 'showing');
+      tracks.forEach((t) => {
+        if (t.mode === 'showing') {
+          t.mode = 'hidden';
+          this.captionsShowing = true;
+        }
+      });
     }
     this.emitEvent('savanna:caption-change');
   };
@@ -2516,24 +2600,43 @@ export class SavannaPlayer extends LitElement {
    * Fetches transcript from the API endpoint per Contract C1 or falls back to VTT cues.
    */
   private async fetchTranscript(url: string, manifest?: any): Promise<void> {
-    const fullUrl = url.startsWith('http')
-      ? url
-      : `${this.api.replace(/\/$/, '')}${url.startsWith('/') ? '' : '/'}${url}?lang=${this.activeLang}`;
+    let targetUrl: string;
+    try {
+      targetUrl = resolveCaptionUrl({ urlPath: url, apiBase: this.api });
+      const parsed = new URL(targetUrl);
+      parsed.searchParams.set('lang', this.activeLang);
+      targetUrl = parsed.href;
+    } catch {
+      targetUrl = url;
+    }
+
     try {
       const headers: Record<string, string> = {};
-      if (this.apiKey) {
+      if (this.apiKey && shouldSendApiKey(targetUrl, this.apiKey, this.api)) {
         headers['X-Savanna-Key'] = this.apiKey;
       }
-      const res = await fetch(fullUrl, { headers });
+      const res = await fetch(targetUrl, { headers });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data?.lines) && data.lines.length > 0) {
-          const vttCues = this.vttCuesCache.get(this.activeLang);
-          if (vttCues && vttCues.length > data.lines.length) {
-            this.transcriptLines = vttCues.map((c) => ({ start: c.start, end: c.end, text: c.text }));
-          } else {
-            this.transcriptLines = data.lines;
+          const matchingVtt = this.vttCuesCache.get(this.activeLang);
+
+          // If the API returned a different language than requested, prefer authentic VTT cues
+          if (data.lang && data.lang !== this.activeLang && matchingVtt && matchingVtt.length > 0) {
+            this.transcriptLines = matchingVtt.map((c) => ({ start: c.start, end: c.end, text: c.text }));
+            this.resolveSummary(manifest);
+            return;
           }
+
+          // If VTT cues have more complete coverage than a partial API transcript, prefer VTT cues
+          if (matchingVtt && matchingVtt.length > data.lines.length) {
+            this.transcriptLines = matchingVtt.map((c) => ({ start: c.start, end: c.end, text: c.text }));
+            this.resolveSummary(manifest);
+            return;
+          }
+
+          // Otherwise use data.lines
+          this.transcriptLines = data.lines;
           this.resolveSummary(manifest);
           return;
         }
@@ -2553,10 +2656,14 @@ export class SavannaPlayer extends LitElement {
     } else {
       const track = this.manifestCaptions.find((c) => c.lang === this.activeLang) || this.manifestCaptions[0];
       if (track?.url) {
-        fetch(track.url)
-          .then((r) => r.text())
-          .then((txt) => {
-            const parsed = parseWebVtt(txt);
+        const resolvedUrl = resolveCaptionUrl({ urlPath: track.url, apiBase: this.api });
+        fetchCaptionTrack({
+          url: resolvedUrl,
+          apiKey: this.apiKey,
+          apiBase: this.api,
+        })
+          .then((res) => {
+            const parsed = parseWebVtt(res.text);
             this.vttCuesCache.set(track.lang, parsed);
             this.transcriptLines = parsed.map((c) => ({ start: c.start, end: c.end, text: c.text }));
           })
@@ -2934,7 +3041,7 @@ export class SavannaPlayer extends LitElement {
               <track
                 kind="subtitles"
                 srclang=${c.lang}
-                src=${c.url}
+                src=${this.captionBlobUrls.get(c.lang) || c.url}
                 label=${c.lang === 'am' ? 'Amharic' : 'English'}
                 ?default=${c.lang === this.lang}
               />
