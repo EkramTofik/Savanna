@@ -144,11 +144,21 @@ importers:
         specifier: ^6.0.3
         version: 6.4.6(@types/node@22.20.5)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
 
+  demo/sandbox-player:
+    devDependencies:
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.6(@types/node@22.20.5)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+
   module:
     dependencies:
       lit:
-        specifier: ^3.2.1
+        specifier: ^3.3.1
         version: 3.3.3
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   pipeline:
     devDependencies:

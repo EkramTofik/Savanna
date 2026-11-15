@@ -1,6 +1,7 @@
 packages:
   - "api"
   - "demo/sandbox-career"
+  - "demo/sandbox-player"
   - "module"
   - "pipeline"
   - "sdk"
