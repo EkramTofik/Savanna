@@ -18,7 +18,87 @@ export class SavannaOffline extends LitElement{
  private headers(){return this.apiKey?{'X-Savanna-Key':this.apiKey}:{};}
  private async refresh(){if(!this.api||!this.lessonId)return;try{const r=await fetch(this.url(),{headers:this.headers()});if(!r.ok)throw Error(r.status===404?'Pack is not published.':`Manifest request failed (${r.status}).`);this.manifest=await r.json();this.status=`Pack ready · ${this.size(this.manifest.sizeBytes||0)}`;}catch(e){this.status=(e as Error).message;}}
  private size(n:number){return n<1024?`${n} B`:n<1048576?`${(n/1024).toFixed(1)} KB`:`${(n/1048576).toFixed(2)} MB`;}
- private async save(){if(this.busy||!this.manifest)return;this.busy=true;this.progress=0;this.startTime=Date.now();try{const url=this.url()+'.zip',r=await fetch(url,{headers:this.headers()});if(!r.ok)throw Error(`Download failed (${r.status}).`);const total=Number(r.headers.get('content-length'))||this.manifest.sizeBytes||0,reader=r.body?.getReader();if(!reader)throw Error('Streaming download is not supported.');const chunks:Uint8Array[]=[];let got=0,lastAnnounce=0;while(true){const x=await reader.read();if(x.done)break;if(x.value){chunks.push(x.value);got+=x.value.length;const newProgress=total?Math.round(got/total*100):0;if(newProgress>=lastAnnounce+10){this.progress=newProgress;lastAnnounce=newProgress;}else{this.progress=newProgress;}}}const blob=new Blob(chunks as BlobPart[],{type:'application/zip'});const cache=await caches.open(PREFIX+this.lessonId);await cache.put(url,new Response(blob,{headers:{'Content-Type':'application/zip','Content-Length':String(blob.size)}}));const p=read();p.savedLessons=[...new Set([...p.savedLessons,this.lessonId])];const a=JSON.parse(localStorage.getItem(KEY)||'{}');a.offline=p;localStorage.setItem(KEY,JSON.stringify(a));this.saved=true;this.progress=100;this.status=`✓ Saved offline · ${this.size(blob.size)}`;}catch(e){this.status=`❌ ${(e as Error).message} Check your connection and retry.`;}finally{this.busy=false;this.startTime=0;}}
- private async remove(){await caches.delete(PREFIX+this.lessonId);const p=read();p.savedLessons=p.savedLessons.filter((x:string)=>x!==this.lessonId);const a=JSON.parse(localStorage.getItem(KEY)||'{}');a.offline=p;localStorage.setItem(KEY,JSON.stringify(a));this.saved=false;this.progress=0;this.status='Offline copy deleted from this device.';}
+ private async save(){
+  if(this.busy||!this.manifest)return;
+  
+  // Check if Cache Storage API is available
+  if(typeof caches==='undefined'){
+    this.status='⚠️ Cache Storage is not available. Use http://localhost:3001 (not IP address) or enable HTTPS. Offline features require secure context.';
+    return;
+  }
+  
+  this.busy=true;this.progress=0;this.startTime=Date.now();
+  try{
+    const url=this.url()+'.zip',r=await fetch(url,{headers:this.headers()});
+    if(!r.ok)throw Error(`Download failed (${r.status}).`);
+    const total=Number(r.headers.get('content-length'))||this.manifest.sizeBytes||0,reader=r.body?.getReader();
+    if(!reader)throw Error('Streaming download is not supported.');
+    const chunks:Uint8Array[]=[];let got=0,lastAnnounce=0;
+    while(true){
+      const x=await reader.read();
+      if(x.done)break;
+      if(x.value){
+        chunks.push(x.value);got+=x.value.length;
+        const newProgress=total?Math.round(got/total*100):0;
+        if(newProgress>=lastAnnounce+10){this.progress=newProgress;lastAnnounce=newProgress;}
+        else{this.progress=newProgress;}
+      }
+    }
+    const blob=new Blob(chunks as BlobPart[],{type:'application/zip'});
+    
+    // Store in Cache Storage API
+    const cache=await caches.open(PREFIX+this.lessonId);
+    await cache.put(url,new Response(blob,{headers:{'Content-Type':'application/zip','Content-Length':String(blob.size)}}));
+    
+    // Store lesson ID in localStorage
+    const p=read();
+    p.savedLessons=[...new Set([...p.savedLessons,this.lessonId])];
+    const a=JSON.parse(localStorage.getItem(KEY)||'{}');
+    a.offline=p;
+    localStorage.setItem(KEY,JSON.stringify(a));
+    
+    this.saved=true;this.progress=100;
+    this.status=`✓ Saved offline · ${this.size(blob.size)}`;
+  }catch(e){
+    const errorMsg = (e as Error).message;
+    if(errorMsg.includes('caches') || errorMsg.includes('Cache')) {
+      this.status='❌ Cache Storage not available. Use http://localhost:3001 instead of IP address.';
+    } else {
+      this.status=`❌ ${errorMsg}`;
+    }
+  }finally{
+    this.busy=false;this.startTime=0;
+  }
+ }
+ private async remove(){
+  // Check if Cache Storage API is available
+  if(typeof caches==='undefined'){
+    // Cache API not available, but we can still clear localStorage
+    const p=read();
+    p.savedLessons=p.savedLessons.filter((x:string)=>x!==this.lessonId);
+    const a=JSON.parse(localStorage.getItem(KEY)||'{}');
+    a.offline=p;
+    localStorage.setItem(KEY,JSON.stringify(a));
+    this.saved=false;
+    this.progress=0;
+    this.status='⚠️ Offline copy cleared from localStorage (Cache API unavailable - requires HTTPS/localhost).';
+    return;
+  }
+  
+  try {
+    await caches.delete(PREFIX+this.lessonId);
+  } catch(e) {
+    console.warn('[offline] Cache delete failed:', e);
+  }
+  
+  const p=read();
+  p.savedLessons=p.savedLessons.filter((x:string)=>x!==this.lessonId);
+  const a=JSON.parse(localStorage.getItem(KEY)||'{}');
+  a.offline=p;
+  localStorage.setItem(KEY,JSON.stringify(a));
+  this.saved=false;
+  this.progress=0;
+  this.status='Offline copy deleted from this device.';
+ }
  render(){return html`<div class="row">${this.saved?html`<button @click=${this.remove} ?disabled=${this.busy} aria-label="Delete offline copy">🗑️ Delete offline copy</button>`:html`<button @click=${this.save} ?disabled=${this.busy||!this.manifest} aria-label="Save lesson for offline use">${this.busy?'⏸':'📥'} Save for offline${this.manifest&&!this.busy?html` <span class="size">(${this.size(this.manifest.sizeBytes||0)})</span>`:''}</button>`}<button @click=${this.refresh} ?disabled=${this.busy} aria-label="Refresh pack information">🔄 Refresh</button></div>${this.busy?html`<div class="progress-container"><progress max="100" .value=${this.progress} aria-label="Download progress ${this.progress} percent"></progress><p class="progress-text"><strong>${this.progress}%</strong> ${this.estimateTime()}</p></div>`:''}<p role="status" aria-live="polite" class="${this.saved?'success':this.busy?'info':''}"><span class="status-icon">${this.statusIcon()}</span> ${this.status}</p>`;}
 }
