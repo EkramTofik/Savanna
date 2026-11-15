@@ -1091,6 +1091,7 @@ export class SavannaPlayer extends LitElement {
     if (this.lang === newLang) return;
     this.lang = newLang;
     this.saveAllPreferences();
+    this.resolveSummary();
     this.syncTranscriptLanguage();
 
     // Contract C4: fires savanna:lang-change on window with detail.lang
@@ -1145,6 +1146,7 @@ export class SavannaPlayer extends LitElement {
     this.captionPosition = defaultCap.position;
 
     this.saveAllPreferences();
+    this.resolveSummary();
     this.syncTranscriptLanguage();
     this.announceStatus(this.t('player.statusPrefsSaved'), 'Reset');
   }
@@ -1186,6 +1188,7 @@ export class SavannaPlayer extends LitElement {
     const detail = (event as CustomEvent<{ lang?: string }>).detail;
     if (detail && typeof detail.lang === 'string') {
       this.lang = detail.lang;
+      this.resolveSummary();
       this.syncTranscriptLanguage();
       this.requestUpdate();
     }
@@ -2206,13 +2209,15 @@ export class SavannaPlayer extends LitElement {
    */
   private resolveSummary(manifest?: any): void {
     const m = manifest || this.manifestData;
+    let resolved = '';
     if (m?.summary) {
-      this.transcriptSummary =
-        m.summary[this.activeLang] || m.summary.en || (typeof m.summary === 'string' ? m.summary : '');
+      if (typeof m.summary === 'object') {
+        resolved = m.summary[this.activeLang] || m.summary.en || '';
+      } else if (typeof m.summary === 'string') {
+        resolved = m.summary;
+      }
     }
-    if (!this.transcriptSummary) {
-      this.transcriptSummary = this.t('player.defaultSummary');
-    }
+    this.transcriptSummary = resolved || this.t('player.defaultSummary');
     if (m?.title) {
       this.lessonTitle = m.title[this.activeLang] || m.title.en || '';
     }

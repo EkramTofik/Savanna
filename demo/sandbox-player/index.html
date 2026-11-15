@@ -314,12 +314,21 @@
 </head>
 
 <body>
+    <header class="navbar" role="banner">
+        <div class="navbar-brand">
+            <span class="logo-tag">Savanna</span>
+            <span id="nav-brand-title">Learning Portal</span>
+        </div>
+        <div class="navbar-nav">
+            <span class="badge-learner" id="nav-learner-badge">Learner: Kidus T.</span>
+        </div>
+    </header>
     <div class="container">
         <!-- Breadcrumb Navigation -->
         <nav class="breadcrumb" aria-label="Breadcrumb">
-            <a href="#">Courses</a> &gt; 
-            <a href="#">VA-1 Foundations</a> &gt; 
-            <a href="#">Module 2</a> &gt; 
+            <a href="#" id="crumb-courses">Courses</a> &gt; 
+            <a href="#" id="crumb-track">VA-1 Foundations</a> &gt; 
+            <a href="#" id="crumb-module">Module 2</a> &gt; 
             <span id="breadcrumb-lesson">The Future of the VA Industry</span>
         </nav>
 
@@ -328,7 +337,7 @@
             <div class="lesson-header">
                 <div class="lesson-meta">
                     <span class="badge-lesson-id" id="badge-lesson-id">Module 2 · Concept 2.1</span>
-                    <span>Duration: <strong>12s (Full Lesson)</strong></span>
+                    <span id="lesson-duration">Duration: <strong>12s (Full Lesson)</strong></span>
                 </div>
                 <h1 class="lesson-title" id="page-lesson-title">The Future of the VA Industry</h1>
             </div>
@@ -343,9 +352,9 @@
                 >
                     <!-- Slotted ESL Sign Window Stub with actual ESL video from L-103 -->
                     <div slot="overlay" data-sign-window id="mock-sign-window" class="mock-sign-overlay">
-                        <div style="font-weight: 700; margin-bottom: 3px;">ESL Sign Window</div>
+                        <div id="mock-sign-title" style="font-weight: 700; margin-bottom: 3px;">ESL Sign Window</div>
                         <video src="http://localhost:4010/media/esl-placeholder.mp4" autoplay loop muted playsinline style="width: 120px; height: 80px; object-fit: cover; border-radius: 4px; display: block;"></video>
-                        <div style="font-size: 0.68rem; opacity: 0.9; margin-top: 2px;">(Press S to toggle)</div>
+                        <div id="mock-sign-hint" style="font-size: 0.68rem; opacity: 0.9; margin-top: 2px;">(Press S to toggle)</div>
                     </div>
                     <!-- Slotted Audio Description from L-103 -->
                     <audio data-ad id="mock-ad-track" src="http://localhost:4010/media/ad.opus" preload="none"></audio>
@@ -365,19 +374,19 @@
             <!-- Small Written Summary & Concepts -->
             <section class="learning-summary" aria-labelledby="summary-heading">
                 <h3 id="summary-heading">Lesson Summary</h3>
-                <div class="summary-card">
+                <div class="summary-card" id="summary-card-text">
                     The Virtual Assistant profession is evolving rapidly. As businesses adopt AI and remote-first operations, routine tasks are automated while human skills—such as client care, judgment under ambiguity, and empathetic communication—become more valuable than ever.
                 </div>
 
-                <ul class="key-points">
-                    <li><strong>Human-in-the-loop:</strong> AI tools assist with research, drafting, and scheduling; human professionals provide trust and critical thinking.</li>
-                    <li><strong>Specialization:</strong> Growing demand for specialized remote support in digital workflows, CRM management, and project coordination.</li>
-                    <li><strong>Accessibility:</strong> Press <kbd>C</kbd> for captions, <kbd>S</kbd> for sign language, and <kbd>D</kbd> for Audio Description.</li>
+                <ul class="key-points" id="key-points-list">
+                    <li id="kp-1"><strong>Human-in-the-loop:</strong> AI tools assist with research, drafting, and scheduling; human professionals provide trust and critical thinking.</li>
+                    <li id="kp-2"><strong>Specialization:</strong> Growing demand for specialized remote support in digital workflows, CRM management, and project coordination.</li>
+                    <li id="kp-3"><strong>Accessibility:</strong> Press <kbd>C</kbd> for captions, <kbd>S</kbd> for sign language, and <kbd>D</kbd> for Audio Description.</li>
                 </ul>
 
                 <!-- Small Learner Notes / Reflection (Typing Safety Test) -->
                 <div class="notes-box">
-                    <label for="test-input">Learner Study Notes:</label>
+                    <label for="test-input" id="lbl-study-notes">Learner Study Notes:</label>
                     <input
                         id="test-input"
                         type="text"
@@ -391,22 +400,22 @@
         <!-- Right Sidebar: Clean Course Curriculum -->
         <aside class="sidebar">
             <div class="side-card">
-                <h4>Module 2 Curriculum</h4>
-                <ul class="course-outline">
-                    <li class="completed"><span>2.0 Module Overview</span> <span>✓</span></li>
-                    <li class="completed"><span>2.1 Evolution of Support Roles</span> <span>✓</span></li>
-                    <li class="active"><span>2.2 The Future of the VA Industry</span> <span>Current</span></li>
-                    <li><span>2.3 AI Tools & Prompting</span> <span>Next</span></li>
-                    <li><span>2.4 Case Study & Reflection</span> <span>Upcoming</span></li>
-                    <li><span>2.5 Knowledge Check</span> <span>Locked</span></li>
+                <h4 id="sidebar-curriculum-heading">Module 2 Curriculum</h4>
+                <ul class="course-outline" id="curriculum-list">
+                    <li class="completed" id="curr-0"><span>2.0 Module Overview</span> <span>✓</span></li>
+                    <li class="completed" id="curr-1"><span>2.1 Evolution of Support Roles</span> <span>✓</span></li>
+                    <li class="active" id="curr-2"><span>2.2 The Future of the VA Industry</span> <span id="curr-2-status">Current</span></li>
+                    <li id="curr-3"><span>2.3 AI Tools & Prompting</span> <span id="curr-3-status">Next</span></li>
+                    <li id="curr-4"><span>2.4 Case Study & Reflection</span> <span id="curr-4-status">Upcoming</span></li>
+                    <li id="curr-5"><span>2.5 Knowledge Check</span> <span id="curr-5-status">Locked</span></li>
                 </ul>
             </div>
 
             <div class="side-card" style="font-size: 0.8rem; color: var(--savanna-text-muted);">
-                <h4 style="margin-bottom: 0.4rem;">Lesson Details</h4>
-                <div>Track: <strong>VA Foundations</strong></div>
-                <div>Accessibility: <strong>ESL, AD, Captions</strong></div>
-                <div style="margin-top: 0.5rem; font-size: 0.75rem;">
+                <h4 style="margin-bottom: 0.4rem;" id="sidebar-details-heading">Lesson Details</h4>
+                <div id="side-track">Track: <strong>VA Foundations</strong></div>
+                <div id="side-access">Accessibility: <strong>ESL, AD, Captions</strong></div>
+                <div style="margin-top: 0.5rem; font-size: 0.75rem;" id="side-hint">
                     Press <kbd>?</kbd> anytime on the player for keyboard shortcuts help.
                 </div>
             </div>

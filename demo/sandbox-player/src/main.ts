@@ -185,10 +185,8 @@ if (btnLoadL103 && player) {
     btnLoadL103.addEventListener('click', async () => {
         player.lesson = 'L-103';
         player.api = 'http://localhost:4010';
-        player.lang = 'en';
-        if (pageLessonTitle) pageLessonTitle.textContent = 'The Future of the VA Industry';
-        if (badgeLessonId) badgeLessonId.textContent = 'Module 2 · Concept 2.1 (L-103)';
-        if (breadcrumbLesson) breadcrumbLesson.textContent = 'Concept 2.1: The Future of the VA Industry';
+        player.lang = currentHostLang;
+        applyHostLanguage(currentHostLang);
         if (mockDataTitle) mockDataTitle.textContent = 'Active Mock Data (contracts/fixtures/v1/lessons/L-103.json)';
         if (mockRawLink) mockRawLink.href = 'http://localhost:4010/v1/lessons/L-103';
         appendLog('Switched to L-103 (Full Lesson: Sign, AD, Captions, Pack)');
@@ -207,10 +205,8 @@ if (btnLoadL102 && player) {
     btnLoadL102.addEventListener('click', async () => {
         player.lesson = 'L-102';
         player.api = 'http://localhost:4010';
-        player.lang = 'en';
-        if (pageLessonTitle) pageLessonTitle.textContent = 'Introduction to Databases';
-        if (badgeLessonId) badgeLessonId.textContent = 'Module 1 · Lesson 102 (Minimal)';
-        if (breadcrumbLesson) breadcrumbLesson.textContent = 'Lesson 102: Databases (Minimal)';
+        player.lang = currentHostLang;
+        applyHostLanguage(currentHostLang);
         if (mockDataTitle) mockDataTitle.textContent = 'Active Mock Data (contracts/fixtures/v1/lessons/L-102.json)';
         if (mockRawLink) mockRawLink.href = 'http://localhost:4010/v1/lessons/L-102';
         appendLog('Switched to L-102 (Minimal Lesson)');
@@ -224,6 +220,184 @@ if (btnLoadL102 && player) {
         } catch {}
     });
 }
+
+// Contract C4: Bilingual Host Page Localization (English <-> Amharic)
+let currentHostLang: 'en' | 'am' = 'en';
+
+const hostI18n = {
+    en: {
+        brand: 'Learning Portal',
+        learner: 'Learner: Kidus T.',
+        crumbCourses: 'Courses',
+        crumbTrack: 'VA-1 Foundations',
+        crumbModule: 'Module 2',
+        lessonTitleL103: 'The Future of the VA Industry',
+        lessonTitleL102: 'Introduction to Databases',
+        badgeL103: 'Module 2 · Concept 2.1 (L-103)',
+        badgeL102: 'Module 1 · Lesson 102 (Minimal)',
+        durationL103: 'Duration: <strong>12s (Full Lesson)</strong>',
+        durationL102: 'Duration: <strong>12s (Minimal Lesson)</strong>',
+        btnBefore: '← Previous Concept',
+        btnLoadL103: '★ Full Lesson (L-103)',
+        btnLoadL102: 'Minimal Lesson (L-102)',
+        btnAfter: 'Next Concept →',
+        summaryHeading: 'Lesson Summary',
+        summaryCardL103: 'The Virtual Assistant profession is evolving rapidly. As businesses adopt AI and remote-first operations, routine tasks are automated while human skills—such as client care, judgment under ambiguity, and empathetic communication—become more valuable than ever.',
+        summaryCardL102: 'Databases organize structured information for fast querying and reliable storage. This lesson introduces tables, keys, and accessible relational schemas.',
+        kp1: '<strong>Human-in-the-loop:</strong> AI tools assist with research, drafting, and scheduling; human professionals provide trust and critical thinking.',
+        kp2: '<strong>Specialization:</strong> Growing demand for specialized remote support in digital workflows, CRM management, and project coordination.',
+        kp3: '<strong>Accessibility:</strong> Press <kbd>C</kbd> for captions, <kbd>S</kbd> for sign language, and <kbd>D</kbd> for Audio Description.',
+        studyNotesLabel: 'Learner Study Notes:',
+        studyNotesPlaceholder: 'Type personal study notes here (player shortcuts are safely disabled while typing)...',
+        studyNotesAria: 'Learner study notes',
+        curriculumHeading: 'Module 2 Curriculum',
+        curr0: '2.0 Module Overview',
+        curr1: '2.1 Evolution of Support Roles',
+        curr2: '2.2 The Future of the VA Industry',
+        curr2Status: 'Current',
+        curr3: '2.3 AI Tools & Prompting',
+        curr3Status: 'Next',
+        curr4: '2.4 Case Study & Reflection',
+        curr4Status: 'Upcoming',
+        curr5: '2.5 Knowledge Check',
+        curr5Status: 'Locked',
+        detailsHeading: 'Lesson Details',
+        sideTrack: 'Track: <strong>VA Foundations</strong>',
+        sideAccess: 'Accessibility: <strong>ESL, AD, Captions</strong>',
+        sideHint: 'Press <kbd>?</kbd> anytime on the player for keyboard shortcuts help.',
+        signTitle: 'ESL Sign Window',
+        signHint: '(Press S to toggle)',
+    },
+    am: {
+        brand: 'የትምህርት ፖርታል',
+        learner: 'ተማሪ: ኪዱስ ተ.',
+        crumbCourses: 'ኮርሶች',
+        crumbTrack: 'VA-1 መሠረታዊ',
+        crumbModule: 'ሞጁል 2',
+        lessonTitleL103: 'የቨርቹዋል ረዳት ኢንዱስትሪ የወደፊት ዕጣ ፈንታ',
+        lessonTitleL102: 'የመረጃ ቋቶች መግቢያ',
+        badgeL103: 'ሞጁል 2 · ጽንሰ-ሀሳብ 2.1 (L-103)',
+        badgeL102: 'ሞጁል 1 · ትምህርት 102 (አነስተኛ)',
+        durationL103: 'የቆይታ ጊዜ: <strong>12 ሰከንድ (ሙሉ ትምህርት)</strong>',
+        durationL102: 'የቆይታ ጊዜ: <strong>12 ሰከንድ (አነስተኛ ትምህርት)</strong>',
+        btnBefore: '← ያለፈው ጽንሰ-ሀሳብ',
+        btnLoadL103: '★ ሙሉ ትምህርት (L-103)',
+        btnLoadL102: 'አነስተኛ ትምህርት (L-102)',
+        btnAfter: 'ቀጣይ ጽንሰ-ሀሳብ →',
+        summaryHeading: 'የትምህርት ማጠቃለያ',
+        summaryCardL103: 'የቨርቹዋል ረዳት (VA) ሙያ በፍጥነት እያደገ ነው። የንግድ ድርጅቶች አርቴፊሻል ኢንተለጀንስን እና የርቀት ሥራን ሲጠቀሙ፣ የተለመዱ ተግባራት በራስ-ሰር ይሰራሉ፤ የሰው ችሎታዎች—እንደ ደንበኛ እንክብካቤ፣ ውሳኔ አሰጣጥ እና የርኅራኄ ተግባቦት—ከምንጊዜውም በላይ አስፈላጊ ይሆናሉ።',
+        summaryCardL102: 'የመረጃ ቋቶች መረጃን ለፈጣን ፍለጋ እና አስተማማኝ ማከማቻ ያደራጃሉ። ይህ ትምህርት ሰንጠረዦችን፣ ቁልፎችን እና ግንኙነቶችን ያስተዋውቃል።',
+        kp1: '<strong>ሰው እና ቴክኖሎጂ:</strong> የ AI መሣሪያዎች ለምርምር፣ ለረቂቅ ጽሑፍ እና ለቀጠሮ ይረዳሉ፤ የሰው ባለሙያዎች አመኔታ እና ሂሳዊ አስተሳሰብን ይሰጣሉ።',
+        kp2: '<strong>ልዩ ሙያ:</strong> በዲጂታል የሥራ ፍሰት፣ በ CRM አስተዳደር እና በፕሮጀክት ቅንጅት ውስጥ የልዩ የርቀት ድጋፍ ፍላጎት እያደገ ነው።',
+        kp3: '<strong>ተደራሽነት:</strong> ለግርጌ ጽሑፍ <kbd>C</kbd>ን፣ ለምልክት ቋንቋ <kbd>S</kbd>ን፣ እና ለድምጽ ማብራሪያ <kbd>D</kbd>ን ይጫኑ።',
+        studyNotesLabel: 'የተማሪው የጥናት ማስታወሻዎች:',
+        studyNotesPlaceholder: 'የግል ጥናት ማስታወሻዎችን እዚህ ይጻፉ (በመጻፍ ወቅት የተጫዋች አቋራጮች በደህና ይቦዝናሉ)...',
+        studyNotesAria: 'የተማሪው የጥናት ማስታወሻዎች',
+        curriculumHeading: 'የሞጁል 2 ይዘቶች',
+        curr0: '2.0 የሞጁል አጠቃላይ እይታ',
+        curr1: '2.1 የድጋፍ ሚናዎች እድገት',
+        curr2: '2.2 የቨርቹዋል ረዳት ኢንዱስትሪ የወደፊት ዕጣ ፈንታ',
+        curr2Status: 'ወቅታዊ',
+        curr3: '2.3 የ AI መሣሪያዎች እና መጠይቆች',
+        curr3Status: 'ቀጣይ',
+        curr4: '2.4 የጥናት ጉዳይ እና አስተያየት',
+        curr4Status: 'መጪ',
+        curr5: '2.5 የእውቀት ፍተሻ',
+        curr5Status: 'የተቆለፈ',
+        detailsHeading: 'የትምህርት ዝርዝሮች',
+        sideTrack: 'የትምህርት መስመር: <strong>VA መሠረታዊ</strong>',
+        sideAccess: 'ተደራሽነት: <strong>የምልክት ቋንቋ፣ የድምጽ ማብራሪያ፣ የግርጌ ጽሑፍ</strong>',
+        sideHint: 'የቁልፍ ሰሌዳ አቋራጮች እገዛ ለማግኘት በማጫወቻው ላይ በማንኛውም ጊዜ <kbd>?</kbd>ን ይጫኑ።',
+        signTitle: 'የምልክት ቋንቋ መስኮት (ESL)',
+        signHint: '(ለማብራት/ማጥፋት S ይጫኑ)',
+    }
+};
+
+function applyHostLanguage(lang: 'en' | 'am'): void {
+    currentHostLang = lang;
+    const t = hostI18n[lang];
+    const isL102 = player?.lesson === 'L-102';
+
+    const setHtml = (id: string, html: string) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+    };
+    const setText = (id: string, text: string) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    };
+
+    setText('nav-brand-title', t.brand);
+    setText('nav-learner-badge', t.learner);
+    setText('crumb-courses', t.crumbCourses);
+    setText('crumb-track', t.crumbTrack);
+    setText('crumb-module', t.crumbModule);
+    setText('breadcrumb-lesson', isL102 ? t.lessonTitleL102 : t.lessonTitleL103);
+    setText('badge-lesson-id', isL102 ? t.badgeL102 : t.badgeL103);
+    setHtml('lesson-duration', isL102 ? t.durationL102 : t.durationL103);
+    setText('page-lesson-title', isL102 ? t.lessonTitleL102 : t.lessonTitleL103);
+
+    setText('btn-before', t.btnBefore);
+    setText('btn-load-l103', t.btnLoadL103);
+    setText('btn-load-l102', t.btnLoadL102);
+    setText('btn-after', t.btnAfter);
+
+    setText('summary-heading', t.summaryHeading);
+    setText('summary-card-text', isL102 ? t.summaryCardL102 : t.summaryCardL103);
+    setHtml('kp-1', t.kp1);
+    setHtml('kp-2', t.kp2);
+    setHtml('kp-3', t.kp3);
+
+    setText('lbl-study-notes', t.studyNotesLabel);
+    const testInput = document.getElementById('test-input') as HTMLInputElement | null;
+    if (testInput) {
+        testInput.placeholder = t.studyNotesPlaceholder;
+        testInput.setAttribute('aria-label', t.studyNotesAria);
+    }
+
+    setText('sidebar-curriculum-heading', t.curriculumHeading);
+    const setCurrItem = (id: string, title: string, status?: string) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const spans = el.querySelectorAll('span');
+        if (spans[0]) spans[0].textContent = title;
+        if (spans[1] && status) spans[1].textContent = status;
+    };
+    setCurrItem('curr-0', t.curr0);
+    setCurrItem('curr-1', t.curr1);
+    setCurrItem('curr-2', t.curr2, t.curr2Status);
+    setCurrItem('curr-3', t.curr3, t.curr3Status);
+    setCurrItem('curr-4', t.curr4, t.curr4Status);
+    setCurrItem('curr-5', t.curr5, t.curr5Status);
+
+    setText('sidebar-details-heading', t.detailsHeading);
+    setHtml('side-track', t.sideTrack);
+    setHtml('side-access', t.sideAccess);
+    setHtml('side-hint', t.sideHint);
+
+    setText('mock-sign-title', t.signTitle);
+    setText('mock-sign-hint', t.signHint);
+}
+
+// Contract C4: Listen for global language switch event
+window.addEventListener('savanna:lang-change', (event: Event) => {
+    const detail = (event as CustomEvent<{ lang?: 'en' | 'am' }>).detail;
+    if (detail?.lang) {
+        applyHostLanguage(detail.lang);
+        appendLog(`Contract C4: Host page translated to ${detail.lang.toUpperCase()}`);
+    }
+});
+
+// Restore saved language preference on load
+try {
+    const raw = localStorage.getItem('savanna.prefs.v1');
+    if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.ui?.lang === 'am') {
+            applyHostLanguage('am');
+        }
+    }
+} catch {}
 
 // Reset checklist
 if (btnResetChecks) {
