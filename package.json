@@ -11,6 +11,7 @@
     "mock": "node contracts/mock/server.js",
     "format": "prettier --write .",
     "test": "node --test pipeline/src/pack/*.test.mjs module/src/**/*.test.ts module/src/member2-a11y.test.ts",
+    "build": "node build-components.mjs",
     "ui": "pnpm --filter sandbox-career ui",
     "career": "pnpm --filter sandbox-career dev",
     "dev:api": "pnpm --filter @savanna/api dev",
@@ -18,13 +19,14 @@
     "pipeline": "pnpm --filter @savanna/pipeline cli"
   },
   "dependencies": {
+    "archiver": "^7.0.1",
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "archiver": "^7.0.1",
     "lit": "^3.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "esbuild": "^0.28.2",
     "prettier": "^3.4.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
