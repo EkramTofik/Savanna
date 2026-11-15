@@ -1,9 +1,9 @@
 # WCAG 2.2 Level AA Conformance Report
 
-**Product:** Savanna Access Kit - Member 2: Media Access  
-**Components:** Sign Window, Audio Description, Offline Pack  
+**Product:** Savanna Access Kit (Track 2: Accessible Learning Media + Career Gateway)  
+**Components:** `<savanna-player>`, `<savanna-sign-window>`, `<savanna-audio-description>`, `<savanna-offline>`, `<savanna-job-card>`, `<savanna-credential>`  
 **Date:** November 2026  
-**Evaluation Method:** Manual testing with NVDA 2024.3, TalkBack (Android 13), keyboard-only, axe-core 4.8
+**Evaluation Method:** Manual testing with NVDA 2024.3, TalkBack (Android 13), JAWS, keyboard-only, axe-core 4.8 (0 critical, 0 serious)
 
 ---
 
