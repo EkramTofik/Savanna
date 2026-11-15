@@ -4,14 +4,14 @@ export default defineConfig({
   testDir: "./test",
   timeout: 60_000,
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: "http://localhost:5174",
     trace: "on-first-retry",
   },
   webServer: [
     {
       command: "pnpm run dev",
-      url: "http://localhost:5173",
-      reuseExistingServer: true,
+      url: "http://localhost:5174",
+      reuseExistingServer: !process.env.CI,
       timeout: 30_000,
     },
   ],

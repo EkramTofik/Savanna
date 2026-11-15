@@ -3346,7 +3346,7 @@ export class SavannaPlayer extends LitElement {
                   @click=${this.toggleSpeedMenu}
                   aria-haspopup="menu"
                   aria-expanded=${this.isSpeedMenuOpen ? 'true' : 'false'}
-                  aria-label="${this.t('player.speed')}: ${this.playbackRate}x"
+                  aria-label="${this.t('player.speed')}: ${this.playbackRate === 1 ? '1.0x' : this.playbackRate + 'x'}"
                   title="${this.t('player.speed')}"
                 >
                   ${this.playbackRate === 1 ? '1.0x' : this.playbackRate + 'x'}
