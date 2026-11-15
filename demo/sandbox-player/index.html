@@ -99,8 +99,13 @@
         }
 
         .breadcrumb a {
-            color: #0284c7;
-            text-decoration: none;
+            color: #0369a1;
+            text-decoration: underline;
+        }
+
+        .breadcrumb a:hover,
+        .breadcrumb a:focus-visible {
+            color: #0c4a6e;
         }
 
         /* Main Lesson Area */
@@ -308,6 +313,60 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
             pointer-events: auto;
         }
+
+        /* Noscript Fallback Card (SRS FR-P11, Task 1.7) */
+        .noscript-fallback-card {
+            background-color: #f8fafc;
+            border: 2px solid #0284c7;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .noscript-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .noscript-icon {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .noscript-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .noscript-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 0.6rem 0.85rem;
+            color: #0369a1;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+
+        .noscript-link:hover {
+            border-color: #0284c7;
+            background: #f0f9ff;
+            text-decoration: underline;
+        }
+
+        .noscript-link:focus-visible {
+            outline: 3px solid #005fcc;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 
@@ -322,7 +381,6 @@
                 type="button"
                 id="btn-lang-toggle"
                 class="btn-lang-pill"
-                aria-label="Switch UI Language between English and Amharic"
                 title="Switch UI Language (English / አማርኛ)"
                 style="background: rgba(255, 255, 255, 0.16); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 20px; padding: 4px 12px; font-size: 0.82rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;"
             >
@@ -352,6 +410,62 @@
 
             <!-- Video Player Area -->
             <div class="video-wrapper">
+                <!-- Fallback when JavaScript is disabled (SRS FR-P11, Task 1.7) -->
+                <noscript>
+                    <div class="noscript-fallback-card" role="region" aria-label="Non-JavaScript Lesson Access">
+                        <div class="noscript-header">
+                            <span class="noscript-icon">ℹ️</span>
+                            <div>
+                                <h2 style="font-size: 1.15rem; margin: 0 0 0.25rem 0; color: #0b2545;">JavaScript is disabled in your browser</h2>
+                                <p style="margin: 0; font-size: 0.88rem; color: #475569;">
+                                    You can still follow this lesson completely using the direct media, caption, and transcript links below:
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Direct media player fallback -->
+                        <div style="margin: 1rem 0;">
+                            <video controls preload="metadata" style="width: 100%; max-height: 380px; border-radius: 6px; background: #000;">
+                                <source src="http://localhost:4010/media/lesson.mp4" type="video/mp4" />
+                                <track kind="subtitles" srclang="en" src="http://localhost:4010/media/en.vtt" label="English" default />
+                                <track kind="subtitles" srclang="am" src="http://localhost:4010/media/am.vtt" label="Amharic" />
+                                Your browser does not support HTML5 video.
+                            </video>
+                        </div>
+
+                        <!-- Working links list (Done when: Page shows working links when JS is off) -->
+                        <div class="noscript-links-grid">
+                            <a href="http://localhost:4010/media/lesson.mp4" class="noscript-link" download>
+                                🎥 <strong>Direct Video:</strong> lesson.mp4 (720p)
+                            </a>
+                            <a href="http://localhost:4010/media/lesson.opus" class="noscript-link" download>
+                                🎵 <strong>Audio Only:</strong> lesson.opus (Low bandwidth)
+                            </a>
+                            <a href="http://localhost:4010/media/en.vtt" class="noscript-link" download>
+                                📝 <strong>English Captions:</strong> en.vtt (WebVTT)
+                            </a>
+                            <a href="http://localhost:4010/media/am.vtt" class="noscript-link" download>
+                                📝 <strong>Amharic Captions:</strong> am.vtt (የአማርኛ የግርጌ ጽሑፍ)
+                            </a>
+                            <a href="http://localhost:4010/media/esl-placeholder.mp4" class="noscript-link" download>
+                                🤟 <strong>Sign Language (ESL):</strong> esl-placeholder.mp4
+                            </a>
+                            <a href="http://localhost:4010/media/ad.opus" class="noscript-link" download>
+                                🎙️ <strong>Audio Description:</strong> ad.opus
+                            </a>
+                            <a href="http://localhost:4010/v1/lessons/L-103/transcript" class="noscript-link" target="_blank" rel="noopener">
+                                📄 <strong>Full Transcript:</strong> Plain-Language JSON / Text
+                            </a>
+                            <a href="/samples/L-103.en.brf" class="noscript-link" download>
+                                ⠃⠗ <strong>Braille Transcript (EN .brf):</strong> 40 cells × 25 lines
+                            </a>
+                            <a href="/samples/L-103.am.brf" class="noscript-link" download>
+                                ⠃⠗ <strong>Braille Transcript (AM .brf):</strong> 40 cells × 25 lines (Ethiopic)
+                            </a>
+                        </div>
+                    </div>
+                </noscript>
+
                 <savanna-player
                     id="lesson-player"
                     lesson="L-103"
@@ -361,7 +475,7 @@
                     <!-- Slotted ESL Sign Window Stub with actual ESL video from L-103 -->
                     <div slot="overlay" data-sign-window id="mock-sign-window" class="mock-sign-overlay">
                         <div id="mock-sign-title" style="font-weight: 700; margin-bottom: 3px;">ESL Sign Window</div>
-                        <video src="http://localhost:4010/media/esl-placeholder.mp4" autoplay loop muted playsinline style="width: 120px; height: 80px; object-fit: cover; border-radius: 4px; display: block;"></video>
+                        <video src="http://localhost:4010/media/esl-placeholder.mp4" loop muted playsinline style="width: 120px; height: 80px; object-fit: cover; border-radius: 4px; display: block;"></video>
                         <div id="mock-sign-hint" style="font-size: 0.68rem; opacity: 0.9; margin-top: 2px;">(Press S to toggle)</div>
                     </div>
                     <!-- Slotted Audio Description from L-103 -->

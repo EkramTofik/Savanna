@@ -11,6 +11,7 @@ import {
   splitTextByMatch,
   formatTranscriptForDownload,
 } from './transcript-manager.js';
+import { formatTranscriptToBrf } from './braille-formatter.js';
 import {
   loadPlayerPreferences,
   savePlayerPreferences,
@@ -197,6 +198,10 @@ export class SavannaPlayer extends LitElement {
   /** Whether the playback speed popover menu is open (SRS FR-P9) */
   @state()
   private isSpeedMenuOpen = false;
+
+  /** Whether loading lesson manifest failed (SRS FR-P11, Task 1.7) */
+  @state()
+  private manifestLoadError = false;
 
   /** Lesson title from manifest */
   @state()
@@ -894,6 +899,52 @@ export class SavannaPlayer extends LitElement {
       box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
     }
 
+    /* Manifest Error Fallback Card (SRS FR-P11, Task 1.7) */
+    .manifest-error-card {
+      background: #7f1d1d;
+      color: #fef2f2;
+      border: 2px solid #ef4444;
+      border-radius: var(--savanna-radius, 6px);
+      padding: 1.5rem;
+      margin: 1rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .error-msg {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .btn-retry {
+      min-height: 44px;
+      padding: 0 1.25rem;
+      background: #ef4444;
+      color: #ffffff;
+      border: 1px solid #ffffff;
+      border-radius: var(--savanna-radius, 4px);
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.15s ease;
+    }
+
+    .btn-retry:hover,
+    .btn-retry:focus-visible {
+      background: #dc2626;
+      outline: 3px solid var(--savanna-focus, #005fcc);
+      outline-offset: 2px;
+    }
+
     /* Plain-Language Summary Header (SRS FR-P8, FR-D4) */
     .transcript-summary-card {
       padding: 0.65rem 0.85rem;
@@ -1490,43 +1541,71 @@ export class SavannaPlayer extends LitElement {
         throw new Error(`Failed to fetch lesson manifest: HTTP ${res.status}`);
       }
       const manifest = await res.json();
-      this.manifestData = manifest;
-      if (manifest?.title) {
-        this.lessonTitle = manifest.title[this.activeLang] || manifest.title.en || '';
-      }
-      if (manifest?.media?.video) {
-        this.src = manifest.media.video;
-      }
-      if (Array.isArray(manifest?.captions)) {
-        this.manifestCaptions = manifest.captions;
-        this.loadVttCues();
-      }
+      // Cache manifest in localStorage for offline fallback (SRS FR-P11, Task 1.7)
+      try {
+        localStorage.setItem(`savanna.cached_manifest.${this.lesson}`, JSON.stringify(manifest));
+      } catch { }
 
-      // Step 6: Derive sign and audioDescription track availability from manifest (Contract C1)
-      this.hasSignTrack = manifest?.sign != null;
-      this.hasAdTrack = manifest?.audioDescription != null;
-
-      // Load interactive transcript (SRS FR-P8)
-      if (manifest?.transcript?.url) {
-        this.fetchTranscript(manifest.transcript.url, manifest);
-      } else {
-        this.fallbackTranscriptFromCaptions(manifest);
-      }
-
-      // Honor null tracks by hiding/disabling slotted light DOM stubs
-      if (!this.hasSignTrack) {
-        const signEl = this.querySelector('savanna-sign-window, [data-sign-window]') as HTMLElement | null;
-        if (signEl) signEl.hidden = true;
-      }
-      if (!this.hasAdTrack) {
-        const adAudio = this.querySelector('audio[data-ad], audio.ad-track') as HTMLAudioElement | null;
-        if (adAudio) {
-          adAudio.muted = true;
-          adAudio.pause();
-        }
-      }
+      this.manifestLoadError = false;
+      this.applyManifest(manifest);
     } catch {
-      this.emitEvent('savanna:error');
+      // Offline fallback: check localStorage (SRS FR-P11, Task 1.7)
+      let loadedFromCache = false;
+      try {
+        const cachedRaw = localStorage.getItem(`savanna.cached_manifest.${this.lesson}`);
+        if (cachedRaw) {
+          const cachedManifest = JSON.parse(cachedRaw);
+          this.manifestLoadError = false;
+          this.applyManifest(cachedManifest);
+          this.announceStatus(this.t('player.statusOfflineManifest'), 'Offline Cache');
+          loadedFromCache = true;
+        }
+      } catch { }
+
+      if (!loadedFromCache) {
+        this.manifestLoadError = true;
+        this.announceStatus(this.t('player.errorManifestLoad'), 'Network Error');
+      }
+    }
+  }
+
+  private applyManifest(manifest: any): void {
+    this.manifestData = manifest;
+    if (manifest?.title) {
+      this.lessonTitle = manifest.title[this.activeLang] || manifest.title.en || '';
+    }
+    if (manifest?.media?.video) {
+      this.src = manifest.media.video;
+    }
+    if (Array.isArray(manifest?.captions)) {
+      this.manifestCaptions = manifest.captions;
+      this.loadVttCues();
+    }
+
+    // Step 6: Derive sign and audioDescription track availability from manifest (Contract C1)
+    this.hasSignTrack = manifest?.sign != null;
+    this.hasAdTrack = manifest?.audioDescription != null;
+
+    // Load interactive transcript (SRS FR-P8)
+    if (manifest?.transcript?.url) {
+      this.fetchTranscript(manifest.transcript.url, manifest);
+    } else {
+      this.fallbackTranscriptFromCaptions(manifest);
+    }
+
+    this.resolveSummary(manifest);
+
+    // Honor null tracks by hiding/disabling slotted light DOM stubs
+    if (!this.hasSignTrack) {
+      const signEl = this.querySelector('savanna-sign-window, [data-sign-window]') as HTMLElement | null;
+      if (signEl) signEl.hidden = true;
+    }
+    if (!this.hasAdTrack) {
+      const adAudio = this.querySelector('audio[data-ad], audio.ad-track') as HTMLAudioElement | null;
+      if (adAudio) {
+        adAudio.muted = true;
+        adAudio.pause();
+      }
     }
   }
 
@@ -2491,6 +2570,31 @@ export class SavannaPlayer extends LitElement {
     this.announceStatus(this.t('player.transcriptDownloaded'));
   };
 
+  /**
+   * Generates and downloads the transcript as a standard 40 cells x 25 lines
+   * ASCII Braille (.brf) document with mandatory draft watermark notice (SRS FR-S1, Task 1.8).
+   */
+  private downloadBrailleTranscript = (): void => {
+    const title = this.lessonTitle || (this.manifestData?.title ? this.manifestData.title[this.activeLang] || this.manifestData.title.en : 'Lesson');
+    const content = formatTranscriptToBrf(
+      title,
+      this.activeLang,
+      this.getEffectiveSummary(),
+      this.transcriptLines,
+      (sec) => this.formatTime(sec)
+    );
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${this.lesson || 'lesson'}-transcript-${this.activeLang}.brf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.announceStatus(this.t('player.statusBrailleDownloaded'), 'BRF (.brf)');
+  };
+
   private renderCueText(text: string, query: string) {
     if (!query || !query.trim()) {
       return text;
@@ -2565,6 +2669,17 @@ export class SavannaPlayer extends LitElement {
               title=${this.t('player.transcriptDownload')}
             >
               📥 ${this.t('player.transcriptDownload')}
+            </button>
+
+            <!-- Download Braille (.brf) Button (SRS FR-S1, Task 1.8) -->
+            <button
+              type="button"
+              class="transcript-action-btn btn-braille-transcript"
+              @click=${this.downloadBrailleTranscript}
+              aria-label=${this.t('player.transcriptDownloadBraille')}
+              title=${this.t('player.transcriptDownloadBraille')}
+            >
+              ⠃⠗ ${this.t('player.transcriptDownloadBraille')}
             </button>
 
             <!-- Close Panel Button -->
@@ -2657,6 +2772,21 @@ export class SavannaPlayer extends LitElement {
     return html`
       <div class="player-container ${this.isTranscriptOpen ? 'with-transcript' : ''}">
         <div class="player" @click=${() => this.focus()}>
+        ${this.manifestLoadError && !this.src
+          ? html`
+              <div class="manifest-error-card" role="alert" aria-live="assertive">
+                <p class="error-msg">⚠️ ${this.t('player.errorManifestLoad')}</p>
+                <button
+                  type="button"
+                  class="btn-retry"
+                  @click=${() => this.fetchLessonManifest()}
+                  aria-label=${this.t('player.retry')}
+                >
+                  🔄 ${this.t('player.retry')}
+                </button>
+              </div>
+            `
+          : ''}
         <video
           src=${this.src}
           @play=${this.handlePlay}
