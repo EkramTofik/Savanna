@@ -173,7 +173,7 @@ export class SavannaPlayer extends LitElement {
 
   /** Whether the interactive transcript panel is open (SRS FR-P8) */
   @state()
-  private isTranscriptOpen = true;
+  private isTranscriptOpen = false;
 
   /** Transcript lines array */
   @state()
