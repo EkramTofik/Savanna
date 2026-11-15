@@ -210,6 +210,42 @@ export class SavannaPlayer extends LitElement {
   /** Stored manifest cache */
   private manifestData: any = null;
 
+  /** Reactive state aliases matching developer/test expectations */
+  get isCaptionsOpen(): boolean {
+    return this.captionsShowing;
+  }
+  set isCaptionsOpen(val: boolean) {
+    this.captionsShowing = val;
+    this.syncCaptionTracks();
+  }
+
+  get isPrefsOpen(): boolean {
+    return this.showPreferencesDialog;
+  }
+  set isPrefsOpen(val: boolean) {
+    if (val) {
+      this.openPreferencesDialog('general');
+    } else {
+      this.closePreferencesDialog();
+    }
+  }
+
+  get isSignOpen(): boolean {
+    return this.showSignWindow;
+  }
+  set isSignOpen(val: boolean) {
+    this.showSignWindow = val;
+    this.syncSignWindow();
+  }
+
+  get isAdOpen(): boolean {
+    return this.audioDescriptionEnabled;
+  }
+  set isAdOpen(val: boolean) {
+    this.audioDescriptionEnabled = val;
+    this.syncAudioDescription();
+  }
+
   @query('.btn-transcript')
   private transcriptBtnElement!: HTMLButtonElement | null;
 
@@ -665,6 +701,22 @@ export class SavannaPlayer extends LitElement {
     .btn-reset-prefs:hover {
       background: rgba(239, 68, 68, 0.35);
       color: #ffffff;
+    }
+
+    .ctrl-btn.active,
+    .ctrl-btn[aria-pressed='true'] {
+      background: var(--savanna-accent, #0f4c81);
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+    }
+
+    :host([data-theme='high-contrast']) .ctrl-btn.active,
+    :host([data-theme='high-contrast']) .ctrl-btn[aria-pressed='true'] {
+      background: #f59e0b;
+      color: #000000;
+      border-color: #ffffff;
+      font-weight: 700;
     }
 
     .ctrl-btn.is-disabled,
@@ -1425,6 +1477,20 @@ export class SavannaPlayer extends LitElement {
     }
   };
 
+  private handleWindowKeyDown = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') {
+      if (this.isSpeedMenuOpen) {
+        this.isSpeedMenuOpen = false;
+      }
+      if (this.showHelpDialog || this.helpDialogElement?.open) {
+        this.closeShortcutsDialog();
+      }
+      if (this.showPreferencesDialog || this.prefsDialogElement?.open) {
+        this.closePreferencesDialog();
+      }
+    }
+  };
+
   private handleSpeedChange = (event: Event): void => {
     const select = event.target as HTMLSelectElement;
     const rate = parseFloat(select.value);
@@ -1481,6 +1547,7 @@ export class SavannaPlayer extends LitElement {
       this.setAttribute('tabindex', '0');
     }
     this.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('keydown', this.handleWindowKeyDown);
     window.addEventListener('savanna:lang-change', this.handleLangChange);
     document.addEventListener('fullscreenchange', this.handleFullscreenChange);
     document.addEventListener('click', this.handleDocumentClick);
@@ -1489,6 +1556,7 @@ export class SavannaPlayer extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('keydown', this.handleWindowKeyDown);
     window.removeEventListener('savanna:lang-change', this.handleLangChange);
     document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
     document.removeEventListener('click', this.handleDocumentClick);
@@ -2917,7 +2985,7 @@ export class SavannaPlayer extends LitElement {
           <div class="speed-menu-container">
             <button
               type="button"
-              class="ctrl-btn btn-speed"
+              class="ctrl-btn btn-speed ${this.isSpeedMenuOpen ? 'active' : ''}"
               @click=${this.toggleSpeedMenu}
               aria-haspopup="menu"
               aria-expanded=${this.isSpeedMenuOpen ? 'true' : 'false'}
@@ -2954,10 +3022,11 @@ export class SavannaPlayer extends LitElement {
           <!-- Captions Toggle -->
           <button
             type="button"
-            class="ctrl-btn btn-captions"
+            class="ctrl-btn btn-captions ${this.captionsShowing ? 'active' : ''}"
             @click=${this.toggleCaptions}
             aria-label="${this.t('player.captions')} CC"
             aria-pressed=${this.captionsShowing ? 'true' : 'false'}
+            aria-expanded=${this.captionsShowing ? 'true' : 'false'}
             title="${this.t('player.captions')} (C)"
           >
             CC
@@ -2966,7 +3035,7 @@ export class SavannaPlayer extends LitElement {
           <!-- Preferences Settings Dialog Trigger (SRS FR-P3, FR-P9, Contract C3/C4) -->
           <button
             type="button"
-            class="ctrl-btn btn-preferences btn-captions-settings"
+            class="ctrl-btn btn-preferences btn-captions-settings ${this.showPreferencesDialog ? 'active' : ''}"
             @click=${() => this.togglePreferences('general')}
             aria-label=${this.t('player.preferences')}
             aria-haspopup="dialog"
@@ -2979,7 +3048,7 @@ export class SavannaPlayer extends LitElement {
           <!-- Interactive Transcript Toggle Button (SRS FR-P8) -->
           <button
             type="button"
-            class="ctrl-btn btn-transcript"
+            class="ctrl-btn btn-transcript ${this.isTranscriptOpen ? 'active' : ''}"
             @click=${this.toggleTranscript}
             aria-label="${this.t('player.transcript')} 📝"
             aria-expanded=${this.isTranscriptOpen ? 'true' : 'false'}
@@ -3010,12 +3079,13 @@ export class SavannaPlayer extends LitElement {
           <!-- Sign Language Window Toggle (Step 6 Null-Safe) -->
           <button
             type="button"
-            class="ctrl-btn btn-sign ${!this.hasSignTrack ? 'is-disabled' : ''}"
+            class="ctrl-btn btn-sign ${!this.hasSignTrack ? 'is-disabled' : ''} ${this.hasSignTrack && this.showSignWindow ? 'active' : ''}"
             @click=${this.toggleSignWindow}
             aria-label=${this.hasSignTrack
         ? this.t('player.sign')
         : `${this.t('player.sign')} ${this.t('player.notAvailableSuffix')}`.trim()}
             aria-disabled=${!this.hasSignTrack ? 'true' : 'false'}
+            aria-expanded=${this.hasSignTrack && this.showSignWindow ? 'true' : 'false'}
             aria-pressed=${this.hasSignTrack && this.showSignWindow ? 'true' : 'false'}
             title="${this.t('player.sign')} (S)${!this.hasSignTrack ? ' ' + this.t('player.notAvailableSuffix') : ''}"
           >
@@ -3025,12 +3095,13 @@ export class SavannaPlayer extends LitElement {
           <!-- Audio Description Toggle (Step 6 Null-Safe) -->
           <button
             type="button"
-            class="ctrl-btn btn-ad ${!this.hasAdTrack ? 'is-disabled' : ''}"
+            class="ctrl-btn btn-ad ${!this.hasAdTrack ? 'is-disabled' : ''} ${this.hasAdTrack && this.audioDescriptionEnabled ? 'active' : ''}"
             @click=${this.toggleAudioDescription}
             aria-label=${this.hasAdTrack
         ? `${this.t('player.audioDescription')} AD`
         : `${this.t('player.audioDescription')} AD ${this.t('player.notAvailableSuffix')}`.trim()}
             aria-disabled=${!this.hasAdTrack ? 'true' : 'false'}
+            aria-expanded=${this.hasAdTrack && this.audioDescriptionEnabled ? 'true' : 'false'}
             aria-pressed=${this.hasAdTrack && this.audioDescriptionEnabled ? 'true' : 'false'}
             title="${this.t('player.audioDescription')} (D)${!this.hasAdTrack ? ' ' + this.t('player.notAvailableSuffix') : ''}"
           >
@@ -3052,7 +3123,7 @@ export class SavannaPlayer extends LitElement {
           <!-- Keyboard Shortcuts Help (Step 7) -->
           <button
             type="button"
-            class="ctrl-btn btn-help"
+            class="ctrl-btn btn-help ${this.showHelpDialog ? 'active' : ''}"
             @click=${this.toggleShortcutsHelp}
             aria-label=${this.t('player.help')}
             aria-haspopup="dialog"
