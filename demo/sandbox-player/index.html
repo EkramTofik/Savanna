@@ -76,11 +76,11 @@
 
         /* Page Layout */
         .container {
-            max-width: 1140px;
+            max-width: 1440px;
             margin: 1.5rem auto;
             padding: 0 1rem;
             display: grid;
-            grid-template-columns: 1fr 300px;
+            grid-template-columns: 1fr 280px;
             gap: 1.5rem;
         }
 
@@ -152,11 +152,9 @@
         /* Video Player Wrapper */
         .video-wrapper {
             margin: 1rem 0;
-            background: #000;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background: transparent;
             position: relative;
-            padding: 4px;
+            width: 100%;
         }
 
         /* Navigation Buttons */
@@ -319,7 +317,17 @@
             <span class="logo-tag">Savanna</span>
             <span id="nav-brand-title">Learning Portal</span>
         </div>
-        <div class="navbar-nav">
+        <div class="navbar-nav" style="display: flex; align-items: center; gap: 0.75rem;">
+            <button
+                type="button"
+                id="btn-lang-toggle"
+                class="btn-lang-pill"
+                aria-label="Switch UI Language between English and Amharic"
+                title="Switch UI Language (English / አማርኛ)"
+                style="background: rgba(255, 255, 255, 0.16); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 20px; padding: 4px 12px; font-size: 0.82rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;"
+            >
+                🌐 አማርኛ (AM)
+            </button>
             <span class="badge-learner" id="nav-learner-badge">Learner: Kidus T.</span>
         </div>
     </header>

@@ -197,7 +197,7 @@ if (btnLoadL103 && player) {
                 const data = await res.json();
                 mockJsonDisplay.textContent = JSON.stringify(data, null, 2);
             }
-        } catch {}
+        } catch { }
     });
 }
 
@@ -217,7 +217,7 @@ if (btnLoadL102 && player) {
                 const data = await res.json();
                 mockJsonDisplay.textContent = JSON.stringify(data, null, 2);
             }
-        } catch {}
+        } catch { }
     });
 }
 
@@ -377,6 +377,25 @@ function applyHostLanguage(lang: 'en' | 'am'): void {
 
     setText('mock-sign-title', t.signTitle);
     setText('mock-sign-hint', t.signHint);
+
+    // Update navbar language switcher pill text
+    const btnLangToggle = document.getElementById('btn-lang-toggle');
+    if (btnLangToggle) {
+        btnLangToggle.textContent = lang === 'am' ? '🌐 English (EN)' : '🌐 አማርኛ (AM)';
+    }
+
+    // FR-P10: Screen reader lang attribute tagging
+    document.documentElement.lang = lang;
+    document.documentElement.setAttribute('lang', lang);
+}
+
+// Wire navbar language switcher button
+const btnLangToggle = document.getElementById('btn-lang-toggle');
+if (btnLangToggle && player) {
+    btnLangToggle.addEventListener('click', () => {
+        const nextLang = currentHostLang === 'am' ? 'en' : 'am';
+        player.setLanguage(nextLang);
+    });
 }
 
 // Contract C4: Listen for global language switch event
@@ -397,7 +416,7 @@ try {
             applyHostLanguage('am');
         }
     }
-} catch {}
+} catch { }
 
 // Reset checklist
 if (btnResetChecks) {

@@ -107,6 +107,10 @@
   "player.prefShortcuts": "Keyboard Shortcuts",
   "player.prefShortcutsOn": "Enabled (K, J, L, C, S, D, F, T)",
   "player.prefShortcutsOff": "Disabled",
+  "player.prefSignWindow": "Sign Language Window",
+  "player.prefAudioDescription": "Audio Description (AD)",
+  "player.prefEnabled": "Enabled",
+  "player.prefDisabled": "Disabled",
   "player.prefReset": "Reset to Defaults",
   "player.statusPrefsSaved": "Preferences saved",
   "player.statusLangChanged": "Language changed to {lang}"

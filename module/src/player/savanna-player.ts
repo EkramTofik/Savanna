@@ -194,6 +194,10 @@ export class SavannaPlayer extends LitElement {
   @state()
   private activeTranscriptIndex = -1;
 
+  /** Whether the playback speed popover menu is open (SRS FR-P9) */
+  @state()
+  private isSpeedMenuOpen = false;
+
   /** Lesson title from manifest */
   @state()
   private lessonTitle = '';
@@ -633,6 +637,14 @@ export class SavannaPlayer extends LitElement {
       border-color: #ffffff;
     }
 
+    :host([data-theme='high-contrast']) .prefs-tab-btn.is-active-tab,
+    :host([data-theme='high-contrast']) .prefs-tab-btn[aria-selected='true'] {
+      background: #f59e0b;
+      color: #000000;
+      border-color: #ffffff;
+      font-weight: 700;
+    }
+
     .prefs-tab-btn:focus-visible {
       outline: 3px solid var(--savanna-focus, #005fcc) !important;
       outline-offset: 2px;
@@ -648,8 +660,6 @@ export class SavannaPlayer extends LitElement {
     .btn-reset-prefs:hover {
       background: rgba(239, 68, 68, 0.35);
       color: #ffffff;
-    }
-      border-color: rgba(255, 255, 255, 0.45);
     }
 
     .ctrl-btn.is-disabled,
@@ -692,20 +702,116 @@ export class SavannaPlayer extends LitElement {
       white-space: nowrap;
     }
 
-    /* Player Container Layout (Responsive Side-by-side or Stacked) */
+    /* Speed Menu Popover (SRS FR-P9) */
+    .speed-menu-container {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .btn-speed {
+      min-width: 48px;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .speed-popover {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0b192c;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: var(--savanna-radius, 4px);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 40;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      min-width: 140px;
+    }
+
+    :host([data-theme='light']) .speed-popover {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    :host([data-theme='high-contrast']) .speed-popover {
+      background: #000000;
+      border: 2px solid #ffffff;
+    }
+
+    .speed-opt-btn {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.15s ease, border-color 0.15s ease;
+      min-height: 36px;
+      box-sizing: border-box;
+    }
+
+    :host([data-theme='light']) .speed-opt-btn {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    .speed-opt-btn:hover,
+    .speed-opt-btn:focus-visible {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: 2px solid var(--savanna-focus, #005fcc);
+      outline-offset: 1px;
+    }
+
+    :host([data-theme='light']) .speed-opt-btn:hover,
+    :host([data-theme='light']) .speed-opt-btn:focus-visible {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+
+    .speed-opt-btn.is-selected {
+      background: var(--savanna-accent, #0f4c81);
+      border-color: #ffffff;
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    :host([data-theme='high-contrast']) .speed-opt-btn.is-selected {
+      background: #f59e0b;
+      color: #000000;
+      border-color: #ffffff;
+    }
+
+    /* Player Container Layout (Side-by-side next to video per SRS FR-P8) */
     .player-container {
       display: flex;
       flex-direction: column;
       width: 100%;
-      gap: 0.85rem;
+      gap: 1.25rem;
     }
 
-    @media (min-width: 960px) {
+    .player-container.with-transcript {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 1fr);
+      align-items: stretch;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 768px) {
       .player-container.with-transcript {
-        display: grid;
-        grid-template-columns: minmax(0, 1.45fr) minmax(320px, 1fr);
-        align-items: start;
-        gap: 1.25rem;
+        display: flex;
+        flex-direction: column;
       }
     }
 
@@ -714,13 +820,15 @@ export class SavannaPlayer extends LitElement {
       background: #0b192c;
       color: #f8fafc;
       border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: var(--savanna-radius, 4px);
+      border-radius: var(--savanna-radius, 6px);
       display: flex;
       flex-direction: column;
-      max-height: 540px;
+      height: 100%;
+      min-height: 480px;
+      max-height: 600px;
       box-sizing: border-box;
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     }
 
     .transcript-header {
@@ -1090,6 +1198,11 @@ export class SavannaPlayer extends LitElement {
   public setLanguage(newLang: 'en' | 'am'): void {
     if (this.lang === newLang) return;
     this.lang = newLang;
+    this.setAttribute('lang', newLang);
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.lang = newLang;
+      document.documentElement.setAttribute('lang', newLang);
+    }
     this.saveAllPreferences();
     this.resolveSummary();
     this.syncTranscriptLanguage();
@@ -1230,13 +1343,42 @@ export class SavannaPlayer extends LitElement {
     }
   };
 
+  /**
+   * Toggles playback speed popover menu (SRS FR-P9).
+   */
+  public toggleSpeedMenu(): void {
+    this.isSpeedMenuOpen = !this.isSpeedMenuOpen;
+  }
+
+  /**
+   * Sets the playback rate, synchronizes media element, updates preferences and announces status (SRS FR-P9).
+   */
+  public setPlaybackRate(rate: number): void {
+    if (Number.isNaN(rate) || rate <= 0) return;
+    this.playbackRate = rate;
+    if (this.media) {
+      this.media.playbackRate = rate;
+    }
+    this.saveAllPreferences();
+    this.announceStatus(this.t('player.statusSpeed', { speed: rate }), `${rate}x`);
+    this.isSpeedMenuOpen = false;
+  }
+
+  private handleDocumentClick = (e: MouseEvent): void => {
+    if (this.isSpeedMenuOpen) {
+      const path = e.composedPath();
+      const inSpeedMenu = path.some((node) => (node as HTMLElement)?.classList?.contains('speed-menu-container'));
+      if (!inSpeedMenu) {
+        this.isSpeedMenuOpen = false;
+      }
+    }
+  };
+
   private handleSpeedChange = (event: Event): void => {
     const select = event.target as HTMLSelectElement;
     const rate = parseFloat(select.value);
-    if (!Number.isNaN(rate) && this.media) {
-      this.media.playbackRate = rate;
-      this.playbackRate = rate;
-      this.announceStatus(this.t('player.statusSpeed', { speed: rate }), `${rate}x`);
+    if (!Number.isNaN(rate)) {
+      this.setPlaybackRate(rate);
     }
   };
 
@@ -1290,6 +1432,7 @@ export class SavannaPlayer extends LitElement {
     this.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('savanna:lang-change', this.handleLangChange);
     document.addEventListener('fullscreenchange', this.handleFullscreenChange);
+    document.addEventListener('click', this.handleDocumentClick);
   }
 
   override disconnectedCallback(): void {
@@ -1297,6 +1440,7 @@ export class SavannaPlayer extends LitElement {
     this.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('savanna:lang-change', this.handleLangChange);
     document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
+    document.removeEventListener('click', this.handleDocumentClick);
   }
 
   protected override updated(changedProps: PropertyValues): void {
@@ -1404,6 +1548,13 @@ export class SavannaPlayer extends LitElement {
    * Accessible keyboard shortcut handler.
    */
   private handleKeyDown = (event: KeyboardEvent): void => {
+    // If the speed menu is open, let Escape close it
+    if (this.isSpeedMenuOpen && event.key === 'Escape') {
+      event.preventDefault();
+      this.isSpeedMenuOpen = false;
+      return;
+    }
+
     // If the help dialog is open, let Escape or '?' close it
     if (this.showHelpDialog || this.helpDialogElement?.open) {
       if (event.key === 'Escape' || event.key === '?') {
@@ -1794,6 +1945,20 @@ export class SavannaPlayer extends LitElement {
       val ? this.t('player.prefShortcutsOn') : this.t('player.prefShortcutsOff'),
       val ? 'Keys: ON' : 'Keys: OFF'
     );
+  };
+
+  private handlePrefSignChange = (e: Event): void => {
+    const val = (e.target as HTMLSelectElement).value === 'true';
+    if (this.showSignWindow !== val) {
+      this.toggleSignWindow();
+    }
+  };
+
+  private handlePrefAdChange = (e: Event): void => {
+    const val = (e.target as HTMLSelectElement).value === 'true';
+    if (this.audioDescriptionEnabled !== val) {
+      this.toggleAudioDescription();
+    }
   };
 
   private handleCaptionTrackSelect = (e: Event): void => {
@@ -2198,7 +2363,7 @@ export class SavannaPlayer extends LitElement {
             this.vttCuesCache.set(track.lang, parsed);
             this.transcriptLines = parsed.map((c) => ({ start: c.start, end: c.end, text: c.text }));
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     }
     this.resolveSummary(manifest);
@@ -2221,6 +2386,21 @@ export class SavannaPlayer extends LitElement {
     if (m?.title) {
       this.lessonTitle = m.title[this.activeLang] || m.title.en || '';
     }
+  }
+
+  /**
+   * Dynamically evaluates the plain-language summary according to current active language (SRS FR-P8, FR-P10).
+   */
+  private getEffectiveSummary(): string {
+    const m = this.manifestData;
+    if (m?.summary) {
+      if (typeof m.summary === 'object') {
+        return m.summary[this.activeLang] || m.summary.en || '';
+      } else if (typeof m.summary === 'string') {
+        return m.summary;
+      }
+    }
+    return this.t('player.defaultSummary');
   }
 
   /**
@@ -2364,11 +2544,11 @@ export class SavannaPlayer extends LitElement {
               type="button"
               class="transcript-action-btn ${this.transcriptAutoScroll ? 'is-active-btn' : ''}"
               @click=${() => {
-                this.transcriptAutoScroll = !this.transcriptAutoScroll;
-                this.announceStatus(
-                  this.transcriptAutoScroll ? 'Auto-scroll on' : 'Auto-scroll off'
-                );
-              }}
+        this.transcriptAutoScroll = !this.transcriptAutoScroll;
+        this.announceStatus(
+          this.transcriptAutoScroll ? 'Auto-scroll on' : 'Auto-scroll off'
+        );
+      }}
               aria-pressed=${this.transcriptAutoScroll ? 'true' : 'false'}
               aria-label=${this.t('player.transcriptAutoScroll')}
               title=${this.t('player.transcriptAutoScroll')}
@@ -2401,14 +2581,14 @@ export class SavannaPlayer extends LitElement {
         </div>
 
         <!-- Plain-Language Summary Header (SRS FR-P8 & FR-D4) -->
-        ${this.transcriptSummary
-          ? html`
+        ${this.getEffectiveSummary()
+        ? html`
               <div class="transcript-summary-card" role="region" aria-label=${this.t('player.transcriptSummaryTitle')}>
                 <span class="summary-badge">${this.t('player.transcriptSummaryTitle')}</span>
-                <p class="summary-text">${this.transcriptSummary}</p>
+                <p class="summary-text">${this.getEffectiveSummary()}</p>
               </div>
             `
-          : ''}
+        : ''}
 
         <!-- Search Bar (SRS FR-P8) -->
         <div class="transcript-search-row">
@@ -2424,7 +2604,7 @@ export class SavannaPlayer extends LitElement {
             @input=${this.handleTranscriptSearchInput}
           />
           ${this.transcriptSearchQuery
-            ? html`
+        ? html`
                 <button
                   type="button"
                   class="btn-clear-search"
@@ -2434,27 +2614,27 @@ export class SavannaPlayer extends LitElement {
                   ✕
                 </button>
               `
-            : ''}
+        : ''}
         </div>
 
         ${isSearching
-          ? html`
+        ? html`
               <div class="search-status-bar" aria-live="polite">
                 ${filteredItems.length === 0
-                  ? this.t('player.transcriptNoMatches')
-                  : this.t('player.transcriptMatches', { count: filteredItems.length })}
+            ? this.t('player.transcriptNoMatches')
+            : this.t('player.transcriptMatches', { count: filteredItems.length })}
               </div>
             `
-          : ''}
+        : ''}
 
         <!-- Timed Cue Lines List (SRS FR-P8) -->
         <div class="transcript-lines-container" aria-label=${this.t('player.transcript')}>
           ${filteredItems.length === 0
-            ? html`<div class="transcript-empty">${this.t('player.transcriptNoMatches')}</div>`
-            : filteredItems.map(
-                ({ line, originalIndex }) => {
-                  const isActive = originalIndex === this.activeTranscriptIndex;
-                  return html`
+        ? html`<div class="transcript-empty">${this.t('player.transcriptNoMatches')}</div>`
+        : filteredItems.map(
+          ({ line, originalIndex }) => {
+            const isActive = originalIndex === this.activeTranscriptIndex;
+            return html`
                     <button
                       type="button"
                       class="transcript-line ${isActive ? 'is-active' : ''}"
@@ -2466,8 +2646,8 @@ export class SavannaPlayer extends LitElement {
                       <span class="cue-text">${this.renderCueText(line.text, this.transcriptSearchQuery)}</span>
                     </button>
                   `;
-                }
-              )}
+          }
+        )}
         </div>
       </section>
     `;
@@ -2603,19 +2783,43 @@ export class SavannaPlayer extends LitElement {
             aria-valuetext=${this.volumeValueText}
           />
 
-          <!-- Playback Speed -->
-          <select
-            class="ctrl-select select-speed"
-            @change=${this.handleSpeedChange}
-            aria-label=${this.t('player.speed')}
-          >
-            <option value="0.5" ?selected=${this.playbackRate === 0.5}>0.5x</option>
-            <option value="0.75" ?selected=${this.playbackRate === 0.75}>0.75x</option>
-            <option value="1" ?selected=${this.playbackRate === 1}>${this.t('player.speedNormal')}</option>
-            <option value="1.25" ?selected=${this.playbackRate === 1.25}>1.25x</option>
-            <option value="1.5" ?selected=${this.playbackRate === 1.5}>1.5x</option>
-            <option value="2" ?selected=${this.playbackRate === 2}>2x</option>
-          </select>
+          <!-- Playback Speed Menu (SRS FR-P9 & Stable Popover Buttons) -->
+          <div class="speed-menu-container">
+            <button
+              type="button"
+              class="ctrl-btn btn-speed"
+              @click=${this.toggleSpeedMenu}
+              aria-haspopup="menu"
+              aria-expanded=${this.isSpeedMenuOpen ? 'true' : 'false'}
+              aria-label="${this.t('player.speed')}: ${this.playbackRate}x"
+              title="${this.t('player.speed')}"
+            >
+              ${this.playbackRate === 1 ? '1x' : this.playbackRate + 'x'}
+            </button>
+            ${this.isSpeedMenuOpen
+              ? html`
+                  <div
+                    class="speed-popover"
+                    role="menu"
+                    aria-label=${this.t('player.speed')}
+                  >
+                    ${[0.5, 0.75, 1, 1.25, 1.5, 2].map(
+                      (rate) => html`
+                        <button
+                          type="button"
+                          role="menuitemradio"
+                          class="speed-opt-btn ${this.playbackRate === rate ? 'is-selected' : ''}"
+                          aria-checked=${this.playbackRate === rate ? 'true' : 'false'}
+                          @click=${() => this.setPlaybackRate(rate)}
+                        >
+                          ${rate === 1 ? `1.0x (${this.t('player.speedNormal')})` : `${rate}x`}
+                        </button>
+                      `
+                    )}
+                  </div>
+                `
+              : ''}
+          </div>
 
           <!-- Captions Toggle -->
           <button
@@ -2834,9 +3038,9 @@ export class SavannaPlayer extends LitElement {
               type="button"
               class="close-prefs-btn close-captions-btn"
               @click=${this.closePreferencesDialog}
-              aria-label=${this.t('player.closePreferences')}
+              aria-label="${this.t('player.closePreferences')} (Esc)"
             >
-              ${this.t('player.closeHelp')} (Esc)
+              ${this.t('player.closePreferences')} (Esc)
             </button>
           </div>
 
@@ -2941,6 +3145,42 @@ export class SavannaPlayer extends LitElement {
                 </option>
                 <option value="false" ?selected=${this.disableShortcuts}>
                   ${this.t('player.prefShortcutsOff')}
+                </option>
+              </select>
+            </div>
+
+            <!-- Sign Language Window (SRS FR-P9) -->
+            <div class="setting-row">
+              <label for="pref-sign-select">${this.t('player.prefSignWindow')}:</label>
+              <select
+                id="pref-sign-select"
+                class="ctrl-select"
+                @change=${this.handlePrefSignChange}
+                ?disabled=${!this.hasSignTrack}
+              >
+                <option value="true" ?selected=${this.hasSignTrack && this.showSignWindow}>
+                  ${this.t('player.prefEnabled')}
+                </option>
+                <option value="false" ?selected=${!this.hasSignTrack || !this.showSignWindow}>
+                  ${this.t('player.prefDisabled')} ${!this.hasSignTrack ? `(${this.t('player.notAvailableSuffix')})` : ''}
+                </option>
+              </select>
+            </div>
+
+            <!-- Audio Description (SRS FR-P9) -->
+            <div class="setting-row">
+              <label for="pref-ad-select">${this.t('player.prefAudioDescription')}:</label>
+              <select
+                id="pref-ad-select"
+                class="ctrl-select"
+                @change=${this.handlePrefAdChange}
+                ?disabled=${!this.hasAdTrack}
+              >
+                <option value="true" ?selected=${this.hasAdTrack && this.audioDescriptionEnabled}>
+                  ${this.t('player.prefEnabled')}
+                </option>
+                <option value="false" ?selected=${!this.hasAdTrack || !this.audioDescriptionEnabled}>
+                  ${this.t('player.prefDisabled')} ${!this.hasAdTrack ? `(${this.t('player.notAvailableSuffix')})` : ''}
                 </option>
               </select>
             </div>

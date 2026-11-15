@@ -108,6 +108,10 @@
   "player.prefShortcuts": "የቁልፍ ሰሌዳ አቋራጮች",
   "player.prefShortcutsOn": "የነቃ (K, J, L, C, S, D, F, T)",
   "player.prefShortcutsOff": "የቦዘነ",
+  "player.prefSignWindow": "የምልክት ቋንቋ መስኮት",
+  "player.prefAudioDescription": "የድምጽ ማብራሪያ (AD)",
+  "player.prefEnabled": "የነቃ",
+  "player.prefDisabled": "የቦዘነ",
   "player.prefReset": "ወደ ነባሪ መልስ",
   "player.statusPrefsSaved": "ቅንብሮች ተቀምጠዋል",
   "player.statusLangChanged": "ቋንቋ ወደ {lang} ተቀይሯል"
