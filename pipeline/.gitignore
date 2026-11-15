@@ -1,0 +1,3 @@
+# pipeline working directory (videos, audio, drafts); never commit
+pipeline-out/
+*.wav

@@ -1,13 +1,13 @@
-/packages/components/src/player/             @Ruthareda
-/packages/components/src/sign-window/        @EkramTofik
-/packages/components/src/audio-description/  @EkramTofik
-/packages/components/src/offline/            @EkramTofik
-/apps/api/src/routes/pack.ts                 @EkramTofik
-/packages/components/src/job-card/           @hareg28
-/packages/components/src/credential/         @hareg28
-/apps/api/src/routes/jobs.ts                 @hareg28
-/apps/api/src/routes/credentials.ts          @hareg28
-/apps/api/src/routes/verify.ts               @hareg28
-/apps/api/prisma/schema/career.prisma        @hareg28
+/module/src/player/             @Ruthareda
+/module/src/sign-window/        @EkramTofik
+/module/src/audio-description/  @EkramTofik
+/module/src/offline/            @EkramTofik
+/api/src/routes/pack.ts                 @EkramTofik
+/module/src/job-card/           @hareg28
+/module/src/credential/         @hareg28
+/api/src/routes/jobs.ts                 @hareg28
+/api/src/routes/credentials.ts          @hareg28
+/api/src/routes/verify.ts               @hareg28
+/api/prisma/schema/career.prisma        @hareg28
 /contracts/                                  @Ruthareda @EkramTofik @hareg28 @bit-suan
 *                                            @bit-suan
