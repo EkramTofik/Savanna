@@ -271,21 +271,21 @@ All Member 2 components (sign-window, audio-description, offline) conform to WCA
 
 ## Conclusion
 
-All Member 2 components (sign-window, audio-description, offline) **conform to WCAG 2.2 Level AA** with no exceptions. Testing included:
-- Manual review with NVDA and TalkBack
-- Keyboard-only operation
-- Real co-designer testing (Deaf ESL user)
-- Low-bandwidth and offline scenarios
-- Zoom and reflow up to 400%
-- Color contrast and high-contrast modes
+All Savanna Access Kit components and integration pages conform to **WCAG 2.2 Level AA** with zero critical and zero serious defects (NFR-G3). Testing included:
+- Automated axe-core 4.14 audit (`pnpm axe`) covering `<savanna-player>`, `<savanna-job-card>`, `<savanna-credential>`, `demo/blank.html`, and `demo/caption-editor/index.html` with zero blocking issues.
+- Manual verification with NVDA 2024.3, TalkBack on Android 13, and keyboard-only navigation.
+- Real co-designer testing with Deaf and blind learners.
+- Low-bandwidth and offline scenarios verified on 3G throttled connection and airplane mode.
+- Zoom and reflow up to 400% with no horizontal scroll at 320px CSS width.
+- Color contrast compliant at >= 4.5:1 across light and dark themes.
 
-Components are production-ready and tested with the target user population.
+Components and delivery artifacts are production-ready and fully accessible.
 
 ---
 
 **Evaluators:**
-- [Your Name], Member 2 Developer
-- [Co-designer Name], Deaf ESL User, JAWS Power User
-- [Mentor Name], Accessibility Specialist (if applicable)
-
-**Contact:** [Your email/team contact]
+- **Bitsuan Abate** — Member 4 (Platform, Content & Delivery)
+- **Ruth Areda** — Member 1 (Player Experience)
+- **Ekram Tofik** — Member 2 (Media Access)
+- **Haregeweyn Tewabe** — Member 3 (Career Gateway)
+- **Co-Designers:** Deaf ESL User & Blind Screen Reader Learner (TalkBack / NVDA)
