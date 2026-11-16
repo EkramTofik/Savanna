@@ -23,6 +23,12 @@ export interface AppConfig {
   rateLimitPerMin: number;
   /** "memory" (default in dev, no database needed) or "prisma" (PostgreSQL). */
   store: "memory" | "prisma";
+  /** Optional local media directory. Production assets can instead use external URLs in the lesson records. */
+  mediaRoot?: string;
+  /** Optional root directory containing per-lesson pack.json/manifest.json and pack.zip folders. */
+  packRoot?: string;
+  /** Optional directory containing the public site files served by this API process. */
+  webRoot?: string;
 }
 
 // Replace `unknown` with the generated PrismaClient type once Prisma is set up (task 4.3).
@@ -31,6 +37,8 @@ export interface Ctx {
   /** Content store (lessons, transcripts, preferences). Added in task 4.3. */
   store: Store;
   config: AppConfig;
+  /** Optional explicit offline pack directory, primarily for app-specific deployments. */
+  packRoot?: string;
 }
 
 export type RegisterRoutes = (router: Router, ctx: Ctx) => void;

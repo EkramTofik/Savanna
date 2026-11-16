@@ -1,18 +1,38 @@
 {
   "id": "L-103",
-  "title": { "en": "Full lesson (sign, audio description, offline pack)", "am": "ሙሉ ትምህርት" },
+  "title": {
+    "en": "Full lesson (sign, audio description, offline pack)",
+    "am": "ሙሉ ትምህርት"
+  },
   "durationSec": 120,
-  "media": { "video": "http://localhost:4010/media/lesson.mp4", "audio": "http://localhost:4010/media/lesson.opus" },
+  "media": {
+    "video": "http://localhost:4010/media/lesson.mp4",
+    "audio": "http://localhost:4010/media/lesson.opus"
+  },
   "captions": [
-    { "lang": "en", "url": "http://localhost:4010/media/en.vtt" },
-    { "lang": "am", "url": "http://localhost:4010/media/am.vtt" }
+    {
+      "lang": "en",
+      "url": "http://localhost:4010/media/en.vtt"
+    },
+    {
+      "lang": "am",
+      "url": "http://localhost:4010/media/am.vtt"
+    }
   ],
-  "sign": { "url": "http://localhost:4010/media/esl-placeholder.mp4", "offsetMs": 0 },
+  "sign": {
+    "url": "http://localhost:4010/media/esl-placeholder.mp4",
+    "offsetMs": 0
+  },
   "audioDescription": {
     "audioUrl": "http://localhost:4010/media/ad.opus",
     "vttUrl": "http://localhost:4010/media/ad.vtt",
     "extended": true
   },
-  "transcript": { "url": "/v1/lessons/L-103/transcript" },
-  "pack": { "manifestUrl": "/v1/lessons/L-103/pack", "sizeBytes": 1800000 }
+  "transcript": {
+    "url": "/v1/lessons/L-103/transcript"
+  },
+  "pack": {
+    "manifestUrl": "/v1/lessons/L-103/pack",
+    "sizeBytes": 51761
+  }
 }

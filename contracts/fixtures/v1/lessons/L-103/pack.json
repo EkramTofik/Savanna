@@ -1,1 +1,49 @@
-{ "id": "L-103", "version": 1, "files": [ { "path": "lesson.opus", "bytes": 12000, "sha256": "placeholder" } ], "sizeBytes": 1800000 }
+{
+  "id": "L-103",
+  "version": 1,
+  "sizeBytes": 51761,
+  "content": {
+    "audio": "lesson.opus",
+    "captions": {
+      "en": "en.vtt",
+      "am": "am.vtt"
+    },
+    "sign": "esl-placeholder.mp4",
+    "audioDescription": {
+      "audio": "ad.opus",
+      "text": "ad.vtt"
+    }
+  },
+  "files": [
+    {
+      "path": "lesson.opus",
+      "sizeBytes": 24808,
+      "sha256": "82fa7d167fe1d05528f164de8430e3d5e3df53a4d5d5cf291c461227b58212b7"
+    },
+    {
+      "path": "en.vtt",
+      "sizeBytes": 2019,
+      "sha256": "076a156950f5f79fc319bf6976312a424f4af5f0dc9bf47584c40cc9099dfc14"
+    },
+    {
+      "path": "am.vtt",
+      "sizeBytes": 2830,
+      "sha256": "cdd8d38a656cfb6b73d71053848f95855b50c3258acfbb3cc6689736e00e9e16"
+    },
+    {
+      "path": "ad.opus",
+      "sizeBytes": 9664,
+      "sha256": "715276e68c2800bf2791e29b074fc6bb98d7fbd740b33a7435745f872c722ea9"
+    },
+    {
+      "path": "ad.vtt",
+      "sizeBytes": 133,
+      "sha256": "62529d21b46090cedafb1a979b392a0833497f72d7df7c14bfd31c018d314bb0"
+    },
+    {
+      "path": "esl-placeholder.mp4",
+      "sizeBytes": 12307,
+      "sha256": "34f6d5872bea89e44abf24c3cb5d178bb13b4408fb0deb4bcb197de0f7a4a773"
+    }
+  ]
+}

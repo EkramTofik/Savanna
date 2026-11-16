@@ -200,7 +200,7 @@ export function createMember3CareerContext(ctx: Ctx): CareerCtx {
     },
   };
 
-  const publicBaseUrl = process.env.PUBLIC_BASE_URL ?? `http://localhost:${ctx.config.port}`;
+  const publicBaseUrl = process.env.PUBLIC_BASE_URL ?? process.env.RENDER_EXTERNAL_URL ?? `http://localhost:${ctx.config.port}`;
   const issuerDid = `did:web:${encodeURIComponent(new URL(publicBaseUrl).host)}`;
 
   return {

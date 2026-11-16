@@ -1,7 +1,11 @@
 import '../../../module/src/player/savanna-player.ts';
+import '../../../module/src/sign-window/sign-window.ts';
+import '../../../module/src/audio-description/audio-description.ts';
+import '../../../module/src/offline/offline.ts';
 import type { SavannaPlayer } from '../../../module/src/player/savanna-player.ts';
 
 const player = document.getElementById('lesson-player') as SavannaPlayer | null;
+const API_BASE = '/';
 const eventLog = document.getElementById('event-log');
 const stateText = document.getElementById('state-text');
 const timeText = document.getElementById('time-text');
@@ -184,15 +188,15 @@ const breadcrumbLesson = document.getElementById('breadcrumb-lesson');
 if (btnLoadL103 && player) {
     btnLoadL103.addEventListener('click', async () => {
         player.lesson = 'L-103';
-        player.api = 'http://localhost:4010';
+        player.api = API_BASE;
         player.lang = currentHostLang;
         applyHostLanguage(currentHostLang);
         if (mockDataTitle) mockDataTitle.textContent = 'Active Mock Data (contracts/fixtures/v1/lessons/L-103.json)';
-        if (mockRawLink) mockRawLink.href = 'http://localhost:4010/v1/lessons/L-103';
+        if (mockRawLink) mockRawLink.href = `${API_BASE}v1/lessons/L-103`;
         appendLog('Switched to L-103 (Full Lesson: Sign, AD, Captions, Pack)');
 
         try {
-            const res = await fetch('http://localhost:4010/v1/lessons/L-103');
+            const res = await fetch(`${API_BASE}v1/lessons/L-103`, { headers: { 'X-Savanna-Key': 'pk_demo_public' } });
             if (res.ok && mockJsonDisplay) {
                 const data = await res.json();
                 mockJsonDisplay.textContent = JSON.stringify(data, null, 2);
@@ -204,15 +208,15 @@ if (btnLoadL103 && player) {
 if (btnLoadL102 && player) {
     btnLoadL102.addEventListener('click', async () => {
         player.lesson = 'L-102';
-        player.api = 'http://localhost:4010';
+        player.api = API_BASE;
         player.lang = currentHostLang;
         applyHostLanguage(currentHostLang);
         if (mockDataTitle) mockDataTitle.textContent = 'Active Mock Data (contracts/fixtures/v1/lessons/L-102.json)';
-        if (mockRawLink) mockRawLink.href = 'http://localhost:4010/v1/lessons/L-102';
+        if (mockRawLink) mockRawLink.href = `${API_BASE}v1/lessons/L-102`;
         appendLog('Switched to L-102 (Minimal Lesson)');
 
         try {
-            const res = await fetch('http://localhost:4010/v1/lessons/L-102');
+            const res = await fetch(`${API_BASE}v1/lessons/L-102`, { headers: { 'X-Savanna-Key': 'pk_demo_public' } });
             if (res.ok && mockJsonDisplay) {
                 const data = await res.json();
                 mockJsonDisplay.textContent = JSON.stringify(data, null, 2);

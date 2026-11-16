@@ -5,6 +5,7 @@ import {needsDriftCorrection,signTargetTime} from './sync.js';
 type Position={x:number;y:number;width:number;height:number;corner?:Corner};
 type Corner='nw'|'ne'|'se'|'sw';
 type Bounds={left:number;top:number;right:number;bottom:number};
+type PlayerElement=HTMLElement&{media?:HTMLMediaElement};
 const KEY='savanna.prefs.v1',RATIO=16/9,HEADER=48,MIN_WIDTH=180,GUTTER=8,CONTROL_CLEARANCE=56;
 const DEFAULT:Position={x:8,y:8,width:320,height:320/RATIO+HEADER};
 
@@ -39,7 +40,7 @@ export class SavannaSignWindow extends LitElement{
  @state() private loading=false;
  @state() private announcement='';
  private hasStoredPosition=!!storedPosition();
- private player?:HTMLElement;
+ private player?:PlayerElement;
  private main?:HTMLMediaElement;
  private video?:HTMLVideoElement;
  private drag?:{x:number;y:number;position:Position};
@@ -49,12 +50,46 @@ export class SavannaSignWindow extends LitElement{
  connectedCallback(){
   super.connectedCallback();
   if(!this.slot)this.slot='overlay';
-  this.player=this.closest('savanna-player') as HTMLElement|undefined;
-  this.main=(this.player as {media?:HTMLMediaElement}|undefined)?.media;
+  this.bindPlayer();
   this.hasTrack=!!this.src;
   window.addEventListener('resize',this.clamp);
   window.addEventListener('savanna:lang-change',this.language);
-  this.player?.addEventListener('savanna:timeupdate',this.sync as EventListener);
+ }
+ disconnectedCallback(){
+  window.removeEventListener('resize',this.clamp);
+  window.removeEventListener('savanna:lang-change',this.language);
+  this.unbindPlayer();
+  super.disconnectedCallback();
+ }
+ firstUpdated(){
+  this.video=this.renderRoot.querySelector('video')||undefined;
+  this.bindPlayer();
+  if(!this.hasStoredPosition){const bounds=this.bounds();this.position={...this.position,x:bounds.right-this.position.width,y:bounds.top};}
+  this.clamp();
+ }
+ updated(changed:Map<string,unknown>){
+  if(changed.has('src')){this.hasTrack=!!this.src;this.signUnavailable=false;this.loading=!!this.src;this.video=this.renderRoot.querySelector('video')||undefined;}
+  this.bindPlayer();
+  if(changed.has('enabled')){this.video=this.renderRoot.querySelector('video')||undefined;if(this.enabled)this.syncFromMain();}
+ }
+ private bindPlayer(){
+  const nextPlayer=this.closest('savanna-player') as PlayerElement|null;
+  if(this.player!==nextPlayer){
+   this.player?.removeEventListener('savanna:timeupdate',this.sync as EventListener);
+   this.player=nextPlayer||undefined;
+   this.player?.addEventListener('savanna:timeupdate',this.sync as EventListener);
+  }
+  const nextMain=this.player?.media;
+  if(this.main===nextMain)return;
+  this.main?.removeEventListener('waiting',this.mainWaiting);
+  this.main?.removeEventListener('seeking',this.mainWaiting);
+  this.main?.removeEventListener('canplay',this.mainReady);
+  this.main?.removeEventListener('seeked',this.mainReady);
+  this.main?.removeEventListener('playing',this.mainReady);
+  this.main?.removeEventListener('ended',this.syncFromMain);
+  this.main?.removeEventListener('pause',this.syncFromMain);
+  this.main?.removeEventListener('ratechange',this.syncFromMain);
+  this.main=nextMain;
   this.main?.addEventListener('waiting',this.mainWaiting);
   this.main?.addEventListener('seeking',this.mainWaiting);
   this.main?.addEventListener('canplay',this.mainReady);
@@ -64,10 +99,9 @@ export class SavannaSignWindow extends LitElement{
   this.main?.addEventListener('pause',this.syncFromMain);
   this.main?.addEventListener('ratechange',this.syncFromMain);
  }
- disconnectedCallback(){
-  window.removeEventListener('resize',this.clamp);
-  window.removeEventListener('savanna:lang-change',this.language);
+ private unbindPlayer(){
   this.player?.removeEventListener('savanna:timeupdate',this.sync as EventListener);
+  this.player=undefined;
   this.main?.removeEventListener('waiting',this.mainWaiting);
   this.main?.removeEventListener('seeking',this.mainWaiting);
   this.main?.removeEventListener('canplay',this.mainReady);
@@ -76,16 +110,7 @@ export class SavannaSignWindow extends LitElement{
   this.main?.removeEventListener('ended',this.syncFromMain);
   this.main?.removeEventListener('pause',this.syncFromMain);
   this.main?.removeEventListener('ratechange',this.syncFromMain);
-  super.disconnectedCallback();
- }
- firstUpdated(){
-  this.video=this.renderRoot.querySelector('video')||undefined;
-  if(!this.hasStoredPosition){const bounds=this.bounds();this.position={...this.position,x:bounds.right-this.position.width,y:bounds.top};}
-  this.clamp();
- }
- updated(changed:Map<string,unknown>){
-  if(changed.has('src')){this.hasTrack=!!this.src;this.signUnavailable=false;this.loading=!!this.src;this.video=this.renderRoot.querySelector('video')||undefined;}
-  if(changed.has('enabled')){this.video=this.renderRoot.querySelector('video')||undefined;if(this.enabled)this.syncFromMain();}
+  this.main=undefined;
  }
  private bounds():Bounds{
   const parent=this.offsetParent as HTMLElement|null;

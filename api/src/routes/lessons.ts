@@ -3,12 +3,39 @@
 import type { Router } from "express";
 import { HttpError } from "../lib/errors";
 import type { Ctx } from "../lib/context";
+import type { LessonRecord } from "../db/store";
 import { toManifest } from "../lib/manifest";
 import { z } from "zod";
 import type { OperationDoc } from "../lib/openapi";
 import { LangQuery, LessonListSchema, LessonManifestSchema, TranscriptSchema } from "../schemas/lesson";
 import { requireScope } from "../middleware/auth";
 import { validateWebVTT } from "../lib/captionValidation";
+
+function hostedManifestUrl(url: string, origin: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
+      return new URL(`${parsed.pathname}${parsed.search}${parsed.hash}`, origin).href;
+    }
+  } catch {
+    // Relative paths already work on the API's origin.
+  }
+  return url;
+}
+
+function manifestForRequest(lesson: LessonRecord, origin: string, production: boolean) {
+  const manifest = toManifest(lesson);
+  if (!production) return manifest;
+  manifest.media.video = hostedManifestUrl(manifest.media.video, origin);
+  manifest.media.audio = hostedManifestUrl(manifest.media.audio, origin);
+  manifest.captions = manifest.captions.map((caption) => ({ ...caption, url: hostedManifestUrl(caption.url, origin) }));
+  if (manifest.sign) manifest.sign.url = hostedManifestUrl(manifest.sign.url, origin);
+  if (manifest.audioDescription) {
+    manifest.audioDescription.audioUrl = hostedManifestUrl(manifest.audioDescription.audioUrl, origin);
+    manifest.audioDescription.vttUrl = hostedManifestUrl(manifest.audioDescription.vttUrl, origin);
+  }
+  return manifest;
+}
 
 export function register(router: Router, ctx: Ctx) {
   router.get("/lessons", async (_req, res) => {
@@ -19,7 +46,7 @@ export function register(router: Router, ctx: Ctx) {
   router.get("/lessons/:id", async (req, res) => {
     const lesson = await ctx.store.getLesson(req.params.id);
     if (!lesson) throw new HttpError(404, "Not Found", `No lesson "${req.params.id}".`);
-    res.json(toManifest(lesson));
+    res.json(manifestForRequest(lesson, `${req.protocol}://${req.get("host")}`, ctx.config.production));
   });
 
   // Captions live in object storage or memory store; we hand back the file location.
@@ -35,7 +62,7 @@ export function register(router: Router, ctx: Ctx) {
       }
     }
     const lesson = await ctx.store.getLesson(req.params.id);
-    const cap = lesson && toManifest(lesson).captions.find((c) => c.lang === lang);
+    const cap = lesson && manifestForRequest(lesson, `${req.protocol}://${req.get("host")}`, ctx.config.production).captions.find((c) => c.lang === lang);
     if (!cap) throw new HttpError(404, "Not Found", `No ${lang} captions for lesson "${req.params.id}".`);
     res.redirect(302, cap.url);
   });

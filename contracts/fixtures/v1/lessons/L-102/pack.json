@@ -2,20 +2,32 @@
   "id": "L-102",
   "version": 1,
   "createdAt": "2024-01-01T00:00:00.000Z",
-  "sizeBytes": 212000,
+  "sizeBytes": 29657,
   "content": {
     "audio": "lesson.opus",
-    "captions": { "en": "en.vtt", "am": "am.vtt" },
+    "captions": {
+      "en": "en.vtt",
+      "am": "am.vtt"
+    },
     "transcript": "transcript.html",
-    "audioDescription": { "audio": "ad.opus", "text": "ad.vtt" },
+    "audioDescription": null,
     "optionalVideo": null
   },
   "files": [
-    { "path": "lesson.opus",  "sizeBytes": 24808,  "sha256": "placeholder-opus" },
-    { "path": "en.vtt",       "sizeBytes": 176,    "sha256": "placeholder-en" },
-    { "path": "am.vtt",       "sizeBytes": 284,    "sha256": "placeholder-am" },
-    { "path": "ad.opus",      "sizeBytes": 9664,   "sha256": "placeholder-ad-opus" },
-    { "path": "ad.vtt",       "sizeBytes": 133,    "sha256": "placeholder-ad-vtt" },
-    { "path": "transcript.html","sizeBytes": 1200, "sha256": "placeholder-transcript" }
+    {
+      "path": "lesson.opus",
+      "sizeBytes": 24808,
+      "sha256": "82fa7d167fe1d05528f164de8430e3d5e3df53a4d5d5cf291c461227b58212b7"
+    },
+    {
+      "path": "en.vtt",
+      "sizeBytes": 2019,
+      "sha256": "076a156950f5f79fc319bf6976312a424f4af5f0dc9bf47584c40cc9099dfc14"
+    },
+    {
+      "path": "am.vtt",
+      "sizeBytes": 2830,
+      "sha256": "cdd8d38a656cfb6b73d71053848f95855b50c3258acfbb3cc6689736e00e9e16"
+    }
   ]
 }

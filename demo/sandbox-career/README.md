@@ -200,23 +200,9 @@ files are fetched at runtime from the same origin as the script.
 
 ## Offline / slow connection
 
-Measured on Chrome DevTools **Slow 3G** (750 kbps down, 250 kbps up, 300 ms RTT):
+No repeatable network-throttling measurement is recorded for this integration pass. Measure the production bundle and API on the target deployment before using performance budgets or timings in release material.
 
-| Asset | Transfer size | Load time |
-|---|---|---|
-| `savanna-career.v1.js` bundle | ~13 KB (gzip) | ~1.5 s |
-| i18n/am.json (job-card) | ~1 KB | ~0.4 s |
-| i18n/am.json (credential) | ~1 KB | ~0.4 s |
-| First API call (`/v1/jobs/J-9`) | ~2 KB | ~0.5 s |
-| **Total first meaningful paint** | **~17 KB** | **~3 s** |
-
-The module has no service worker. On a lost connection the last-loaded text stays visible
-(shadow DOM); new data fetches display a localised error message. Audio files (~40 KB each
-as MP3) load on demand only when the user activates Play.
-
-> **Note:** Exact timings depend on the deployment origin and CDN. The numbers above were
-> measured locally on 14 November 2026 from the Vite dev build. Record a fresh measurement
-> from the production CDN before final submission.
+The Career Gateway does not register a service worker. Previously rendered text remains in the page after connectivity is lost; new requests show the component's error state. Audio loads when the user activates Play. This behavior is distinct from the lesson player's offline pack.
 
 ## Data and privacy
 

@@ -93,9 +93,9 @@ test("audio-description: extended mode clearly marked", async () => {
     "utf8",
   );
 
-  assert.match(src, /<input type="checkbox"/, "Checkbox for extended mode");
-  assert.match(src, /Extended AD|extended AD/, "Label must explain feature");
-  assert.match(src, /pause/, "Label must explain it pauses main video");
+  assert.match(src, /type="checkbox"/, "Checkbox for extended mode");
+  assert.match(src, /extended description/i, "Label must explain feature");
+  assert.match(src, /pause lesson/i, "Label must explain it pauses main video");
 });
 
 // Test: Offline Component Accessibility
@@ -137,7 +137,8 @@ test("media-sw: service worker caches pack manifests", async () => {
 test("media-sw: service worker handles offline gracefully", async () => {
   const src = await fs.readFile(new URL("./offline/media-sw.js", import.meta.url), "utf8");
 
-  assert.match(src, /fetch.*catch/, "Falls back to cache on fetch failure");
+  assert.match(src, /fetch\(request\)/, "Attempts network requests");
+  assert.match(src, /catch\s*\{[\s\S]*?503/, "Falls back to a clear offline response");
   assert.match(src, /503/, "Returns 503 (Service Unavailable) when offline");
   assert.match(src, /Offline pack is not saved/, "Clear offline message");
 });
@@ -195,7 +196,7 @@ test("offline: pack size targets for low-end devices", async () => {
   // The build-pack.mjs enforces this, but the component should handle large packs gracefully
   assert.match(src, /sizeBytes/, "Must read and display size");
   assert.match(src, /toFixed/, "Formats size for readability");
-  assert.match(src, /size\(/, "Has a size formatting function");
+  assert.match(src, /formatSize\(/, "Has a size formatting function");
 });
 
 test("pack-builder: uses Opus codec for low bandwidth", async () => {

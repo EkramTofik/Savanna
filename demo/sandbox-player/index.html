@@ -803,10 +803,10 @@
                         <div style="margin: 1rem 0;">
                             <video controls preload="metadata"
                                 style="width: 100%; max-height: 380px; border-radius: 6px; background: #000;">
-                                <source src="http://localhost:4010/media/lesson.mp4" type="video/mp4" />
-                                <track kind="subtitles" srclang="en" src="http://localhost:4010/media/en.vtt"
+                                <source src="/media/lesson.mp4" type="video/mp4" />
+                                <track kind="subtitles" srclang="en" src="/media/en.vtt"
                                     label="English" default />
-                                <track kind="subtitles" srclang="am" src="http://localhost:4010/media/am.vtt"
+                                <track kind="subtitles" srclang="am" src="/media/am.vtt"
                                     label="Amharic" />
                                 Your browser does not support HTML5 video.
                             </video>
@@ -814,51 +814,48 @@
 
                         <!-- Working links list (Done when: Page shows working links when JS is off) -->
                         <div class="noscript-links-grid">
-                            <a href="http://localhost:4010/media/lesson.mp4" class="noscript-link" download>
+                            <a href="/media/lesson.mp4" class="noscript-link" download>
                                 🎥 <strong>Direct Video:</strong> lesson.mp4 (720p)
                             </a>
-                            <a href="http://localhost:4010/media/lesson.opus" class="noscript-link" download>
+                            <a href="/media/lesson.opus" class="noscript-link" download>
                                 🎵 <strong>Audio Only:</strong> lesson.opus (Low bandwidth)
                             </a>
-                            <a href="http://localhost:4010/media/en.vtt" class="noscript-link" download>
+                            <a href="/media/en.vtt" class="noscript-link" download>
                                 📝 <strong>English Captions:</strong> en.vtt (WebVTT)
                             </a>
-                            <a href="http://localhost:4010/media/am.vtt" class="noscript-link" download>
+                            <a href="/media/am.vtt" class="noscript-link" download>
                                 📝 <strong>Amharic Captions:</strong> am.vtt (የአማርኛ የግርጌ ጽሑፍ)
                             </a>
-                            <a href="http://localhost:4010/media/esl-placeholder.mp4" class="noscript-link" download>
+                            <a href="/media/esl-placeholder.mp4" class="noscript-link" download>
                                 🤟 <strong>Sign Language (ESL):</strong> esl-placeholder.mp4
                             </a>
-                            <a href="http://localhost:4010/media/ad.opus" class="noscript-link" download>
+                            <a href="/media/ad.opus" class="noscript-link" download>
                                 🎙️ <strong>Audio Description:</strong> ad.opus
                             </a>
-                            <a href="http://localhost:4010/v1/lessons/L-103/transcript" class="noscript-link"
+                            <a href="/v1/lessons/L-103/transcript" class="noscript-link"
                                 target="_blank" rel="noopener">
                                 📄 <strong>Full Transcript:</strong> Plain-Language JSON / Text
                             </a>
-                            <a href="/samples/L-103.en.brf" class="noscript-link" download>
+                            <a href="samples/L-103.en.brf" class="noscript-link" download>
                                 ⠃⠗ <strong>Braille Transcript (EN .brf):</strong> 40 cells × 25 lines
                             </a>
-                            <a href="/samples/L-103.am.brf" class="noscript-link" download>
+                            <a href="samples/L-103.am.brf" class="noscript-link" download>
                                 ⠃⠗ <strong>Braille Transcript (AM .brf):</strong> 40 cells × 25 lines (Ethiopic)
                             </a>
                         </div>
                     </div>
                 </noscript>
 
-                <savanna-player id="lesson-player" lesson="L-103" api="http://localhost:4010" lang="en">
-                    <!-- Slotted ESL Sign Window Stub with actual ESL video from L-103 -->
-                    <div slot="overlay" data-sign-window id="mock-sign-window" class="mock-sign-overlay">
-                        <div id="mock-sign-title" style="font-weight: 700; margin-bottom: 3px;">ESL Sign Window</div>
-                        <video src="http://localhost:4010/media/esl-placeholder.mp4" loop muted playsinline
-                            style="width: 120px; height: 80px; object-fit: cover; border-radius: 4px; display: block;"></video>
-                        <div id="mock-sign-hint" style="font-size: 0.68rem; opacity: 0.9; margin-top: 2px;">(Press S to
-                            toggle)</div>
-                    </div>
-                    <!-- Slotted Audio Description from L-103 -->
-                    <audio data-ad id="mock-ad-track" src="http://localhost:4010/media/ad.opus" preload="none"></audio>
+                <savanna-player id="lesson-player" lesson="L-103" api="/" api-key="pk_demo_public" lang="en">
+                    <savanna-sign-window id="mock-sign-window" slot="overlay" lang="en"></savanna-sign-window>
+                    <savanna-audio-description id="mock-ad-track" lang="en"></savanna-audio-description>
                 </savanna-player>
             </div>
+
+            <section class="offline-panel" aria-labelledby="offline-heading">
+                <h2 id="offline-heading">Save this lesson for offline learning</h2>
+                <savanna-offline id="offline-save" api="/" api-key="pk_demo_public" lesson-id="L-103" lang="en"></savanna-offline>
+            </section>
 
             <!-- Modern Bottom Lesson Navigation & Switcher -->
             <div class="lesson-nav-bar">

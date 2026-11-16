@@ -14,7 +14,7 @@ export default defineConfig({
       reuseExistingServer: true,
     },
     {
-      command: "npm run ui-only",
+      command: "node node_modules/vite/bin/vite.js --port 5173 --strictPort",
       url: "http://localhost:5173",
       reuseExistingServer: true,
     },

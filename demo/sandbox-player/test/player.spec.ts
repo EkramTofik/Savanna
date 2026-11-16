@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { createHash } from "node:crypto";
 
 test.describe("Savanna Player - Member 1 Accessibility & Functional Suite", () => {
   test.beforeEach(async ({ page }) => {
@@ -257,5 +258,209 @@ test.describe("Savanna Player - Member 1 Accessibility & Functional Suite", () =
 
     // Turn captions back off
     await player.locator(".btn-captions").click();
+  });
+
+  test("1.12 L-103 manifest configures the sign and audio-description components", async ({ page }) => {
+    const player = page.locator("savanna-player");
+    const sign = page.locator("savanna-sign-window");
+    const audioDescription = page.locator("savanna-audio-description");
+
+    await expect.poll(() => player.evaluate((element: any) => ({
+      sign: element.hasSignTrack,
+      audioDescription: element.hasAdTrack,
+    }))).toEqual({ sign: true, audioDescription: true });
+
+    const tracks = await player.evaluate((element: any) => {
+      const signElement = element.querySelector("savanna-sign-window");
+      const adElement = element.querySelector("savanna-audio-description");
+      return {
+        signUrl: signElement?.src,
+        signOffsetMs: signElement?.offsetMs,
+        signVideoUrl: signElement?.shadowRoot?.querySelector("video")?.getAttribute("src"),
+        audioUrl: adElement?.src,
+        textVttUrl: adElement?.textVtt,
+        audioElementUrl: adElement?.shadowRoot?.querySelector("audio")?.getAttribute("src"),
+      };
+    });
+
+    expect(tracks.signUrl).toBe("http://localhost:4010/media/esl-placeholder.mp4");
+    expect(tracks.signOffsetMs).toBe(0);
+    expect(tracks.signVideoUrl).toBe("http://localhost:4010/media/esl-placeholder.mp4");
+    expect(tracks.audioUrl).toBe("http://localhost:4010/media/ad.opus");
+    expect(tracks.textVttUrl).toBe("http://localhost:4010/media/ad.vtt");
+    expect(tracks.audioElementUrl).toBe("http://localhost:4010/media/ad.opus");
+
+    await player.locator(".btn-ad").click();
+    await expect(player.locator(".btn-ad")).toHaveAttribute("aria-pressed", "true");
+    await expect(audioDescription.locator(".ad-badge")).toHaveText("🔊 AD ON");
+
+    await player.locator(".btn-sign").click();
+    await expect.poll(() => sign.evaluate((element: any) => element.enabled)).toBe(false);
+    await expect.poll(() => player.evaluate((element: any) => element.showSignWindow)).toBe(false);
+  });
+
+  test("1.13 offline lesson pack caches playable audio and the player switches to it when connectivity is lost", async ({ page }) => {
+    const offline = page.locator("savanna-offline#offline-save");
+    const player = page.locator("savanna-player");
+
+    await page.evaluate(async () => {
+      for (const name of await caches.keys()) if (name.startsWith("savanna-pack-L-103-v")) await caches.delete(name);
+    });
+    await page.reload();
+
+    await expect(offline).toContainText("Pack ready");
+    await expect.poll(() => player.locator("video").first().evaluate((video: HTMLVideoElement) => video.src)).toContain("/media/lesson.mp4");
+    await offline.getByRole("button", { name: /Save for offline/ }).click();
+    await expect(offline).toContainText("Saved offline", { timeout: 20_000 });
+
+    const cached = await page.evaluate(async () => {
+      for (const name of await caches.keys()) {
+        if (!name.startsWith("savanna-pack-L-103-v")) continue;
+        const response = await (await caches.open(name)).match("http://localhost:4010/media/lesson.opus");
+        if (response) return { type: response.headers.get("content-type"), size: Number(response.headers.get("content-length")) };
+      }
+      return null;
+    });
+    expect(cached?.type).toBe("audio/ogg");
+    expect(cached?.size).toBeGreaterThan(0);
+
+    await page.context().setOffline(true);
+    await expect.poll(() => player.locator("video").first().evaluate((video: HTMLVideoElement) => video.src)).toMatch(/^blob:/);
+  });
+
+  test("1.14 an interrupted multi-range pack download resumes from its saved byte offset", async ({ page }) => {
+    const offline = page.locator("savanna-offline#offline-save");
+    await page.evaluate(async () => {
+      for (const name of await caches.keys()) if (name.startsWith("savanna-pack-L-103-v")) await caches.delete(name);
+      localStorage.removeItem("savanna.prefs.v1");
+    });
+    const chunkSize = 256 * 1024;
+    const totalBytes = chunkSize * 2 + 31;
+    const sourcePackResponse = await page.request.get("http://localhost:4010/v1/lessons/L-103/pack");
+    const sourcePack = await sourcePackResponse.json();
+    const originalAudioSize = sourcePack.files.find((file: { path: string }) => file.path === "lesson.opus").sizeBytes;
+    const overriddenPackSize = sourcePack.sizeBytes - originalAudioSize + totalBytes;
+    await page.route("http://localhost:4010/v1/lessons/L-103", async (route) => {
+      const response = await route.fetch();
+      const manifest = await response.json();
+      manifest.pack.sizeBytes = overriddenPackSize;
+      return route.fulfill({ response, json: manifest });
+    });
+    await page.route("http://localhost:4010/v1/lessons/L-103/pack", async (route) => {
+      const response = await route.fetch();
+      const manifest = await response.json();
+      const audio = manifest.files.find((file: { path: string }) => file.path === "lesson.opus");
+      audio.sizeBytes = totalBytes;
+      audio.sha256 = createHash("sha256").update(Buffer.alloc(totalBytes, 7)).digest("hex");
+      manifest.sizeBytes = manifest.files.reduce((sum: number, file: { sizeBytes: number }) => sum + file.sizeBytes, 0);
+      expect(manifest.sizeBytes).toBe(overriddenPackSize);
+      return route.fulfill({ response, json: manifest });
+    });
+    await page.reload();
+    await expect(offline).toContainText("Pack ready");
+
+    let interrupted = false;
+    const requestedOffsets: number[] = [];
+    await page.route("http://localhost:4010/media/lesson.opus", async (route) => {
+      const header = route.request().headers().range || "";
+      const match = /^bytes=(\d+)-(\d+)$/.exec(header);
+      if (!match) return route.fulfill({ status: 416 });
+      const start = Number(match[1]);
+      const requestedEnd = Number(match[2]);
+      requestedOffsets.push(start);
+      if (start >= chunkSize && !interrupted) {
+        interrupted = true;
+        return route.abort();
+      }
+      const end = Math.min(requestedEnd, totalBytes - 1);
+      const body = Buffer.alloc(end - start + 1, 7);
+      return route.fulfill({
+        status: 206,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Expose-Headers": "Accept-Ranges, Content-Range, Content-Length",
+          "Accept-Ranges": "bytes",
+          "Content-Range": `bytes ${start}-${end}/${totalBytes}`,
+          "Content-Length": String(body.length),
+          "Content-Type": "audio/ogg",
+        },
+        body,
+      });
+    });
+
+    await offline.getByRole("button", { name: /Save for offline/ }).click();
+    await expect(offline).toContainText("Failed to fetch", { timeout: 20_000 });
+    await expect(offline.getByRole("button", { name: /Resume download/ })).toBeVisible();
+    await offline.getByRole("button", { name: /Resume download/ }).click();
+    await expect(offline).toContainText("Saved offline", { timeout: 20_000 });
+    expect(requestedOffsets).toEqual([0, chunkSize, chunkSize, chunkSize * 2]);
+  });
+
+  test("1.15 a completed resource with the wrong checksum is rejected and its partial chunks are removed", async ({ page }) => {
+    const offline = page.locator("savanna-offline#offline-save");
+    await page.evaluate(async () => {
+      for (const name of await caches.keys()) if (name.startsWith("savanna-pack-L-103-v")) await caches.delete(name);
+      localStorage.removeItem("savanna.prefs.v1");
+    });
+    const totalBytes = 256 * 1024 + 37;
+    const sourcePackResponse = await page.request.get("http://localhost:4010/v1/lessons/L-103/pack");
+    const sourcePack = await sourcePackResponse.json();
+    const originalAudioSize = sourcePack.files.find((file: { path: string }) => file.path === "lesson.opus").sizeBytes;
+    const overriddenPackSize = sourcePack.sizeBytes - originalAudioSize + totalBytes;
+    await page.route("http://localhost:4010/v1/lessons/L-103", async (route) => {
+      const response = await route.fetch();
+      const manifest = await response.json();
+      manifest.pack.sizeBytes = overriddenPackSize;
+      return route.fulfill({ response, json: manifest });
+    });
+    await page.route("http://localhost:4010/v1/lessons/L-103/pack", async (route) => {
+      const response = await route.fetch();
+      const manifest = await response.json();
+      const audio = manifest.files.find((file: { path: string }) => file.path === "lesson.opus");
+      audio.sizeBytes = totalBytes;
+      audio.sha256 = "0".repeat(64);
+      manifest.sizeBytes = manifest.files.reduce((sum: number, file: { sizeBytes: number }) => sum + file.sizeBytes, 0);
+      return route.fulfill({ response, json: manifest });
+    });
+    await page.route("http://localhost:4010/media/lesson.opus", async (route) => {
+      const rangeHeader = route.request().headers().range || "";
+      const match = /^bytes=(\d+)-(\d+)$/.exec(rangeHeader);
+      if (!match) return route.fulfill({ status: 416 });
+      const start = Number(match[1]);
+      const end = Math.min(Number(match[2]), totalBytes - 1);
+      const body = Buffer.alloc(end - start + 1, 7);
+      return route.fulfill({
+        status: 206,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Expose-Headers": "Accept-Ranges, Content-Range, Content-Length",
+          "Accept-Ranges": "bytes",
+          "Content-Range": `bytes ${start}-${end}/${totalBytes}`,
+          "Content-Length": String(body.length),
+          "Content-Type": "audio/ogg",
+        },
+        body,
+      });
+    });
+    await page.reload();
+    await expect(offline).toContainText("Pack ready");
+    await offline.getByRole("button", { name: /Save for offline/ }).click();
+    await expect(offline).toContainText("checksum for lesson.opus does not match", { timeout: 20_000 });
+
+    const result = await page.evaluate(async () => {
+      for (const name of await caches.keys()) {
+        if (!name.startsWith("savanna-pack-L-103-v")) continue;
+        const cache = await caches.open(name);
+        const keys = await cache.keys();
+        const preferences = JSON.parse(localStorage.getItem("savanna.prefs.v1") || "{}");
+        return {
+          assetCached: Boolean(await cache.match("http://localhost:4010/media/lesson.opus")),
+          partialChunks: keys.filter((request) => request.url.includes("/__savanna_offline__/L-103/0/")).length,
+          partialState: preferences.offline?.partials?.["L-103"],
+        };
+      }
+      return { assetCached: false, partialChunks: 0, partialState: null };
+    });
+    expect(result).toEqual({ assetCached: false, partialChunks: 0, partialState: undefined });
   });
 });

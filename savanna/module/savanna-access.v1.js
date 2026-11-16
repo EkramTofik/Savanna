@@ -1676,6 +1676,15 @@ function resolveCaptionUrl(options) {
     );
   }
   try {
+    if (!/^[a-z][a-z\d+.-]*:/i.test(base)) {
+      const resolutionBase = typeof window !== "undefined" && window.location?.href ? window.location.href : documentOrigin?.trim();
+      if (!resolutionBase) throw new Error("No page origin is available for a relative API base.");
+      base = new URL(base, resolutionBase).href;
+    }
+  } catch (err) {
+    throw new Error(`Invalid base URL "${base}": ${err.message}`);
+  }
+  try {
     const parsedBase = new URL(base);
     if (parsedBase.protocol !== "http:" && parsedBase.protocol !== "https:") {
       throw new Error(`Base URL protocol "${parsedBase.protocol}" must be HTTP or HTTPS.`);
@@ -1698,7 +1707,8 @@ function isTrustedApiEndpoint(url, apiBase) {
   if (!apiBase) return false;
   try {
     const target = new URL(url);
-    const api = new URL(apiBase);
+    const resolutionBase = typeof window !== "undefined" && window.location?.href ? window.location.href : void 0;
+    const api = new URL(apiBase, resolutionBase);
     if (target.origin !== api.origin) return false;
     return target.pathname.startsWith("/v1/") && !target.pathname.startsWith("/media/");
   } catch {
@@ -1725,24 +1735,36 @@ function formatPackSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 async function fetchCaptionTrack(options) {
-  const { url, apiKey, apiBase, createBlobUrl = false, fetchFn = fetch } = options;
+  const { url, apiKey, apiBase, createBlobUrl = false, fetchFn = fetch, signal } = options;
   const mustAuthenticate = shouldSendApiKey(url, apiKey, apiBase);
   const headers = {};
   if (mustAuthenticate && apiKey) {
     headers["X-Savanna-Key"] = apiKey;
   }
-  const response = await fetchFn(url, {
-    headers,
-    redirect: mustAuthenticate ? "manual" : "follow"
-  });
+  let response;
+  try {
+    response = await fetchFn(url, {
+      headers,
+      redirect: mustAuthenticate ? "manual" : "follow",
+      signal
+    });
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    if (typeof caches !== "undefined") {
+      const cached = await caches.match(url).catch(() => void 0);
+      if (cached?.ok) return processCaptionText(await cached.text(), createBlobUrl);
+    }
+    throw error;
+  }
   if (response.type === "opaqueredirect" || response.status >= 300 && response.status < 400) {
-    const location = response.headers.get("location");
-    if (location) {
-      const targetUrl = resolveCaptionUrl({ urlPath: location, apiBase });
+    const location2 = response.headers.get("location");
+    if (location2) {
+      const targetUrl = resolveCaptionUrl({ urlPath: location2, apiBase });
       const targetResponse = await fetchFn(targetUrl, {
         headers: {},
         // Do NOT forward API key to redirect target
-        redirect: "follow"
+        redirect: "follow",
+        signal
       });
       if (!targetResponse.ok) {
         throw new Error(`Failed to fetch redirected caption file: HTTP ${targetResponse.status}`);
@@ -1773,6 +1795,118 @@ function processCaptionText(text, createBlobUrl) {
     }
   }
   return { text, blobUrl };
+}
+
+// module/src/player/lesson-manifest.ts
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function isHttpUrl(value) {
+  if (typeof value !== "string" || value.trim() === "") return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+function isApiPath(value) {
+  return typeof value === "string" && value.startsWith("/v1/");
+}
+function parseLessonManifest(value, expectedId) {
+  if (!isRecord(value)) throw new Error("Lesson manifest must be a JSON object.");
+  if (typeof value.id !== "string" || value.id.trim() === "") throw new Error("Lesson manifest is missing its id.");
+  if (expectedId && value.id !== expectedId) throw new Error("The API returned a manifest for a different lesson.");
+  if (!isRecord(value.title) || typeof value.title.en !== "string" || typeof value.title.am !== "string") {
+    throw new Error("Lesson manifest title must include English and Amharic text.");
+  }
+  if (typeof value.durationSec !== "number" || !Number.isFinite(value.durationSec) || value.durationSec < 0) {
+    throw new Error("Lesson manifest duration must be a non-negative number.");
+  }
+  if (!isRecord(value.media) || !isHttpUrl(value.media.video) || !isHttpUrl(value.media.audio)) {
+    throw new Error("Lesson manifest media must include valid HTTP or HTTPS video and audio URLs.");
+  }
+  if (!Array.isArray(value.captions)) throw new Error("Lesson manifest captions must be an array.");
+  const captions = value.captions.map((caption) => {
+    if (!isRecord(caption) || caption.lang !== "en" && caption.lang !== "am" || !isHttpUrl(caption.url)) {
+      throw new Error("Each caption track must have an en or am language and a valid HTTP or HTTPS URL.");
+    }
+    return { lang: caption.lang, url: caption.url };
+  });
+  if (new Set(captions.map((caption) => caption.lang)).size !== captions.length) {
+    throw new Error("Lesson manifest contains duplicate caption languages.");
+  }
+  let sign = null;
+  if (value.sign !== null) {
+    if (!isRecord(value.sign) || !isHttpUrl(value.sign.url) || typeof value.sign.offsetMs !== "number" || !Number.isFinite(value.sign.offsetMs)) {
+      throw new Error("Lesson manifest sign track must include a valid URL and numeric offsetMs, or be null.");
+    }
+    sign = { url: value.sign.url, offsetMs: value.sign.offsetMs };
+  }
+  let audioDescription = null;
+  if (value.audioDescription !== null) {
+    if (!isRecord(value.audioDescription) || !isHttpUrl(value.audioDescription.audioUrl) || !isHttpUrl(value.audioDescription.vttUrl) || typeof value.audioDescription.extended !== "boolean") {
+      throw new Error("Lesson manifest audio description must include valid audio and VTT URLs and an extended flag, or be null.");
+    }
+    audioDescription = {
+      audioUrl: value.audioDescription.audioUrl,
+      vttUrl: value.audioDescription.vttUrl,
+      extended: value.audioDescription.extended
+    };
+  }
+  if (!isRecord(value.transcript) || !isApiPath(value.transcript.url)) {
+    throw new Error("Lesson manifest transcript URL must be a versioned API path.");
+  }
+  let pack = null;
+  if (value.pack !== null) {
+    if (!isRecord(value.pack) || !isApiPath(value.pack.manifestUrl) || typeof value.pack.sizeBytes !== "number" || !Number.isInteger(value.pack.sizeBytes) || value.pack.sizeBytes < 0) {
+      throw new Error("Lesson manifest pack must include a versioned manifest URL and non-negative sizeBytes, or be null.");
+    }
+    pack = { manifestUrl: value.pack.manifestUrl, sizeBytes: value.pack.sizeBytes };
+  }
+  let summary;
+  if (typeof value.summary === "string") {
+    summary = value.summary;
+  } else if (value.summary !== void 0 && value.summary !== null) {
+    const summaryValue = value.summary;
+    if (!isRecord(summaryValue)) {
+      throw new Error("Lesson manifest summary must be text or an English/Amharic text map.");
+    }
+    if (["en", "am"].some((lang) => summaryValue[lang] !== void 0 && typeof summaryValue[lang] !== "string")) {
+      throw new Error("Lesson manifest summary must be text or an English/Amharic text map.");
+    }
+    summary = {
+      ...typeof summaryValue.en === "string" ? { en: summaryValue.en } : {},
+      ...typeof summaryValue.am === "string" ? { am: summaryValue.am } : {}
+    };
+  }
+  return {
+    id: value.id,
+    title: { en: value.title.en, am: value.title.am },
+    durationSec: value.durationSec,
+    media: { video: value.media.video, audio: value.media.audio },
+    captions,
+    sign,
+    audioDescription,
+    transcript: { url: value.transcript.url },
+    pack,
+    ...summary !== void 0 ? { summary } : {}
+  };
+}
+
+// module/src/offline/offline-cache.ts
+var CACHE_PREFIX = "savanna-pack-";
+async function getCachedObjectUrl(url) {
+  if (typeof caches === "undefined" || typeof URL.createObjectURL !== "function") return null;
+  try {
+    for (const name of await caches.keys()) {
+      if (!name.startsWith(CACHE_PREFIX)) continue;
+      const response = await (await caches.open(name)).match(url);
+      if (response) return URL.createObjectURL(await response.blob());
+    }
+  } catch {
+  }
+  return null;
 }
 
 // module/src/player/savanna-player.ts
@@ -1834,6 +1968,8 @@ var SavannaPlayer = class extends i4 {
     this.lessonTitle = "";
     /** Stored manifest cache */
     this.manifestData = null;
+    this.manifestGeneration = 0;
+    this.offlineMediaUrls = /* @__PURE__ */ new Map();
     /**
      * Handles the global language change event per Contract C4.
      */
@@ -1921,6 +2057,23 @@ var SavannaPlayer = class extends i4 {
       if (!Number.isNaN(rate)) {
         this.setPlaybackRate(rate);
       }
+    };
+    this.handleOffline = () => {
+      const manifest = this.manifestData;
+      if (manifest) void this.useCachedPlayerMedia(manifest);
+      this.configureAccessibilityChildren();
+    };
+    this.handleSignStateChange = (event) => {
+      if (typeof event.detail?.enabled !== "boolean") return;
+      this.showSignWindow = event.detail.enabled;
+    };
+    this.handleAdStateChange = (event) => {
+      if (typeof event.detail?.enabled !== "boolean") return;
+      this.audioDescriptionEnabled = event.detail.enabled;
+      this.announceStatus(
+        event.detail.enabled ? this.t("player.statusAdOn") : this.t("player.statusAdOff"),
+        event.detail.enabled ? "Audio Description: ON" : "Audio Description: OFF"
+      );
     };
     /**
      * Accessible keyboard shortcut handler.
@@ -2484,21 +2637,21 @@ var SavannaPlayer = class extends i4 {
    * Loads Member 1's preferences (ui, captions) from localStorage per Contract C3.
    */
   loadAllPreferences() {
-    const prefs2 = loadPlayerPreferences();
-    if (prefs2.ui.lang) {
-      this.lang = prefs2.ui.lang;
+    const prefs = loadPlayerPreferences();
+    if (prefs.ui.lang) {
+      this.lang = prefs.ui.lang;
     }
-    if (typeof prefs2.ui.speed === "number") {
-      this.playbackRate = prefs2.ui.speed;
+    if (typeof prefs.ui.speed === "number") {
+      this.playbackRate = prefs.ui.speed;
     }
-    if (prefs2.ui.theme) {
-      this.playerTheme = prefs2.ui.theme;
+    if (prefs.ui.theme) {
+      this.playerTheme = prefs.ui.theme;
       this.setAttribute("data-theme", this.playerTheme);
     }
-    if (typeof prefs2.ui.shortcuts === "boolean") {
-      this.disableShortcuts = !prefs2.ui.shortcuts;
+    if (typeof prefs.ui.shortcuts === "boolean") {
+      this.disableShortcuts = !prefs.ui.shortcuts;
     }
-    const c5 = prefs2.captions;
+    const c5 = prefs.captions;
     this.captionsShowing = c5.enabled;
     this.selectedCaptionLang = c5.lang;
     this.captionFontSize = c5.fontSize;
@@ -2738,7 +2891,10 @@ var SavannaPlayer = class extends i4 {
       this.setAttribute("tabindex", "0");
     }
     this.addEventListener("keydown", this.handleKeyDown);
+    this.addEventListener("savanna:sign-toggle", this.handleSignStateChange);
+    this.addEventListener("savanna:ad-change", this.handleAdStateChange);
     window.addEventListener("keydown", this.handleWindowKeyDown);
+    window.addEventListener("offline", this.handleOffline);
     window.addEventListener("savanna:lang-change", this.handleLangChange);
     document.addEventListener("fullscreenchange", this.handleFullscreenChange);
     document.addEventListener("click", this.handleDocumentClick);
@@ -2746,14 +2902,20 @@ var SavannaPlayer = class extends i4 {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener("keydown", this.handleKeyDown);
+    this.removeEventListener("savanna:sign-toggle", this.handleSignStateChange);
+    this.removeEventListener("savanna:ad-change", this.handleAdStateChange);
     window.removeEventListener("keydown", this.handleWindowKeyDown);
+    window.removeEventListener("offline", this.handleOffline);
     window.removeEventListener("savanna:lang-change", this.handleLangChange);
     document.removeEventListener("fullscreenchange", this.handleFullscreenChange);
     document.removeEventListener("click", this.handleDocumentClick);
+    this.manifestAbortController?.abort();
+    this.manifestGeneration += 1;
     if (this.videoElement?.textTracks) {
       this.videoElement.textTracks.removeEventListener("change", this.handleCaptionChange);
     }
     this.revokeCaptionBlobUrls();
+    this.revokeOfflineMediaUrls();
   }
   /**
    * Safely revokes and clears any created Object URLs for caption tracks.
@@ -2766,6 +2928,15 @@ var SavannaPlayer = class extends i4 {
       }
     }
     this.captionBlobUrls.clear();
+  }
+  revokeOfflineMediaUrls() {
+    for (const url of this.offlineMediaUrls.values()) {
+      try {
+        URL.revokeObjectURL(url);
+      } catch {
+      }
+    }
+    this.offlineMediaUrls.clear();
   }
   /**
    * Ensures native text tracks remain in 'hidden' mode so that browser
@@ -2782,19 +2953,25 @@ var SavannaPlayer = class extends i4 {
   }
   updated(changedProps) {
     super.updated(changedProps);
-    if (changedProps.has("lesson") || changedProps.has("api")) {
+    if (changedProps.has("lesson") || changedProps.has("api") || changedProps.has("apiKey")) {
       if (this.lesson && this.api) {
-        this.fetchLessonManifest();
+        void this.fetchLessonManifest();
+      } else {
+        this.manifestAbortController?.abort();
+        this.manifestAbortController = void 0;
+        this.manifestGeneration += 1;
       }
     }
     if (changedProps.has("lang")) {
       this.syncTranscriptLanguage();
+      this.configureAccessibilityChildren();
     }
   }
   /**
    * Loads and parses all WebVTT caption files referenced in manifestCaptions.
    */
   async loadVttCues() {
+    const expectedLesson = this.manifestData?.id;
     for (const track of this.manifestCaptions) {
       if (!track.url || this.vttCuesCache.has(track.lang)) continue;
       try {
@@ -2806,6 +2983,7 @@ var SavannaPlayer = class extends i4 {
           apiBase: this.api,
           createBlobUrl: requiresAuth
         });
+        if (expectedLesson && this.manifestData?.id !== expectedLesson) return;
         if (result.blobUrl) {
           const prevBlob = this.captionBlobUrls.get(track.lang);
           if (prevBlob) {
@@ -2832,29 +3010,42 @@ var SavannaPlayer = class extends i4 {
    * Fetches lesson manifest per Contract C1 & C6 and configures media sources.
    */
   async fetchLessonManifest() {
-    const endpoint = `${this.api.replace(/\/$/, "")}/v1/lessons/${this.lesson}`;
+    const lessonId = this.lesson.trim();
+    if (!lessonId || !this.api.trim()) return;
+    this.manifestAbortController?.abort();
+    const controller = new AbortController();
+    this.manifestAbortController = controller;
+    const generation = ++this.manifestGeneration;
     try {
+      const apiBase = new URL(this.api.trim(), document.baseURI);
+      if (apiBase.protocol !== "http:" && apiBase.protocol !== "https:") {
+        throw new Error("The API URL must use HTTP or HTTPS.");
+      }
+      const endpoint = new URL(`/v1/lessons/${encodeURIComponent(lessonId)}`, apiBase).href;
       const headers = {};
       if (this.apiKey) {
         headers["X-Savanna-Key"] = this.apiKey;
       }
-      const res = await fetch(endpoint, { headers });
+      const res = await fetch(endpoint, { headers, signal: controller.signal });
       if (!res.ok) {
-        throw new Error(`Failed to fetch lesson manifest: HTTP ${res.status}`);
+        const detail = res.status === 401 || res.status === 403 ? "The lesson API key was rejected." : `The lesson service returned HTTP ${res.status}.`;
+        throw new Error(detail);
       }
-      const manifest = await res.json();
+      const manifest = parseLessonManifest(await res.json(), lessonId);
+      if (generation !== this.manifestGeneration) return;
       try {
-        localStorage.setItem(`savanna.cached_manifest.${this.lesson}`, JSON.stringify(manifest));
+        localStorage.setItem(`savanna.cached_manifest.${lessonId}`, JSON.stringify(manifest));
       } catch {
       }
       this.manifestLoadError = false;
       this.applyManifest(manifest);
-    } catch {
+    } catch (error) {
+      if (controller.signal.aborted || generation !== this.manifestGeneration) return;
       let loadedFromCache = false;
       try {
-        const cachedRaw = localStorage.getItem(`savanna.cached_manifest.${this.lesson}`);
+        const cachedRaw = localStorage.getItem(`savanna.cached_manifest.${lessonId}`);
         if (cachedRaw) {
-          const cachedManifest = JSON.parse(cachedRaw);
+          const cachedManifest = parseLessonManifest(JSON.parse(cachedRaw), lessonId);
           this.manifestLoadError = false;
           this.applyManifest(cachedManifest);
           this.announceStatus(this.t("player.statusOfflineManifest"), "Offline Cache");
@@ -2864,50 +3055,102 @@ var SavannaPlayer = class extends i4 {
       }
       if (!loadedFromCache) {
         this.manifestLoadError = true;
-        this.announceStatus(this.t("player.errorManifestLoad"), "Network Error");
+        const detail = error instanceof Error ? error.message : this.t("player.errorManifestLoad");
+        this.announceStatus(`${this.t("player.errorManifestLoad")} ${detail}`, "Lesson API error");
       }
+    } finally {
+      if (generation === this.manifestGeneration) this.manifestAbortController = void 0;
     }
   }
   applyManifest(manifest) {
-    this.manifestData = manifest;
-    if (manifest?.title) {
-      this.lessonTitle = manifest.title[this.activeLang] || manifest.title.en || "";
-    }
-    if (manifest?.media?.video) {
-      this.src = manifest.media.video;
-    }
-    if (Array.isArray(manifest?.captions)) {
+    const lessonChanged = this.manifestData?.id !== manifest.id;
+    if (lessonChanged) {
+      this.vttCuesCache.clear();
+      this.transcriptLines = [];
+      this.transcriptSummary = "";
+      this.activeTranscriptIndex = -1;
       this.revokeCaptionBlobUrls();
-      this.manifestCaptions = manifest.captions.map((c5) => {
-        try {
-          return {
-            lang: c5.lang,
-            url: resolveCaptionUrl({ urlPath: c5.url, apiBase: this.api })
-          };
-        } catch {
-          return c5;
-        }
-      });
-      this.loadVttCues();
+      this.revokeOfflineMediaUrls();
     }
-    this.hasSignTrack = manifest?.sign != null;
-    this.hasAdTrack = manifest?.audioDescription != null;
-    if (manifest?.transcript?.url) {
+    this.manifestData = manifest;
+    this.lessonTitle = manifest.title[this.activeLang] || manifest.title.en;
+    this.src = manifest.media.video;
+    void this.useCachedPlayerMedia(manifest);
+    this.revokeCaptionBlobUrls();
+    this.manifestCaptions = manifest.captions.map((caption) => ({
+      lang: caption.lang,
+      url: resolveCaptionUrl({ urlPath: caption.url, apiBase: this.api })
+    }));
+    void this.loadVttCues();
+    this.hasSignTrack = manifest.sign !== null;
+    this.hasAdTrack = manifest.audioDescription !== null;
+    this.configureAccessibilityChildren();
+    if (manifest.transcript.url) {
       this.fetchTranscript(manifest.transcript.url, manifest);
     } else {
       this.fallbackTranscriptFromCaptions(manifest);
     }
     this.resolveSummary(manifest);
-    if (!this.hasSignTrack) {
-      const signEl = this.querySelector("savanna-sign-window, [data-sign-window]");
-      if (signEl) signEl.hidden = true;
-    }
     if (!this.hasAdTrack) {
       const adAudio = this.querySelector("audio[data-ad], audio.ad-track");
-      if (adAudio) {
-        adAudio.muted = true;
-        adAudio.pause();
+      adAudio?.pause();
+    }
+  }
+  configureAccessibilityChildren() {
+    const sign = this.manifestData?.sign;
+    const signElement = this.querySelector("savanna-sign-window");
+    if (signElement) {
+      signElement.hidden = !this.hasSignTrack;
+      signElement.src = sign?.url ?? "";
+      if (sign?.url) void this.useCachedChildMedia(sign.url, signElement, this.manifestId);
+      signElement.offsetMs = sign?.offsetMs ?? 0;
+      signElement.lang = this.activeLang;
+      if (this.hasSignTrack) {
+        this.showSignWindow = signElement.enabled !== false;
+        signElement.enabled = this.showSignWindow;
       }
+    }
+    const ad = this.manifestData?.audioDescription;
+    const adElement = this.querySelector("savanna-audio-description");
+    if (adElement) {
+      adElement.hidden = !this.hasAdTrack;
+      adElement.src = ad?.audioUrl ?? "";
+      if (ad?.audioUrl) void this.useCachedChildMedia(ad.audioUrl, adElement, this.manifestId);
+      adElement.textVtt = ad?.vttUrl ?? "";
+      adElement.api = this.api;
+      adElement.apiKey = this.apiKey;
+      adElement.lang = this.activeLang;
+      adElement.defaultExtended = ad?.extended ?? false;
+      this.audioDescriptionEnabled = Boolean(adElement.isEnabled);
+    }
+  }
+  get manifestId() {
+    return this.manifestData?.id;
+  }
+  async cachedUrl(source, lessonId) {
+    const existing = this.offlineMediaUrls.get(source);
+    if (existing) return existing;
+    const objectUrl = await getCachedObjectUrl(source);
+    if (!objectUrl) return null;
+    if (lessonId && this.manifestData?.id !== lessonId) {
+      URL.revokeObjectURL(objectUrl);
+      return null;
+    }
+    this.offlineMediaUrls.set(source, objectUrl);
+    return objectUrl;
+  }
+  async useCachedPlayerMedia(manifest) {
+    const videoUrl = await this.cachedUrl(manifest.media.video, manifest.id);
+    const audioUrl = videoUrl ? null : await this.cachedUrl(manifest.media.audio, manifest.id);
+    const source = videoUrl || audioUrl;
+    if (source && this.manifestData?.id === manifest.id) {
+      this.src = source;
+    }
+  }
+  async useCachedChildMedia(originalUrl, element, lessonId) {
+    const source = await this.cachedUrl(originalUrl, lessonId);
+    if (source && element.isConnected && this.manifestData?.id === lessonId) {
+      element.src = source;
     }
   }
   /**
@@ -3054,11 +3297,12 @@ var SavannaPlayer = class extends i4 {
       return;
     }
     this.showSignWindow = !this.showSignWindow;
-    const signElement = this.querySelector(
-      "savanna-sign-window, [data-sign-window]"
-    );
+    const signComponent = this.querySelector("savanna-sign-window");
+    const signElement = signComponent || this.querySelector("[data-sign-window]");
     if (signElement) {
-      signElement.hidden = !this.showSignWindow;
+      signElement.hidden = false;
+      if (signComponent) signComponent.enabled = this.showSignWindow;
+      else signElement.hidden = !this.showSignWindow;
     }
     this.announceStatus(
       this.showSignWindow ? this.t("player.statusSignOn") : this.t("player.statusSignOff"),
@@ -3071,6 +3315,11 @@ var SavannaPlayer = class extends i4 {
   toggleAudioDescription() {
     if (!this.hasAdTrack) {
       this.announceStatus(this.t("player.adUnavailable"), this.t("player.adUnavailable"));
+      return;
+    }
+    const adComponent = this.querySelector("savanna-audio-description");
+    if (adComponent?.toggle) {
+      adComponent.toggle();
       return;
     }
     this.audioDescriptionEnabled = !this.audioDescriptionEnabled;
@@ -3214,11 +3463,9 @@ var SavannaPlayer = class extends i4 {
         }
       });
     }
-    if (this.lesson && this.api) {
-      this.fetchLessonManifest();
-    } else {
+    if (!this.lesson || !this.api) {
       this.hasSignTrack = Boolean(this.querySelector("savanna-sign-window, [data-sign-window]"));
-      this.hasAdTrack = Boolean(this.querySelector("audio[data-ad], audio.ad-track"));
+      this.hasAdTrack = Boolean(this.querySelector("savanna-audio-description[src], savanna-audio-description[text-vtt], audio[data-ad], audio.ad-track"));
     }
     this.emitEvent("savanna:ready");
   }
@@ -3226,6 +3473,7 @@ var SavannaPlayer = class extends i4 {
    * Fetches transcript from the API endpoint per Contract C1 or falls back to VTT cues.
    */
   async fetchTranscript(url, manifest) {
+    const expectedLesson = this.manifestData?.id;
     let targetUrl;
     try {
       targetUrl = resolveCaptionUrl({ urlPath: url, apiBase: this.api });
@@ -3241,21 +3489,28 @@ var SavannaPlayer = class extends i4 {
         headers["X-Savanna-Key"] = this.apiKey;
       }
       const res = await fetch(targetUrl, { headers });
+      if (expectedLesson && this.manifestData?.id !== expectedLesson) return;
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data?.lines) && data.lines.length > 0) {
+        if (expectedLesson && this.manifestData?.id !== expectedLesson) return;
+        const lines = Array.isArray(data?.lines) ? data.lines.filter((line) => {
+          if (!line || typeof line !== "object") return false;
+          const item = line;
+          return Number.isFinite(item.start) && Number.isFinite(item.end) && item.start >= 0 && item.end >= item.start && typeof item.text === "string";
+        }) : [];
+        if (lines.length > 0) {
           const matchingVtt = this.vttCuesCache.get(this.activeLang);
           if (data.lang && data.lang !== this.activeLang && matchingVtt && matchingVtt.length > 0) {
             this.transcriptLines = matchingVtt.map((c5) => ({ start: c5.start, end: c5.end, text: c5.text }));
             this.resolveSummary(manifest);
             return;
           }
-          if (matchingVtt && matchingVtt.length > data.lines.length) {
+          if (matchingVtt && matchingVtt.length > lines.length) {
             this.transcriptLines = matchingVtt.map((c5) => ({ start: c5.start, end: c5.end, text: c5.text }));
             this.resolveSummary(manifest);
             return;
           }
-          this.transcriptLines = data.lines;
+          this.transcriptLines = lines;
           this.resolveSummary(manifest);
           return;
         }
@@ -3532,7 +3787,7 @@ var SavannaPlayer = class extends i4 {
               </div>
             ` : ""}
         <video
-          src=${this.src}
+          src=${this.src || A}
           @play=${this.handlePlay}
           @pause=${this.handlePause}
           @seeking=${this.handleSeek}
@@ -3817,6 +4072,10 @@ var SavannaPlayer = class extends i4 {
             </svg>
           </button>
         </div>
+
+        <section class="accessibility-modules" aria-label="Additional accessibility controls">
+          <slot></slot>
+        </section>
 
         <!-- Step 5: Persistent Polite Live Region (Screen Reader Only) -->
         <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
@@ -4589,6 +4848,12 @@ SavannaPlayer.styles = i`
       color: var(--savanna-ctrl-text, #ffffff);
       border-top: 1px solid rgba(255, 255, 255, 0.15);
       box-sizing: border-box;
+    }
+
+    .accessibility-modules {
+      padding: 0.5rem 0.75rem;
+      background: var(--savanna-panel-bg, #0b192c);
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .ctrl-btn {
@@ -5407,9 +5672,9 @@ function storedEnabled() {
 }
 function save(position, enabled) {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) || "{}"), prefs2 = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {}, previous = prefs2.sign && typeof prefs2.sign === "object" ? prefs2.sign : {};
-    prefs2.sign = { ...position, ...typeof enabled === "boolean" ? { enabled } : typeof previous.enabled === "boolean" ? { enabled: previous.enabled } : {} };
-    localStorage.setItem(KEY, JSON.stringify(prefs2));
+    const raw = JSON.parse(localStorage.getItem(KEY) || "{}"), prefs = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {}, previous = prefs.sign && typeof prefs.sign === "object" ? prefs.sign : {};
+    prefs.sign = { ...position, ...typeof enabled === "boolean" ? { enabled } : typeof previous.enabled === "boolean" ? { enabled: previous.enabled } : {} };
+    localStorage.setItem(KEY, JSON.stringify(prefs));
   } catch {
   }
 }
@@ -5460,37 +5725,20 @@ var SavannaSignWindow = class extends i4 {
   connectedCallback() {
     super.connectedCallback();
     if (!this.slot) this.slot = "overlay";
-    this.player = this.closest("savanna-player");
-    this.main = this.player?.media;
+    this.bindPlayer();
     this.hasTrack = !!this.src;
     window.addEventListener("resize", this.clamp);
     window.addEventListener("savanna:lang-change", this.language);
-    this.player?.addEventListener("savanna:timeupdate", this.sync);
-    this.main?.addEventListener("waiting", this.mainWaiting);
-    this.main?.addEventListener("seeking", this.mainWaiting);
-    this.main?.addEventListener("canplay", this.mainReady);
-    this.main?.addEventListener("seeked", this.mainReady);
-    this.main?.addEventListener("playing", this.mainReady);
-    this.main?.addEventListener("ended", this.syncFromMain);
-    this.main?.addEventListener("pause", this.syncFromMain);
-    this.main?.addEventListener("ratechange", this.syncFromMain);
   }
   disconnectedCallback() {
     window.removeEventListener("resize", this.clamp);
     window.removeEventListener("savanna:lang-change", this.language);
-    this.player?.removeEventListener("savanna:timeupdate", this.sync);
-    this.main?.removeEventListener("waiting", this.mainWaiting);
-    this.main?.removeEventListener("seeking", this.mainWaiting);
-    this.main?.removeEventListener("canplay", this.mainReady);
-    this.main?.removeEventListener("seeked", this.mainReady);
-    this.main?.removeEventListener("playing", this.mainReady);
-    this.main?.removeEventListener("ended", this.syncFromMain);
-    this.main?.removeEventListener("pause", this.syncFromMain);
-    this.main?.removeEventListener("ratechange", this.syncFromMain);
+    this.unbindPlayer();
     super.disconnectedCallback();
   }
   firstUpdated() {
     this.video = this.renderRoot.querySelector("video") || void 0;
+    this.bindPlayer();
     if (!this.hasStoredPosition) {
       const bounds = this.bounds();
       this.position = { ...this.position, x: bounds.right - this.position.width, y: bounds.top };
@@ -5504,10 +5752,51 @@ var SavannaSignWindow = class extends i4 {
       this.loading = !!this.src;
       this.video = this.renderRoot.querySelector("video") || void 0;
     }
+    this.bindPlayer();
     if (changed.has("enabled")) {
       this.video = this.renderRoot.querySelector("video") || void 0;
       if (this.enabled) this.syncFromMain();
     }
+  }
+  bindPlayer() {
+    const nextPlayer = this.closest("savanna-player");
+    if (this.player !== nextPlayer) {
+      this.player?.removeEventListener("savanna:timeupdate", this.sync);
+      this.player = nextPlayer || void 0;
+      this.player?.addEventListener("savanna:timeupdate", this.sync);
+    }
+    const nextMain = this.player?.media;
+    if (this.main === nextMain) return;
+    this.main?.removeEventListener("waiting", this.mainWaiting);
+    this.main?.removeEventListener("seeking", this.mainWaiting);
+    this.main?.removeEventListener("canplay", this.mainReady);
+    this.main?.removeEventListener("seeked", this.mainReady);
+    this.main?.removeEventListener("playing", this.mainReady);
+    this.main?.removeEventListener("ended", this.syncFromMain);
+    this.main?.removeEventListener("pause", this.syncFromMain);
+    this.main?.removeEventListener("ratechange", this.syncFromMain);
+    this.main = nextMain;
+    this.main?.addEventListener("waiting", this.mainWaiting);
+    this.main?.addEventListener("seeking", this.mainWaiting);
+    this.main?.addEventListener("canplay", this.mainReady);
+    this.main?.addEventListener("seeked", this.mainReady);
+    this.main?.addEventListener("playing", this.mainReady);
+    this.main?.addEventListener("ended", this.syncFromMain);
+    this.main?.addEventListener("pause", this.syncFromMain);
+    this.main?.addEventListener("ratechange", this.syncFromMain);
+  }
+  unbindPlayer() {
+    this.player?.removeEventListener("savanna:timeupdate", this.sync);
+    this.player = void 0;
+    this.main?.removeEventListener("waiting", this.mainWaiting);
+    this.main?.removeEventListener("seeking", this.mainWaiting);
+    this.main?.removeEventListener("canplay", this.mainReady);
+    this.main?.removeEventListener("seeked", this.mainReady);
+    this.main?.removeEventListener("playing", this.mainReady);
+    this.main?.removeEventListener("ended", this.syncFromMain);
+    this.main?.removeEventListener("pause", this.syncFromMain);
+    this.main?.removeEventListener("ratechange", this.syncFromMain);
+    this.main = void 0;
   }
   bounds() {
     const parent = this.offsetParent;
@@ -5662,12 +5951,67 @@ SavannaSignWindow = __decorateClass([
 ], SavannaSignWindow);
 
 // module/src/audio-description/audio-description.ts
-var KEY2 = "savanna.prefs.v1";
-function prefs() {
+var PREFERENCES_KEY = "savanna.prefs.v1";
+var COPY = {
+  en: {
+    on: "Audio description is on.",
+    off: "Audio description is off.",
+    unavailable: "Recorded audio description is not available for this lesson.",
+    textUnavailable: "Text descriptions are not available for this lesson.",
+    loading: "Loading text descriptions.",
+    loadError: "Text description could not be loaded. Check your connection and retry.",
+    playing: "Audio description playing.",
+    playBlocked: "Audio description is ready. Press Play description to start it.",
+    paused: "Audio description paused with the lesson.",
+    stopped: "Audio description stopped.",
+    finished: "Description finished.",
+    failed: "Recorded description failed to load.",
+    mode: "Mode",
+    recorded: "Recorded audio",
+    text: "Text descriptions",
+    play: "Play description",
+    stop: "Stop",
+    extended: "Extended description (pause lesson)"
+  },
+  am: {
+    on: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B \u1260\u122D\u1277\u120D\u1362",
+    off: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B \u1320\u134D\u1277\u120D\u1362",
+    unavailable: "\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u1270\u1240\u12F3 \u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B \u12E8\u1208\u121D\u1362",
+    textUnavailable: "\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u133D\u1211\u134D \u1218\u130D\u1208\u132B \u12E8\u1208\u121D\u1362",
+    loading: "\u12E8\u133D\u1211\u134D \u1218\u130D\u1208\u132B\u12CE\u127D \u1260\u1218\u132B\u1295 \u120B\u12ED \u1293\u1278\u12CD\u1362",
+    loadError: "\u12E8\u133D\u1211\u134D \u1218\u130D\u1208\u132B\u12CD \u1218\u132B\u1295 \u12A0\u120D\u127B\u1208\u121D\u1362 \u130D\u1295\u1299\u1290\u1271\u1295 \u12EB\u1228\u130B\u130D\u1321\u1293 \u12A5\u1295\u12F0\u1308\u1293 \u12ED\u121E\u12AD\u1229\u1362",
+    playing: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B \u1260\u1218\u132B\u12C8\u1275 \u120B\u12ED \u1290\u12CD\u1362",
+    playBlocked: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B\u12CD \u12DD\u130D\u1301 \u1290\u12CD\u1362 \u1208\u1218\u1300\u1218\u122D \u12E8\u1218\u130D\u1208\u132B \u12A0\u132B\u12CD\u1275\u1295 \u12ED\u132B\u1291\u1362",
+    paused: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B\u12CD \u12A8\u1275\u121D\u1205\u122D\u1271 \u130B\u122D \u1246\u121F\u120D\u1362",
+    stopped: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B\u12CD \u1246\u121F\u120D\u1362",
+    finished: "\u1218\u130D\u1208\u132B\u12CD \u1270\u1320\u1293\u124B\u120D\u1362",
+    failed: "\u12E8\u1270\u1240\u12F3\u12CD \u1218\u130D\u1208\u132B \u1218\u132B\u12C8\u1275 \u12A0\u120D\u127B\u1208\u121D\u1362",
+    mode: "\u12E8\u1218\u130D\u1208\u132B \u1201\u1294\u1273",
+    recorded: "\u12E8\u1270\u1240\u12F3 \u12F5\u121D\u1345",
+    text: "\u12E8\u133D\u1211\u134D \u1218\u130D\u1208\u132B\u12CE\u127D",
+    play: "\u1218\u130D\u1208\u132B\u12CD\u1295 \u12A0\u132B\u12CD\u1275",
+    stop: "\u12A0\u1241\u121D",
+    extended: "\u12E8\u1270\u122B\u12D8\u1218 \u1218\u130D\u1208\u132B (\u1275\u121D\u1205\u122D\u1271\u1295 \u12A0\u1241\u121D)"
+  }
+};
+function storedPreferences() {
+  const fallback = { enabled: false, extended: false, mode: "audio" };
   try {
-    return { enabled: false, extended: false, mode: "audio", ...JSON.parse(localStorage.getItem(KEY2) || "{}").ad };
+    const root = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || "{}");
+    const stored = root?.ad;
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) {
+      return { value: fallback, hasExtended: false };
+    }
+    return {
+      value: {
+        enabled: typeof stored.enabled === "boolean" ? stored.enabled : false,
+        extended: typeof stored.extended === "boolean" ? stored.extended : false,
+        mode: stored.mode === "text" ? "text" : "audio"
+      },
+      hasExtended: typeof stored.extended === "boolean"
+    };
   } catch {
-    return { enabled: false, extended: false, mode: "audio" };
+    return { value: fallback, hasExtended: false };
   }
 }
 var SavannaAudioDescription = class extends i4 {
@@ -5676,163 +6020,408 @@ var SavannaAudioDescription = class extends i4 {
     this.src = "";
     this.textVtt = "";
     this.offsetMs = 0;
-    this.p = prefs();
-    this.status = "Audio description is off.";
+    this.api = "";
+    this.apiKey = "";
+    this.lang = "";
+    this.defaultExtended = false;
+    this.preferences = storedPreferences().value;
+    this.status = COPY.en.off;
     this.cues = [];
-    this.active = "";
+    this.activeText = "";
+    this.hasStoredExtended = storedPreferences().hasExtended;
     this.wasPlaying = false;
-    this.last = -1;
-    this.time = (e8) => {
-      const d3 = e8.detail;
-      if (!d3) return;
-      if (this.p.enabled && this.p.mode === "text") {
-        const c5 = this.cues.find((x2) => d3.time >= x2.start && d3.time < x2.end);
-        if (c5 && c5.text !== this.active) {
-          this.active = c5.text;
-          this.status = c5.text;
+    this.pausingForExtended = false;
+    this.bindPlayer = () => {
+      this.player = this.closest("savanna-player") ?? void 0;
+      this.media = this.player?.media;
+    };
+    this.handleTimeUpdate = (event) => {
+      const detail = event.detail;
+      if (!detail || !Number.isFinite(detail.time)) return;
+      if (!this.preferences.enabled) return;
+      if (this.preferences.mode === "text") {
+        const cue = this.cues.find((item) => detail.time >= item.start && detail.time < item.end);
+        if (cue && cue.text !== this.activeText) {
+          this.activeText = cue.text;
+          this.status = cue.text;
+        } else if (!cue && this.activeText) {
+          this.activeText = "";
         }
+        return;
       }
-      if (this.p.enabled && this.p.mode === "audio" && this.audio && this.src) {
-        const target = Math.max(0, d3.time - this.offsetMs / 1e3);
-        if (Math.abs(this.audio.currentTime - target) > 0.45) try {
-          this.audio.currentTime = target;
+      const audio = this.audio;
+      if (!audio || !this.src) return;
+      if (this.extended && this.wasPlaying && detail.paused) return;
+      const targetTime = Math.max(0, detail.time - this.offsetMs / 1e3);
+      if (Math.abs(audio.currentTime - targetTime) > 0.45) {
+        try {
+          audio.currentTime = targetTime;
         } catch {
         }
-        this.audio.playbackRate = d3.rate || 1;
-        if (d3.paused) {
-          this.audio.pause();
-        } else if (this.audio.paused) void this.audio.play().catch(() => {
+      }
+      audio.playbackRate = detail.rate || 1;
+      if (detail.paused) {
+        audio.pause();
+      } else if (audio.paused) {
+        void audio.play().catch(() => {
+          this.status = this.copy.playBlocked;
         });
       }
     };
-    this.descriptionEnded = () => {
-      if (this.p.extended && this.wasPlaying) void this.media?.play().catch(() => {
-      });
-      this.wasPlaying = false;
-      this.p = { ...this.p, enabled: false };
-      this.save();
-      this.status = "Description finished.";
+    this.handleSeek = (event) => {
+      const detail = event.detail;
+      if (typeof detail?.time !== "number" || !this.audio || this.preferences.mode !== "audio") return;
+      try {
+        this.audio.currentTime = Math.max(0, detail.time - this.offsetMs / 1e3);
+      } catch {
+      }
     };
+    this.handlePlayerPause = () => {
+      if (this.pausingForExtended) {
+        this.pausingForExtended = false;
+        return;
+      }
+      if (this.preferences.enabled && this.preferences.mode === "audio") {
+        this.audio?.pause();
+        this.wasPlaying = false;
+        this.status = this.copy.paused;
+      }
+    };
+    this.handlePlayerPlay = () => {
+      if (!this.preferences.enabled || this.preferences.mode !== "audio" || this.extended) return;
+      this.bindPlayer();
+      if (this.media) this.syncAudioToPlayer(this.media.currentTime);
+      void this.audio?.play().catch(() => {
+        this.status = this.copy.playBlocked;
+      });
+    };
+    this.handleDescriptionEnded = () => {
+      const shouldResume = this.extended && this.wasPlaying;
+      this.wasPlaying = false;
+      this.preferences = { ...this.preferences, enabled: false };
+      this.persist();
+      this.emitState();
+      if (shouldResume && this.media?.paused) void this.media.play().catch(() => void 0);
+      this.status = this.copy.finished;
+    };
+    this.handleAudioError = () => {
+      this.status = this.copy.failed;
+      this.dispatchEvent(new CustomEvent("savanna:error", {
+        bubbles: true,
+        composed: true,
+        detail: { feature: "audio-description-audio", message: this.status }
+      }));
+    };
+  }
+  get audio() {
+    return this.renderRoot.querySelector("audio");
+  }
+  get copy() {
+    return this.lang.toLowerCase().startsWith("am") ? COPY.am : COPY.en;
+  }
+  get extended() {
+    return this.hasStoredExtended ? this.preferences.extended : this.defaultExtended;
+  }
+  get isEnabled() {
+    return this.preferences.enabled;
   }
   connectedCallback() {
     super.connectedCallback();
-    this.player = this.closest("savanna-player");
-    this.media = this.player?.media;
-    this.player?.addEventListener("savanna:timeupdate", this.time);
-    if (this.textVtt) void this.load();
+    this.bindPlayer();
+    this.player?.addEventListener("savanna:ready", this.bindPlayer);
+    this.player?.addEventListener("savanna:timeupdate", this.handleTimeUpdate);
+    this.player?.addEventListener("savanna:seek", this.handleSeek);
+    this.player?.addEventListener("savanna:pause", this.handlePlayerPause);
+    this.player?.addEventListener("savanna:play", this.handlePlayerPlay);
   }
   disconnectedCallback() {
-    this.player?.removeEventListener("savanna:timeupdate", this.time);
-    this.stop(false);
+    this.textLoadController?.abort();
+    this.player?.removeEventListener("savanna:ready", this.bindPlayer);
+    this.player?.removeEventListener("savanna:timeupdate", this.handleTimeUpdate);
+    this.player?.removeEventListener("savanna:seek", this.handleSeek);
+    this.player?.removeEventListener("savanna:pause", this.handlePlayerPause);
+    this.player?.removeEventListener("savanna:play", this.handlePlayerPlay);
+    this.stop(false, false);
     super.disconnectedCallback();
   }
   firstUpdated() {
-    this.audio = this.renderRoot.querySelector("audio") || void 0;
-    if (!this.media) {
-      this.player = this.closest("savanna-player");
-      this.media = this.player?.media;
-    }
+    this.bindPlayer();
+    if (this.textVtt) void this.loadTextDescriptions();
   }
-  save() {
+  updated(changed) {
+    if (changed.has("textVtt") && this.textVtt) void this.loadTextDescriptions();
+    if (changed.has("src")) this.audio?.load();
+  }
+  persist() {
     try {
-      const a3 = JSON.parse(localStorage.getItem(KEY2) || "{}");
-      a3.ad = this.p;
-      localStorage.setItem(KEY2, JSON.stringify(a3));
+      const raw = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || "{}");
+      const root = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+      root.ad = this.preferences;
+      localStorage.setItem(PREFERENCES_KEY, JSON.stringify(root));
     } catch {
     }
   }
-  async load() {
+  emitState() {
+    this.dispatchEvent(new CustomEvent("savanna:ad-change", {
+      bubbles: true,
+      composed: true,
+      detail: { enabled: this.preferences.enabled, mode: this.preferences.mode }
+    }));
+  }
+  async loadTextDescriptions() {
+    this.textLoadController?.abort();
+    if (!this.textVtt) {
+      this.cues = [];
+      return;
+    }
+    const controller = new AbortController();
+    this.textLoadController = controller;
     try {
-      const r8 = await fetch(this.textVtt);
-      if (!r8.ok) throw Error();
-      const v2 = await r8.text();
-      const blocks = v2.replace(/\r/g, "").split(/\n\n+/);
-      this.cues = blocks.map((b3) => {
-        const lines = b3.split("\n"), i6 = lines.findIndex((x2) => x2.includes("-->"));
-        if (i6 < 0) return null;
-        const sec = (s5) => s5.trim().split(/[,.]/)[0].split(":").map(Number).reduce((a3, n7) => a3 * 60 + n7, 0) + Number("0." + (s5.split(/[,.]/)[1] || 0));
-        return { start: sec(lines[i6].split("-->")[0]), end: sec(lines[i6].split("-->")[1]), text: lines.slice(i6 + 1).join(" ") };
-      }).filter(Boolean);
+      const url = resolveCaptionUrl({ urlPath: this.textVtt, apiBase: this.api });
+      const result = await fetchCaptionTrack({
+        url,
+        apiKey: this.apiKey,
+        apiBase: this.api,
+        signal: controller.signal
+      });
+      if (controller.signal.aborted) return;
+      this.cues = parseWebVtt(result.text);
+      if (this.cues.length === 0) throw new Error("No timed descriptions were found.");
     } catch {
-      this.status = "Text description could not be loaded.";
+      if (controller.signal.aborted) return;
+      this.cues = [];
+      this.status = this.copy.loadError;
+      this.dispatchEvent(new CustomEvent("savanna:error", {
+        bubbles: true,
+        composed: true,
+        detail: { feature: "audio-description-text", message: this.status }
+      }));
     }
   }
-  /** Called by the owning player for its D shortcut; no competing global listener is installed. */
+  /** Called by the owning player for its D shortcut; the component installs no global key listener. */
   toggle() {
-    if (this.p.enabled) this.stop();
-    else void this.play();
+    void this.setEnabled(!this.preferences.enabled);
   }
-  async play() {
-    this.p = { ...this.p, enabled: true };
-    this.save();
-    if (this.p.mode === "text") {
-      this.status = this.active || "Text descriptions are enabled.";
+  async setEnabled(enabled) {
+    if (!enabled) {
+      this.stop();
+      return;
+    }
+    if (this.preferences.mode === "text") {
+      if (!this.cues.length) {
+        this.status = this.copy.loading;
+        await this.loadTextDescriptions();
+      }
+      if (!this.cues.length) {
+        this.status = this.copy.textUnavailable;
+        return;
+      }
+      this.preferences = { ...this.preferences, enabled: true };
+      this.persist();
+      this.emitState();
+      this.status = this.activeText || this.copy.on;
       return;
     }
     if (!this.src || !this.audio) {
-      this.status = "Recorded audio description is not available.";
+      this.status = this.copy.unavailable;
       return;
     }
-    if (this.media) {
-      this.wasPlaying = !this.media.paused;
-      try {
-        this.audio.currentTime = Math.max(0, this.media.currentTime - this.offsetMs / 1e3);
-      } catch {
-      }
-      this.audio.playbackRate = this.media.playbackRate;
+    this.bindPlayer();
+    this.wasPlaying = Boolean(this.media && !this.media.paused);
+    this.preferences = { ...this.preferences, enabled: true };
+    this.persist();
+    this.emitState();
+    const targetTime = Math.max(0, (this.media?.currentTime ?? 0) - this.offsetMs / 1e3);
+    this.audio.currentTime = targetTime;
+    this.audio.playbackRate = this.media?.playbackRate || 1;
+    if (this.extended && this.wasPlaying && this.media && !this.media.paused) {
+      this.pausingForExtended = true;
+      this.media.pause();
     }
     try {
       await this.audio.play();
-      this.status = "Audio description playing.";
+      this.status = this.copy.playing;
     } catch {
-      this.status = "Press Play to start the description.";
+      this.status = this.copy.playBlocked;
     }
   }
-  stop(persist = true) {
+  syncAudioToPlayer(time) {
+    if (!this.audio) return;
+    try {
+      this.audio.currentTime = Math.max(0, time - this.offsetMs / 1e3);
+    } catch {
+    }
+    this.audio.playbackRate = this.media?.playbackRate || 1;
+  }
+  stop(persist = true, updateStatus = true) {
     this.audio?.pause();
-    if (this.p.extended && this.wasPlaying) void this.media?.play().catch(() => {
-    });
+    const shouldResume = this.extended && this.wasPlaying;
     this.wasPlaying = false;
     if (persist) {
-      this.p = { ...this.p, enabled: false };
-      this.save();
+      this.preferences = { ...this.preferences, enabled: false };
+      this.persist();
+      this.emitState();
     }
-    this.status = "Audio description stopped.";
+    if (shouldResume && this.media?.paused) void this.media.play().catch(() => void 0);
+    if (updateStatus) this.status = this.copy.stopped;
   }
-  extended(v2) {
-    this.p = { ...this.p, extended: v2 };
-    this.save();
-    if (v2 && this.audio && !this.audio.paused) {
-      this.wasPlaying = !!this.media && !this.media.paused;
-      this.media?.pause();
+  changeMode(mode) {
+    if (this.preferences.mode === mode) return;
+    const wasEnabled = this.preferences.enabled;
+    this.audio?.pause();
+    this.preferences = { ...this.preferences, mode, enabled: false };
+    this.persist();
+    this.emitState();
+    this.status = mode === "text" ? this.copy.loading : this.copy.off;
+    if (mode === "text") void this.loadTextDescriptions();
+    else if (wasEnabled) void this.setEnabled(true);
+  }
+  changeExtended(value) {
+    this.hasStoredExtended = true;
+    this.preferences = { ...this.preferences, extended: value };
+    this.persist();
+    if (value && this.preferences.enabled && this.audio && !this.audio.paused && this.media && !this.media.paused) {
+      this.wasPlaying = true;
+      this.pausingForExtended = true;
+      this.media.pause();
     }
   }
   render() {
-    const badge = this.p.enabled ? b2`<span class="ad-badge" role="status" aria-label="Audio description active">🔊 AD ON</span>` : b2`<span class="ad-badge ad-badge-off" aria-label="Audio description off">AD OFF</span>`;
-    return b2`<div class="controls">${badge}<button type="button" aria-pressed=${String(this.p.enabled)} aria-label="Audio description ${this.p.enabled ? "on" : "off"}" @click=${() => this.p.enabled ? this.stop() : void this.play()}>Audio description: ${this.p.enabled ? "On" : "Off"}</button><label>Mode <select .value=${this.p.mode} @change=${(e8) => {
-      this.p = { ...this.p, mode: e8.target.value };
-      this.save();
-    }}><option value="audio">Recorded audio</option><option value="text">Text descriptions</option></select></label><button @click=${this.play}>Play description</button><button @click=${this.stop}>Stop</button><label><input type="checkbox" .checked=${this.p.extended} @change=${(e8) => this.extended(e8.target.checked)}> Extended AD (pause lesson)</label></div><audio preload="metadata" .src=${this.src} @play=${() => {
-      if (this.p.extended) {
-        this.wasPlaying = !!this.media && !this.media.paused;
-        this.media?.pause();
-      }
-    }} @ended=${this.descriptionEnded} @error=${() => this.status = "Recorded description failed to load."}></audio><p role="status" aria-live="polite">${this.status}</p>`;
+    const t6 = this.copy;
+    const badge = this.preferences.enabled ? b2`<span class="ad-badge" role="status"><span aria-hidden="true">🔊</span> AD ON</span>` : b2`<span class="ad-badge ad-badge-off" aria-label=${t6.off}>AD OFF</span>`;
+    return b2`
+      <div class="controls" lang=${this.lang || "en"}>
+        ${badge}
+        <button
+          type="button"
+          aria-pressed=${String(this.preferences.enabled)}
+          aria-label=${this.preferences.enabled ? t6.on : t6.off}
+          @click=${() => this.toggle()}
+        >
+          ${this.preferences.enabled ? t6.on : t6.off}
+        </button>
+        <label>
+          ${t6.mode}
+          <select .value=${this.preferences.mode} @change=${(event) => this.changeMode(event.target.value)}>
+            <option value="audio">${t6.recorded}</option>
+            <option value="text">${t6.text}</option>
+          </select>
+        </label>
+        <button type="button" @click=${() => void this.setEnabled(true)}>${t6.play}</button>
+        <button type="button" @click=${() => this.stop()}>${t6.stop}</button>
+        <label>
+          <input
+            type="checkbox"
+            .checked=${this.extended}
+            @change=${(event) => this.changeExtended(event.target.checked)}
+          />
+          ${t6.extended}
+        </label>
+      </div>
+      ${this.src ? b2`<audio preload="metadata" src=${this.src} @ended=${this.handleDescriptionEnded} @error=${this.handleAudioError}></audio>` : A}
+      <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">${this.status}</p>
+      ${this.activeText ? b2`<p lang=${this.lang || "en"}>${this.activeText}</p>` : A}
+    `;
   }
 };
-SavannaAudioDescription.styles = i`:host{display:block;font:16px/1.5 system-ui;color:inherit}button,select{min-height:44px;padding:8px 12px;border:1px solid #72548a;border-radius:8px;background:white;color:#241b2b;font:inherit}button:focus-visible,select:focus-visible{outline:3px solid #e09b00;outline-offset:2px}.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.ad-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:16px;background:#4caf50;color:white;font-size:13px;font-weight:700;animation:fadeIn .3s}@keyframes fadeIn{from{opacity:0}to{opacity:1}}.ad-badge-off{background:#666}`;
+SavannaAudioDescription.styles = i`
+    :host {
+      display: block;
+      color: inherit;
+      font: 16px/1.5 system-ui, sans-serif;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    button,
+    select {
+      min-height: 44px;
+      padding: 8px 12px;
+      border: 1px solid #72548a;
+      border-radius: 8px;
+      background: #fff;
+      color: #241b2b;
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible {
+      outline: 3px solid #9a5b00;
+      outline-offset: 2px;
+    }
+
+    .ad-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 28px;
+      padding: 3px 10px;
+      border-radius: 16px;
+      background: #176b2c;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .ad-badge-off {
+      background: #4b5563;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  `;
 __decorateClass([
   n4()
 ], SavannaAudioDescription.prototype, "src", 2);
 __decorateClass([
-  n4({ attribute: "text-vtt" })
+  n4({ type: String, attribute: "text-vtt" })
 ], SavannaAudioDescription.prototype, "textVtt", 2);
 __decorateClass([
   n4({ type: Number, attribute: "offset-ms" })
 ], SavannaAudioDescription.prototype, "offsetMs", 2);
 __decorateClass([
+  n4()
+], SavannaAudioDescription.prototype, "api", 2);
+__decorateClass([
+  n4({ attribute: "api-key" })
+], SavannaAudioDescription.prototype, "apiKey", 2);
+__decorateClass([
+  n4()
+], SavannaAudioDescription.prototype, "lang", 2);
+__decorateClass([
+  n4({ type: Boolean, attribute: "default-extended" })
+], SavannaAudioDescription.prototype, "defaultExtended", 2);
+__decorateClass([
   r5()
-], SavannaAudioDescription.prototype, "p", 2);
+], SavannaAudioDescription.prototype, "preferences", 2);
 __decorateClass([
   r5()
 ], SavannaAudioDescription.prototype, "status", 2);
@@ -5841,20 +6430,139 @@ __decorateClass([
 ], SavannaAudioDescription.prototype, "cues", 2);
 __decorateClass([
   r5()
-], SavannaAudioDescription.prototype, "active", 2);
+], SavannaAudioDescription.prototype, "activeText", 2);
 SavannaAudioDescription = __decorateClass([
   t3("savanna-audio-description")
 ], SavannaAudioDescription);
 
-// module/src/offline/offline.ts
-var KEY3 = "savanna.prefs.v1";
-var PREFIX = "savanna-pack-";
-function read2() {
-  try {
-    return { savedLessons: [], ...JSON.parse(localStorage.getItem(KEY3) || "{}").offline };
-  } catch {
-    return { savedLessons: [] };
+// module/src/offline/offline-pack.ts
+function isRecord2(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function parsePackManifest(value, expectedId) {
+  if (!isRecord2(value) || value.id !== expectedId) throw new Error("The offline pack belongs to a different lesson.");
+  if (!Number.isSafeInteger(value.version) || value.version < 1) throw new Error("The offline pack version is invalid.");
+  if (!Number.isSafeInteger(value.sizeBytes) || value.sizeBytes < 0) throw new Error("The offline pack size is invalid.");
+  if (!Array.isArray(value.files)) throw new Error("The offline pack file list is missing.");
+  const paths = /* @__PURE__ */ new Set();
+  const files = value.files.map((file) => {
+    if (!isRecord2(file) || typeof file.path !== "string" || !file.path || file.path.includes("..") || file.path.startsWith("/") || file.path.includes("\\")) {
+      throw new Error("The offline pack contains an unsafe file path.");
+    }
+    const bytes = file.sizeBytes ?? file.bytes;
+    if (!Number.isSafeInteger(bytes) || bytes < 0) throw new Error(`The offline pack size for ${file.path} is invalid.`);
+    if (typeof file.sha256 !== "string" || !/^[a-f0-9]{64}$/i.test(file.sha256)) throw new Error(`The offline pack checksum for ${file.path} is invalid.`);
+    if (paths.has(file.path)) throw new Error(`The offline pack contains ${file.path} more than once.`);
+    paths.add(file.path);
+    return { path: file.path, sizeBytes: bytes, sha256: file.sha256.toLowerCase() };
+  });
+  if (files.reduce((sum, file) => sum + file.sizeBytes, 0) !== value.sizeBytes) {
+    throw new Error("The offline pack size does not match the sum of its files.");
   }
+  return { id: expectedId, version: value.version, sizeBytes: value.sizeBytes, files };
+}
+function buildPackResources(manifest, pack, api, apiKey) {
+  const resources = [];
+  const apiBase = new URL(api, globalThis.location?.href ?? "http://localhost/");
+  const mediaUrl = (filePath) => {
+    const encodedPath = filePath.split("/").map((part) => encodeURIComponent(part)).join("/");
+    return new URL(`/media/${encodedPath}`, apiBase).href;
+  };
+  for (const file of pack.files) {
+    const name = file.path.split("/").pop().toLowerCase();
+    let url;
+    if (/^(lesson|lesson-audio)\.opus$/.test(name)) url = manifest.media.audio || mediaUrl(file.path);
+    else if (/^(en|captions-en)\.vtt$/.test(name)) url = manifest.captions.find((track) => track.lang === "en")?.url ?? mediaUrl(file.path);
+    else if (/^(am|captions-am)\.vtt$/.test(name)) url = manifest.captions.find((track) => track.lang === "am")?.url ?? mediaUrl(file.path);
+    else if (name === "ad.opus") url = manifest.audioDescription?.audioUrl ?? mediaUrl(file.path);
+    else if (name === "ad.vtt") url = manifest.audioDescription?.vttUrl ?? mediaUrl(file.path);
+    else if (/^sign\.(mp4|webm)$/.test(name)) url = manifest.sign?.url ?? mediaUrl(file.path);
+    else if (/^lesson-240p\.(mp4|webm)$/.test(name)) url = mediaUrl(file.path);
+    else if (name === "transcript.html") {
+      continue;
+    }
+    if (!url && manifest.sign && new URL(manifest.sign.url).pathname.split("/").pop()?.toLowerCase() === name) url = manifest.sign.url;
+    if (!url) throw new Error(`The offline pack file \u201C${file.path}\u201D is not declared in the lesson manifest.`);
+    resources.push({ url, expectedBytes: file.sizeBytes, expectedSha256: file.sha256 });
+  }
+  if (resources.length === 0) throw new Error("This lesson pack does not contain any downloadable resources.");
+  return resources;
+}
+
+// module/src/offline/register-service-worker.ts
+async function registerSavannaMediaWorker(url = "/media-sw.js") {
+  if (!("serviceWorker" in navigator) || !window.isSecureContext) return null;
+  try {
+    const script = await fetch(url, { method: "HEAD", cache: "no-store" });
+    if (!script.ok) return null;
+    const registration = await navigator.serviceWorker.register(url, { scope: "/" });
+    await cacheApplicationShell();
+    if (navigator.storage?.persist) await navigator.storage.persist().catch(() => false);
+    return registration;
+  } catch {
+    return null;
+  }
+}
+async function cacheApplicationShell() {
+  const cache = await caches.open("savanna-media-v2-static");
+  const urls = /* @__PURE__ */ new Set([window.location.href]);
+  for (const element of document.querySelectorAll(
+    'script[src], link[rel="stylesheet"][href], link[rel="modulepreload"][href]'
+  )) {
+    const source = element instanceof HTMLScriptElement ? element.src : element.href;
+    if (source && new URL(source).origin === window.location.origin) urls.add(source);
+  }
+  for (const source of urls) {
+    const parsed = new URL(source);
+    if (parsed.pathname.startsWith("/v1/") || parsed.pathname.startsWith("/api/v1/")) continue;
+    try {
+      const response = await fetch(source, { credentials: "same-origin", cache: "no-store" });
+      if (response.ok) await cache.put(source, response);
+    } catch {
+    }
+  }
+}
+
+// module/src/offline/offline.ts
+var PREFERENCES_KEY2 = "savanna.prefs.v1";
+var CACHE_PREFIX2 = "savanna-pack-";
+var CHUNK_BYTES = 256 * 1024;
+var PACK_PATH = /^([A-Za-z0-9_-]{1,80})$/;
+function readOfflinePreferences() {
+  try {
+    const root = JSON.parse(localStorage.getItem(PREFERENCES_KEY2) || "{}");
+    const offline = root?.offline;
+    return {
+      savedLessons: Array.isArray(offline?.savedLessons) ? offline.savedLessons.filter((id) => typeof id === "string") : [],
+      partials: offline?.partials && typeof offline.partials === "object" && !Array.isArray(offline.partials) ? offline.partials : {}
+    };
+  } catch {
+    return { savedLessons: [], partials: {} };
+  }
+}
+function writeOfflinePreferences(value) {
+  try {
+    const root = JSON.parse(localStorage.getItem(PREFERENCES_KEY2) || "{}");
+    const preferences = root && typeof root === "object" && !Array.isArray(root) ? root : {};
+    preferences.offline = value;
+    localStorage.setItem(PREFERENCES_KEY2, JSON.stringify(preferences));
+  } catch {
+  }
+}
+function cacheName(lessonId, version) {
+  return `${CACHE_PREFIX2}${lessonId}-v${version}`;
+}
+function chunkRequest(lessonId, index, offset) {
+  const url = new URL(`/__savanna_offline__/${encodeURIComponent(lessonId)}/${index}/${offset}`, location.origin);
+  return new Request(url.href);
+}
+function contentRange(value) {
+  const match = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(value || "");
+  if (!match) return null;
+  const start = Number(match[1]);
+  const end = Number(match[2]);
+  const total = Number(match[3]);
+  return Number.isSafeInteger(start) && Number.isSafeInteger(end) && Number.isSafeInteger(total) && start <= end && end < total ? { start, end, total } : null;
 }
 var SavannaOffline = class extends i4 {
   constructor() {
@@ -5862,140 +6570,339 @@ var SavannaOffline = class extends i4 {
     this.api = "";
     this.apiKey = "";
     this.lessonId = "";
+    this.lang = "en";
     this.manifest = null;
     this.status = "Load a lesson pack to begin.";
     this.busy = false;
     this.progress = 0;
     this.saved = false;
-    this.startTime = 0;
-    this.lastProgress = 0;
-  }
-  statusIcon() {
-    if (this.saved) return "\u2705";
-    if (this.busy) return "\u23F3";
-    if (this.manifest) return "\u{1F4E6}";
-    return "\u2139\uFE0F";
-  }
-  estimateTime() {
-    if (this.progress <= 0 || !this.startTime) return "";
-    const elapsed = Date.now() - this.startTime, rate = this.progress / elapsed, remaining = (100 - this.progress) / rate;
-    if (!isFinite(remaining) || remaining < 0) return "";
-    const sec = Math.ceil(remaining / 1e3);
-    return sec < 60 ? `~${sec}s remaining` : `~${Math.ceil(sec / 60)}m remaining`;
+    this.canResume = false;
+    this.lessonManifest = null;
+    this.generation = 0;
+    this.refreshClick = () => {
+      void this.refresh();
+    };
+    this.saveClick = () => {
+      void this.save();
+    };
+    this.removeClick = () => {
+      void this.removeSavedCopy();
+    };
   }
   connectedCallback() {
     super.connectedCallback();
-    this.saved = read2().savedLessons.includes(this.lessonId);
+    this.refreshSavedState();
+    void registerSavannaMediaWorker();
     void this.refresh();
   }
+  disconnectedCallback() {
+    this.controller?.abort();
+    this.refreshController?.abort();
+    super.disconnectedCallback();
+  }
   updated(changed) {
-    if ((changed.has("api") || changed.has("lessonId")) && this.api && this.lessonId && !this.manifest) void this.refresh();
-  }
-  url() {
-    return `${this.api.replace(/\/$/, "")}/v1/lessons/${encodeURIComponent(this.lessonId)}/pack`;
-  }
-  headers() {
-    return this.apiKey ? { "X-Savanna-Key": this.apiKey } : {};
-  }
-  async refresh() {
-    if (!this.api || !this.lessonId) return;
-    try {
-      const r8 = await fetch(this.url(), { headers: this.headers() });
-      if (!r8.ok) throw Error(r8.status === 404 ? "Pack is not published." : `Manifest request failed (${r8.status}).`);
-      this.manifest = await r8.json();
-      this.status = `Pack ready \xB7 ${this.size(this.manifest.sizeBytes || 0)}`;
-    } catch (e8) {
-      this.status = e8.message;
+    if (changed.has("api") || changed.has("apiKey") || changed.has("lessonId")) {
+      this.generation++;
+      this.refreshController?.abort();
+      this.manifest = null;
+      this.lessonManifest = null;
+      this.progress = 0;
+      this.refreshSavedState();
+      if (this.api && this.lessonId) void this.refresh();
     }
   }
-  size(n7) {
-    return n7 < 1024 ? `${n7} B` : n7 < 1048576 ? `${(n7 / 1024).toFixed(1)} KB` : `${(n7 / 1048576).toFixed(2)} MB`;
+  refreshSavedState() {
+    const preferences = readOfflinePreferences();
+    this.saved = preferences.savedLessons.includes(this.lessonId);
+    this.canResume = Boolean(preferences.partials[this.lessonId]);
+  }
+  apiUrl(path) {
+    const base = new URL(this.api, document.baseURI);
+    if (base.protocol !== "https:" && base.protocol !== "http:") throw new Error("The API URL must use HTTP or HTTPS.");
+    return new URL(path, base).href;
+  }
+  apiHeaders(url) {
+    return shouldSendApiKey(url, this.apiKey, this.api) ? { "X-Savanna-Key": this.apiKey } : {};
+  }
+  parsePackForLesson(lesson, value) {
+    const pack = parsePackManifest(value, lesson.id);
+    if (!lesson.pack || pack.sizeBytes !== lesson.pack.sizeBytes) {
+      throw new Error("The lesson and offline pack report different download sizes. Refresh the lesson data and try again.");
+    }
+    return pack;
+  }
+  async refresh() {
+    if (!this.api || !this.lessonId || !PACK_PATH.test(this.lessonId)) {
+      this.status = "Enter a valid lesson id and API address to load offline options.";
+      return;
+    }
+    const generation = ++this.generation;
+    this.refreshController?.abort();
+    const controller = new AbortController();
+    this.refreshController = controller;
+    this.status = "Checking lesson and offline pack\u2026";
+    try {
+      const lessonUrl = this.apiUrl(`/v1/lessons/${encodeURIComponent(this.lessonId)}`);
+      const lessonResponse = await fetch(lessonUrl, { headers: this.apiHeaders(lessonUrl), signal: controller.signal });
+      if (!lessonResponse.ok) throw new Error(lessonResponse.status === 404 ? "This lesson is not available." : `Lesson request failed (${lessonResponse.status}).`);
+      const lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
+      if (!lesson.pack) throw new Error("This lesson does not have an offline pack.");
+      const packUrl = new URL(lesson.pack.manifestUrl, this.apiUrl("/")).href;
+      const packResponse = await fetch(packUrl, { headers: this.apiHeaders(packUrl), signal: controller.signal });
+      if (!packResponse.ok) throw new Error(packResponse.status === 404 ? "An offline pack has not been published for this lesson." : `Pack request failed (${packResponse.status}).`);
+      const pack = this.parsePackForLesson(lesson, await packResponse.json());
+      if (generation !== this.generation) return;
+      this.lessonManifest = lesson;
+      this.manifest = pack;
+      this.refreshSavedState();
+      if (this.saved && typeof caches !== "undefined") {
+        const cache = await caches.open(cacheName(this.lessonId, pack.version));
+        const resources = buildPackResources(lesson, pack, this.api, this.apiKey);
+        const complete = await Promise.all(resources.map(async (resource) => {
+          const response = await cache.match(resource.url);
+          if (!response) return false;
+          try {
+            await this.verifyResource(resource, await response.arrayBuffer());
+            return true;
+          } catch {
+            await cache.delete(resource.url);
+            return false;
+          }
+        }));
+        if (!complete.every(Boolean)) {
+          const preferences = readOfflinePreferences();
+          preferences.savedLessons = preferences.savedLessons.filter((id) => id !== this.lessonId);
+          writeOfflinePreferences(preferences);
+          this.saved = false;
+        }
+      }
+      this.status = `Pack ready \xB7 ${this.formatSize(pack.sizeBytes)}${this.saved ? " \xB7 Saved offline" : this.canResume ? " \xB7 Download can resume" : ""}`;
+    } catch (error) {
+      if (controller.signal.aborted || generation !== this.generation) return;
+      this.manifest = null;
+      this.status = error instanceof Error ? error.message : "The offline pack could not be loaded.";
+    } finally {
+      if (this.refreshController === controller) this.refreshController = void 0;
+    }
+  }
+  formatSize(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+  async ensureStorage(requiredBytes) {
+    if (!navigator.storage?.estimate) return;
+    const estimate = await navigator.storage.estimate();
+    const remaining = (estimate.quota ?? Number.POSITIVE_INFINITY) - (estimate.usage ?? 0);
+    if (remaining < requiredBytes) throw new Error("There is not enough device storage for this download. Free space and try again.");
+  }
+  async verifyResource(resource, bytes) {
+    if (resource.expectedBytes !== void 0 && bytes.byteLength !== resource.expectedBytes) {
+      throw new Error(`The downloaded file size does not match the offline pack for ${new URL(resource.url).pathname.split("/").pop()}.`);
+    }
+    if (!globalThis.crypto?.subtle) throw new Error("This browser cannot verify offline file checksums. Use a current browser over HTTPS or localhost.");
+    const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+    const actual = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+    if (actual !== resource.expectedSha256) {
+      throw new Error(`The checksum for ${new URL(resource.url).pathname.split("/").pop()} does not match the offline pack. Its partial download was removed; try again.`);
+    }
+  }
+  async discardPartial(cache, index, total) {
+    for (let offset = 0; offset < total; offset += CHUNK_BYTES) {
+      await cache.delete(chunkRequest(this.lessonId, index, offset));
+    }
+    const preferences = readOfflinePreferences();
+    delete preferences.partials[this.lessonId];
+    writeOfflinePreferences(preferences);
+    this.canResume = false;
   }
   async save() {
     if (this.busy || !this.manifest) return;
     if (typeof caches === "undefined") {
-      this.status = "\u26A0\uFE0F Cache Storage is not available. Use http://localhost:3001 (not IP address) or enable HTTPS. Offline features require secure context.";
+      this.status = "Offline saving is unavailable in this browser. Open the lesson over HTTPS or localhost and enable site storage.";
       return;
     }
+    const lessonUrl = this.apiUrl(`/v1/lessons/${encodeURIComponent(this.lessonId)}`);
     this.busy = true;
     this.progress = 0;
-    this.startTime = Date.now();
+    this.controller = new AbortController();
+    const controller = this.controller;
+    const generation = this.generation;
     try {
-      const url = this.url() + ".zip", r8 = await fetch(url, { headers: this.headers() });
-      if (!r8.ok) throw Error(`Download failed (${r8.status}).`);
-      const total = Number(r8.headers.get("content-length")) || this.manifest.sizeBytes || 0, reader = r8.body?.getReader();
-      if (!reader) throw Error("Streaming download is not supported.");
-      const chunks = [];
-      let got = 0, lastAnnounce = 0;
-      while (true) {
-        const x2 = await reader.read();
-        if (x2.done) break;
-        if (x2.value) {
-          chunks.push(x2.value);
-          got += x2.value.length;
-          const newProgress = total ? Math.round(got / total * 100) : 0;
-          if (newProgress >= lastAnnounce + 10) {
-            this.progress = newProgress;
-            lastAnnounce = newProgress;
-          } else {
-            this.progress = newProgress;
+      let lesson = this.lessonManifest;
+      if (!lesson) {
+        const lessonResponse = await fetch(lessonUrl, { headers: this.apiHeaders(lessonUrl), signal: controller.signal });
+        if (!lessonResponse.ok) throw new Error(`Lesson request failed (${lessonResponse.status}).`);
+        lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
+      }
+      if (!lesson.pack) throw new Error("This lesson does not have an offline pack.");
+      const packUrl = new URL(lesson.pack.manifestUrl, this.apiUrl("/")).href;
+      const packResponse = await fetch(packUrl, { headers: this.apiHeaders(packUrl), signal: controller.signal });
+      if (!packResponse.ok) throw new Error(`Pack request failed (${packResponse.status}).`);
+      const pack = this.parsePackForLesson(lesson, await packResponse.json());
+      if (generation !== this.generation) return;
+      const resources = buildPackResources(lesson, pack, this.api, this.apiKey);
+      const cache = await caches.open(cacheName(this.lessonId, pack.version));
+      const preferences = readOfflinePreferences();
+      const resourceEstimate = resources.reduce((sum, resource) => sum + (resource.expectedBytes ?? 0), 0);
+      const totalExpected = Math.max(pack.sizeBytes, resourceEstimate);
+      let savedBefore = 0;
+      for (const resource of resources) {
+        let existing = await cache.match(resource.url);
+        if (existing) {
+          const bytes = await existing.arrayBuffer();
+          try {
+            await this.verifyResource(resource, bytes);
+          } catch {
+            await cache.delete(resource.url);
+            existing = void 0;
           }
+          if (existing) savedBefore += bytes.byteLength;
         }
       }
-      const blob = new Blob(chunks, { type: "application/zip" });
-      const cache = await caches.open(PREFIX + this.lessonId);
-      await cache.put(url, new Response(blob, { headers: { "Content-Type": "application/zip", "Content-Length": String(blob.size) } }));
-      const p3 = read2();
-      p3.savedLessons = [.../* @__PURE__ */ new Set([...p3.savedLessons, this.lessonId])];
-      const a3 = JSON.parse(localStorage.getItem(KEY3) || "{}");
-      a3.offline = p3;
-      localStorage.setItem(KEY3, JSON.stringify(a3));
+      for (let index = 0; index < resources.length; index++) {
+        const resource = resources[index];
+        if (await cache.match(resource.url)) {
+          this.progress = Math.round(Math.min(1, savedBefore / Math.max(1, totalExpected)) * 100);
+          continue;
+        }
+        const knownPartial = preferences.partials[this.lessonId]?.version === pack.version ? await this.readPartial(cache, index) : { offset: 0, total: 0, chunks: [] };
+        let offset = knownPartial.offset;
+        let total = knownPartial.total;
+        const chunks = knownPartial.chunks;
+        let savedWholeResponse = false;
+        while (!total || offset < total) {
+          const end = total ? Math.min(offset + CHUNK_BYTES - 1, total - 1) : offset + CHUNK_BYTES - 1;
+          const response = await fetch(resource.url, {
+            headers: { ...resource.headers, Range: `bytes=${offset}-${end}` },
+            signal: controller.signal
+          });
+          if (response.status !== 206) {
+            if (response.status === 200 && offset === 0) {
+              const responseSize = Number(response.headers.get("Content-Length")) || resource.expectedBytes || 0;
+              if (responseSize > CHUNK_BYTES) {
+                throw new Error(`The server does not support resumable byte ranges for ${new URL(resource.url).pathname.split("/").pop()}.`);
+              }
+              const body = await response.arrayBuffer();
+              await this.verifyResource(resource, body);
+              await this.ensureStorage(body.byteLength);
+              await cache.put(resource.url, new Response(body, {
+                headers: { "Content-Type": response.headers.get("Content-Type") || responseContentType(resource.url), "Content-Length": String(body.byteLength) }
+              }));
+              savedBefore += body.byteLength;
+              this.progress = Math.round(Math.min(99, savedBefore / Math.max(1, totalExpected) * 100));
+              savedWholeResponse = true;
+              break;
+            }
+            throw new Error(`Download failed (${response.status}) for ${new URL(resource.url).pathname.split("/").pop()}.`);
+          }
+          const range = contentRange(response.headers.get("Content-Range"));
+          if (!range || range.start !== offset || range.end > end || total && range.total !== total || resource.expectedBytes !== void 0 && range.total !== resource.expectedBytes) {
+            throw new Error("The server returned an invalid byte range. The download was paused safely.");
+          }
+          await this.ensureStorage(range.end - range.start + 1);
+          total = range.total;
+          const bytes = await response.arrayBuffer();
+          if (bytes.byteLength !== range.end - range.start + 1) throw new Error("The downloaded chunk was incomplete. Resume the download to continue.");
+          await cache.put(chunkRequest(this.lessonId, index, offset), new Response(bytes, {
+            headers: { "Content-Length": String(bytes.byteLength), "X-Savanna-Total": String(total) }
+          }));
+          chunks.push(new Response(bytes));
+          offset = range.end + 1;
+          preferences.partials[this.lessonId] = { version: pack.version, bytes: savedBefore + offset };
+          writeOfflinePreferences(preferences);
+          this.canResume = true;
+          this.progress = Math.round(Math.min(99, (savedBefore + offset) / Math.max(1, totalExpected) * 100));
+          this.status = `Saving lesson resources \xB7 ${this.progress}%`;
+        }
+        if (savedWholeResponse) continue;
+        const blob = new Blob(await Promise.all(chunks.map((chunk) => chunk.blob())), {
+          type: responseContentType(resource.url)
+        });
+        try {
+          await this.verifyResource(resource, await blob.arrayBuffer());
+        } catch (error) {
+          await this.discardPartial(cache, index, total);
+          throw error;
+        }
+        await this.ensureStorage(blob.size);
+        await cache.put(resource.url, new Response(blob, { headers: { "Content-Type": blob.type, "Content-Length": String(blob.size) } }));
+        for (let offset2 = 0; offset2 < total; offset2 += CHUNK_BYTES) await cache.delete(chunkRequest(this.lessonId, index, offset2));
+        savedBefore += blob.size;
+        this.progress = Math.round(Math.min(99, savedBefore / Math.max(1, totalExpected) * 100));
+      }
+      preferences.savedLessons = [.../* @__PURE__ */ new Set([...preferences.savedLessons, this.lessonId])];
+      delete preferences.partials[this.lessonId];
+      writeOfflinePreferences(preferences);
       this.saved = true;
+      this.canResume = false;
       this.progress = 100;
-      this.status = `\u2713 Saved offline \xB7 ${this.size(blob.size)}`;
-    } catch (e8) {
-      const errorMsg = e8.message;
-      if (errorMsg.includes("caches") || errorMsg.includes("Cache")) {
-        this.status = "\u274C Cache Storage not available. Use http://localhost:3001 instead of IP address.";
+      this.status = `Saved offline \xB7 ${this.formatSize(savedBefore)}`;
+    } catch (error) {
+      if (controller.signal.aborted) {
+        this.status = "Download paused. Your completed chunks are saved; choose Resume to continue.";
+        this.canResume = true;
       } else {
-        this.status = `\u274C ${errorMsg}`;
+        this.status = error instanceof Error ? error.message : "The offline download failed. Try again.";
+        this.canResume = Boolean(readOfflinePreferences().partials[this.lessonId]);
       }
     } finally {
+      if (this.controller === controller) this.controller = void 0;
       this.busy = false;
-      this.startTime = 0;
     }
   }
-  async remove() {
-    if (typeof caches === "undefined") {
-      const p4 = read2();
-      p4.savedLessons = p4.savedLessons.filter((x2) => x2 !== this.lessonId);
-      const a4 = JSON.parse(localStorage.getItem(KEY3) || "{}");
-      a4.offline = p4;
-      localStorage.setItem(KEY3, JSON.stringify(a4));
-      this.saved = false;
-      this.progress = 0;
-      this.status = "\u26A0\uFE0F Offline copy cleared from localStorage (Cache API unavailable - requires HTTPS/localhost).";
-      return;
+  async readPartial(cache, index) {
+    const chunks = [];
+    let offset = 0;
+    let total = 0;
+    while (true) {
+      const response = await cache.match(chunkRequest(this.lessonId, index, offset));
+      if (!response) break;
+      const bytes = await response.arrayBuffer();
+      if (bytes.byteLength === 0) break;
+      chunks.push(new Response(bytes));
+      offset += bytes.byteLength;
+      if (!total) total = Number(response.headers.get("X-Savanna-Total")) || 0;
+      if (total && offset >= total) break;
     }
-    try {
-      await caches.delete(PREFIX + this.lessonId);
-    } catch (e8) {
-      console.warn("[offline] Cache delete failed:", e8);
-    }
-    const p3 = read2();
-    p3.savedLessons = p3.savedLessons.filter((x2) => x2 !== this.lessonId);
-    const a3 = JSON.parse(localStorage.getItem(KEY3) || "{}");
-    a3.offline = p3;
-    localStorage.setItem(KEY3, JSON.stringify(a3));
+    return { offset, total, chunks };
+  }
+  pause() {
+    this.controller?.abort();
+  }
+  async removeSavedCopy() {
+    if (this.busy) return;
+    const preferences = readOfflinePreferences();
+    const prefix = `${CACHE_PREFIX2}${this.lessonId}-`;
+    for (const key of await caches.keys()) if (key.startsWith(prefix)) await caches.delete(key);
+    preferences.savedLessons = preferences.savedLessons.filter((id) => id !== this.lessonId);
+    delete preferences.partials[this.lessonId];
+    writeOfflinePreferences(preferences);
     this.saved = false;
+    this.canResume = false;
     this.progress = 0;
     this.status = "Offline copy deleted from this device.";
   }
   render() {
-    return b2`<div class="row">${this.saved ? b2`<button @click=${this.remove} ?disabled=${this.busy} aria-label="Delete offline copy">🗑️ Delete offline copy</button>` : b2`<button @click=${this.save} ?disabled=${this.busy || !this.manifest} aria-label="Save lesson for offline use">${this.busy ? "\u23F8" : "\u{1F4E5}"} Save for offline${this.manifest && !this.busy ? b2` <span class="size">(${this.size(this.manifest.sizeBytes || 0)})</span>` : ""}</button>`}<button @click=${this.refresh} ?disabled=${this.busy} aria-label="Refresh pack information">🔄 Refresh</button></div>${this.busy ? b2`<div class="progress-container"><progress max="100" .value=${this.progress} aria-label="Download progress ${this.progress} percent"></progress><p class="progress-text"><strong>${this.progress}%</strong> ${this.estimateTime()}</p></div>` : ""}<p role="status" aria-live="polite" class="${this.saved ? "success" : this.busy ? "info" : ""}"><span class="status-icon">${this.statusIcon()}</span> ${this.status}</p>`;
+    const size = this.manifest ? this.formatSize(this.manifest.sizeBytes) : "";
+    return b2`
+      <div class="row">
+        ${this.saved ? b2`<button type="button" @click=${this.removeClick} ?disabled=${this.busy}>Delete offline copy</button>` : b2`<button type="button" @click=${this.saveClick} ?disabled=${this.busy || !this.manifest}>${this.busy ? "Saving\u2026" : this.canResume ? "Resume download" : "Save for offline"}${size ? b2` <span class="size">(${size})</span>` : ""}</button>`}
+        ${this.busy ? b2`<button type="button" @click=${this.pause} aria-label="Pause offline download">Pause</button>` : b2`<button type="button" @click=${this.refreshClick} ?disabled=${!this.api || !this.lessonId}>Refresh</button>`}
+      </div>
+      ${this.busy || this.progress > 0 ? b2`<div class="progress-container"><progress max="100" .value=${this.progress} aria-label=${`Offline download progress ${this.progress}%`}></progress><p class="progress-text">${this.progress}%</p></div>` : ""}
+      <p class="status" role="status" aria-live="polite" aria-atomic="true">${this.status}</p>
+    `;
   }
 };
-SavannaOffline.styles = i`:host{display:block;font:16px/1.5 system-ui;color:inherit}button{min-height:44px;padding:9px 14px;border:0;border-radius:9px;background:#5b3477;color:white;font:inherit;font-weight:600;cursor:pointer;transition:background .2s}button:hover:not(:disabled){background:#4a2a62}button:focus-visible{outline:3px solid #e09b00;outline-offset:3px}button:disabled{opacity:.5;cursor:not-allowed}progress{width:min(100%,360px);height:20px;border-radius:10px;overflow:hidden}.row{display:flex;flex-wrap:wrap;gap:8px}.size{font-size:.875em;opacity:.9}.progress-container{margin:12px 0}.progress-text{margin:6px 0 0;font-size:.9375rem;color:#666}.status-icon{display:inline-block;margin-right:6px}.success{color:#2e7d32;font-weight:600}.info{color:#0d47a1}`;
+SavannaOffline.styles = i`
+    :host{display:block;color:inherit;font:16px/1.5 system-ui,sans-serif}
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    button{min-height:44px;padding:8px 14px;border:1px solid #594267;border-radius:8px;background:#5b3477;color:#fff;font:inherit;font-weight:600;cursor:pointer}
+    button:hover:not(:disabled){background:#4a2a62}button:focus-visible{outline:3px solid #e09b00;outline-offset:3px}button:disabled{opacity:.55;cursor:not-allowed}
+    progress{width:min(100%,360px);height:20px}.progress-container{margin:12px 0}.progress-text{margin:6px 0 0}.size{font-size:.875em;opacity:.9}.status{margin:.75rem 0}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+  `;
 __decorateClass([
   n4()
 ], SavannaOffline.prototype, "api", 2);
@@ -6005,6 +6912,9 @@ __decorateClass([
 __decorateClass([
   n4({ attribute: "lesson-id" })
 ], SavannaOffline.prototype, "lessonId", 2);
+__decorateClass([
+  n4()
+], SavannaOffline.prototype, "lang", 2);
 __decorateClass([
   r5()
 ], SavannaOffline.prototype, "manifest", 2);
@@ -6020,9 +6930,21 @@ __decorateClass([
 __decorateClass([
   r5()
 ], SavannaOffline.prototype, "saved", 2);
+__decorateClass([
+  r5()
+], SavannaOffline.prototype, "canResume", 2);
 SavannaOffline = __decorateClass([
   t3("savanna-offline")
 ], SavannaOffline);
+function responseContentType(url) {
+  const path = new URL(url).pathname.toLowerCase();
+  if (path.endsWith(".vtt")) return "text/vtt";
+  if (path.endsWith(".opus")) return "audio/ogg";
+  if (path.endsWith(".webm")) return "video/webm";
+  if (path.endsWith(".mp4")) return "video/mp4";
+  if (path.includes("/transcript")) return "application/json";
+  return "application/octet-stream";
+}
 
 // node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive-helpers.js
 var { I: t4 } = j;
@@ -6177,10 +7099,10 @@ var en_default2 = {
 };
 
 // module/src/job-card/prefs.ts
-var KEY4 = "savanna.prefs.v1";
+var KEY2 = "savanna.prefs.v1";
 function readJobsPrefs() {
   try {
-    const raw = localStorage.getItem(KEY4);
+    const raw = localStorage.getItem(KEY2);
     if (!raw) return {};
     const all = JSON.parse(raw);
     return all.jobs ?? {};
@@ -6190,10 +7112,10 @@ function readJobsPrefs() {
 }
 function writeJobsPrefs(patch) {
   try {
-    const raw = localStorage.getItem(KEY4);
+    const raw = localStorage.getItem(KEY2);
     const all = raw ? JSON.parse(raw) : {};
     const jobs = { ...all.jobs ?? {}, ...patch };
-    localStorage.setItem(KEY4, JSON.stringify({ ...all, jobs }));
+    localStorage.setItem(KEY2, JSON.stringify({ ...all, jobs }));
   } catch {
   }
 }
@@ -6382,12 +7304,12 @@ var SavannaJobCard = class extends i4 {
     const desc = this.data.description[lang];
     const title = this.localized("title") ?? this.data.title;
     const employer = this.localized("employer") ?? this.data.employer;
-    const location = this.localized("location") ?? this.data.location;
+    const location2 = this.localized("location") ?? this.data.location;
     const payText = this.localized("payText") ?? this.data.payText;
     const employment = this.employmentType();
     const reqs = this.data.description.requirements?.[lang] ?? [];
     const audio = this.audio();
-    const prefs2 = readJobsPrefs();
+    const prefs = readJobsPrefs();
     return b2`
       <div class="wrap">
         <article lang=${lang}>
@@ -6398,7 +7320,7 @@ var SavannaJobCard = class extends i4 {
             <dd>${employer}</dd>
             <dt>${this.t("job.location")}</dt>
             <dd>
-              ${location}${this.data.remote ? ` (${this.t("job.remote")})` : A}
+              ${location2}${this.data.remote ? ` (${this.t("job.remote")})` : A}
             </dd>
             <dt>${this.t("job.employment")}</dt>
             <dd>${employment}</dd>
@@ -6428,7 +7350,7 @@ var SavannaJobCard = class extends i4 {
             @ended=${this.onEnded}
           ></audio>
           <details
-            ?open=${prefs2.transcriptOpen !== false}
+            ?open=${prefs.transcriptOpen !== false}
             @toggle=${(ev) => writeJobsPrefs({ transcriptOpen: ev.target.open })}
           >
             <summary>${this.t("job.transcript")}</summary>

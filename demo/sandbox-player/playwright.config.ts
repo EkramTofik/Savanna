@@ -9,7 +9,14 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "pnpm run dev",
+      command: "node contracts/mock/server.js",
+      cwd: "../..",
+      url: "http://localhost:4010/v1/lessons/L-103",
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+    {
+      command: "node node_modules/vite/bin/vite.js --port 5174 --strictPort",
       url: "http://localhost:5174",
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,

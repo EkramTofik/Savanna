@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 let esbuild;
 try {
@@ -59,3 +60,20 @@ await esbuild.build({
   sourcemap: true
 });
 console.log('✅ Modular components built to module/dist/');
+
+// The service worker must be served from the application origin's root to control media requests.
+fs.copyFileSync('module/src/offline/media-sw.js', 'dist/media-sw.js');
+console.log('✅ Offline media service worker copied to dist/media-sw.js');
+
+// The Career Gateway is a separate component package but is shipped by the
+// Savanna starter page too. Build and copy it as part of the same release step.
+const careerRoot = path.resolve('demo/sandbox-career');
+execFileSync(process.execPath, [path.join(careerRoot, 'node_modules/vite/bin/vite.js'), 'build'], {
+  cwd: careerRoot,
+  stdio: 'inherit',
+});
+fs.copyFileSync(
+  path.join(careerRoot, 'dist/savanna-career.v1.js'),
+  'savanna/module/savanna-career.v1.js',
+);
+console.log('✅ Built and copied Career Gateway bundle to savanna/module/');

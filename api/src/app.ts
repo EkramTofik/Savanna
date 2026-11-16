@@ -37,12 +37,18 @@ export async function createApp(opts: AppOptions = {}) {
   app.use(
     cors({
       origin: (origin, cb) => cb(null, !origin || originAllowed(origin, allOrigins, config.production)),
-      allowedHeaders: ["Content-Type", "X-Savanna-Key", "X-Savanna-User"],
+      allowedHeaders: ["Content-Type", "Range", "X-Savanna-Key", "X-Savanna-User"],
+      exposedHeaders: ["Accept-Ranges", "Content-Range", "Content-Length", "Content-Disposition", "ETag"],
       maxAge: 600,
     }),
   );
   app.use(limiter(config));
   app.use(express.json({ limit: "100kb" }));
+  if (config.mediaRoot) {
+    // Fixture media is public and supports HTTP byte ranges through express.static.
+    // Production deployments can point MEDIA_ROOT at a mounted asset directory.
+    app.use("/media", express.static(config.mediaRoot, { fallthrough: true, index: false }));
+  }
 
   const modules = await loadRouteModules(opts.routesDir ?? path.join(here, "routes"), {
     excludeFiles: CAREER_HARNESS_FILES,
@@ -78,6 +84,10 @@ export async function createApp(opts: AppOptions = {}) {
   }
   app.use("/v1", authenticate(config), v1);
   app.use("/api/v1", authenticate(config), v1);
+
+  if (config.webRoot) {
+    app.use(express.static(config.webRoot, { index: "index.html", fallthrough: true }));
+  }
 
   app.use(notFound);
   app.use(errorHandler);

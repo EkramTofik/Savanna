@@ -9,35 +9,38 @@
 - **Haregeweyn Tewabe** (@hareg28) — *Member 3: Career Gateway*
 - **Bitsuan Abate** (@bit-suan) — *Member 4: Platform, Content and Delivery*
 
-**Co-Designers:**
-- Deaf learner (Ethiopian Sign Language first language, keyboard navigation)
-- Blind learner (NVDA 2024.3 on Windows & TalkBack on Android)
-- Low-bandwidth learner (2GB RAM Android phone, intermittent 3G)
+**User research status:** This repository contains no evidence for a participant session that I can verify in this integration. The workflows below are product goals; automated browser checks are reported separately and are not presented as co-design or assistive-technology testing.
 
 ---
 
 ## What it does
 
-The Savanna Access Kit turns any lesson video into a fully accessible learning experience with resizable Amharic and English captions, a synchronized movable Ethiopian Sign Language interpreter window, and on-demand audio descriptions. It bundles low-bandwidth offline packs that allow learners on intermittent 3G networks to study lessons and transcripts in airplane mode. Finally, it bridges education to employment by providing accessible job opportunity cards with spoken audio summaries and verifiable Open Badges 3.0 certificates.
+The Savanna Access Kit is a set of web components, an API, and demos for accessible learning media and career content. It includes a lesson player with captions, optional sign-language and audio-description tracks, an offline pack control, and career cards and credentials. Support depends on the tracks and API data supplied by the host. The repository includes development fixtures; it is not a catalog of production lesson media.
 
 ---
 
-## The main task we tested
+## Target learner workflow
 
-> "A Deaf or blind learner opens a lesson on a low-cost Android phone, turns on Amharic captions or the sign window or audio description, makes them usable, and saves the lesson offline, with nobody helping."
+> "A learner opens a lesson, selects the available caption, sign-language, or audio-description support, adjusts it, and saves the lesson for offline use."
+
+This is a product scenario, not a claim that a participant completed the task. See [the test plan](docs/TEST-PLAN.md) and [the current conformance status](CONFORMANCE.md) for verification evidence and outstanding manual checks.
 
 ---
 
 ## Run it
 
-### Option A: Docker Compose (One-Command Clean Run)
-Judges can launch the complete ecosystem with a single command (NFR-D1):
+### Prerequisites
+
+- Node.js 22 or newer and Corepack; the repository pins pnpm 9.15.0.
+- Docker Engine is optional and required only for the Compose setup.
+
+### Option A: Docker Compose
+
+With Docker Desktop or another Docker Engine running, build and start the web and API containers:
 
 ```bash
-docker compose up
+docker compose up --build
 ```
-
-*(Optional full profile with PostgreSQL & Redis: `docker compose --profile full up` per NFR-D2)*
 
 Once running, open:
 - **Savanna Access Kit Portal:** [http://localhost:8080/](http://localhost:8080/)
@@ -45,19 +48,26 @@ Once running, open:
 - **Savanna Career Gateway:** [http://localhost:8080/savanna/pages/jobs.html](http://localhost:8080/savanna/pages/jobs.html)
 - **Outside-Savanna Standalone Proof:** [http://localhost:8080/demo/blank.html](http://localhost:8080/demo/blank.html)
 - **WebVTT Caption Editor (Human Review Gate):** [http://localhost:8080/demo/caption-editor/index.html](http://localhost:8080/demo/caption-editor/index.html)
-- **Interactive OpenAPI Documentation (Swagger UI):** [http://localhost:4010/docs](http://localhost:4010/docs)
+- **Interactive OpenAPI Documentation (Swagger UI):** [http://localhost:8080/docs](http://localhost:8080/docs)
 
 ### Option B: Local Development
 ```bash
 corepack enable
-pnpm install
-pnpm build         # compiles dist/savanna-access.v1.js
-pnpm axe           # runs automated axe-core audit on all demo pages (NFR-G3)
-pnpm test          # runs unit and contract tests
-pnpm mock          # mock contract API on http://localhost:4010
-# Or start full Express API:
-pnpm dev:api       # http://localhost:4010
+corepack pnpm install --frozen-lockfile
+corepack pnpm build
+corepack pnpm test
+corepack pnpm -r --if-present typecheck
+corepack pnpm -r --if-present test
+corepack pnpm axe
 ```
+
+Start the fixture API in a separate terminal with `corepack pnpm mock` (port 4010), or use `corepack pnpm dev:api` for the Express API. The API defaults to port 4010; configure `PORT`, `MEDIA_ROOT`, and `PACK_ROOT` for a deployment. Browser tests start their own Vite and mock-server processes. Playwright browsers must be installed for the first run (`corepack pnpm --filter @savanna/sandbox-player exec playwright install chromium`).
+
+---
+
+## Deploy a public preview
+
+The repository includes a Render Blueprint and step-by-step hosting and smoke-check instructions in [DEPLOY.md](DEPLOY.md). The free preview uses fixture content and in-memory demo data; it is not configured for production learner records.
 
 ---
 
@@ -82,8 +92,8 @@ Add the unified bundle to any HTML page with **one script tag**:
 >
   <savanna-sign-window slot="overlay"></savanna-sign-window>
   <savanna-audio-description></savanna-audio-description>
-  <savanna-offline api="http://localhost:4010" api-key="pk_dev_local" lesson-id="L-102"></savanna-offline>
 </savanna-player>
+<savanna-offline api="http://localhost:4010" api-key="pk_dev_local" lesson-id="L-102"></savanna-offline>
 ```
 *Attributes:* `lesson` (e.g. `L-102`), `lang` (`"am"` or `"en"`), `api` (base URL), `api-key` (public publishable key).
 
@@ -197,82 +207,41 @@ curl http://localhost:4010/.well-known/did.json
 
 ---
 
-## Offline and slow connection
+## Offline packs
 
-* **Service Worker Caching:** Uses `media-sw.js` with a cache-first strategy for media packs and network-first for manifests.
-* **Bundle Sizes:**
-  - Unified ES Bundle (`dist/savanna-access.v1.js`): **227 KB uncompressed (~40 KB gzipped)** — far below the 500 KB hackathon ceiling.
-  - Light HTML lesson transcript: **< 15 KB**.
-  - Complete L-102 lesson pack (Opus audio + en/am VTT captions + AD audio/vtt + light HTML): **~212 KB**.
-* **Measured 3G Performance:**
-  - Load time of the blank page on Chrome DevTools throttled "Slow 3G": **5.2 seconds** (transferred size: ~65 KB, well within the 8s budget).
-  - Offline pack streaming download on 3G: **~18 seconds** with continuous progress indication and resume on byte-range failure.
-  - **Airplane Mode Verified:** Content plays flawlessly with internet disconnected.
+The offline control validates the lesson and pack manifests, downloads only declared resources, supports HTTP byte-range resume, checks each resource's byte count and SHA-256 hash, and stores completed assets in Cache Storage. The player and caption loader can reuse those cached assets after connectivity is lost. Service-worker shell caching is available when the built site serves `media-sw.js` from its root; offline media fallback also uses Cache Storage directly.
+
+The checked-in fixture packs currently declare 29,657 payload bytes for L-102 (Opus audio and English/Amharic VTT) and 51,761 bytes for L-103 (the same plus audio-description tracks and an ESL placeholder video). These are fixture sizes, not network-performance measurements or production lesson content. The current browser tests verify offline playback fallback on an already loaded page and a resumed interrupted range download; they do not verify a cold offline page reload.
 
 ---
 
-## Answers to the Guide Questions (FR-X2)
+## Fixture and content limits
 
-1. **How small a useful offline lesson is, and what was left out? (FR-O6)**
-   - The produced offline pack for **L-102** is **212 KB** total. It bundles compressed Opus audio (24.8 KB), full English and Amharic WebVTT caption tracks (0.5 KB), audio description audio (9.6 KB), and a lightweight accessible HTML transcript (1.2 KB).
-   - **What was left out:** The heavy 1080p MP4 video track (which is ~35 MB). By serving synchronized high-clarity voice audio with captions and sign/AD tracks instead of video, bandwidth is reduced by **99.4%**, allowing over 4,500 lessons to fit into 1 GB of storage on low-cost devices.
-2. **How does a blind learner find caption settings and hear what changed? (FR-P3a)**
-   - Settings are reachable from a single dedicated, real button named **"Caption settings"** (or keyboard shortcut `P`), directly in the natural tab order.
-   - When any caption size, color, or speed setting changes, a persistent ARIA polite live region (`aria-live="polite"`) immediately announces the new value in the learner's active language (e.g. *"Caption size 150 percent"* or *"የመግለጫ መጠን 150 ከመቶ"*).
-3. **What does the player do when there is no sign video? (FR-P5a)**
-   - When a lesson lacks an Ethiopian Sign Language video track, the sign window toggle button remains cleanly reachable in the tab order without throwing exceptions.
-   - Activating it displays a clear bilingual message in English and Amharic: *"No sign language video for this lesson yet" / "ለዚህ ትምህርት የምልክት ቋንቋ ቪዲዮ ገና አልተዘጋጀም"*. The player, captions, and audio continue playing without interruption.
+The fixture pack manifest declares individual resource sizes and SHA-256 hashes. The API and browser parser reject invalid hashes, unsafe or duplicate paths, and aggregate sizes that do not equal the listed files. L-102 currently has no sign or audio-description track; its transcript is served by the API and is not included as a separate offline file. L-103's sign asset is explicitly a placeholder. Fixture presence and automated checks do not establish that captions, signing, or descriptions are editorially approved or suitable for real lessons.
 
 ---
 
-## Caption Quality Report (FR-A1)
+## Caption quality
 
-Before human correction, raw automatic speech recognition (ASR) error rates measured across test samples:
-- **English ASR (Whisper Small):** **4.2% Word Error Rate (WER)**. Accurate and usable with minor punctuation cleanups.
-- **Amharic ASR (Meta MMS / Whisper):** **18.7% Word Error Rate (WER)**. Amharic ASR is treated honestly as a draft baseline.
-- **Human Correction Gate (FR-A2 / FR-A3):** All drafts pass through the caption review gate via `demo/caption-editor/` or `POST /v1/lessons/{id}/captions`. Only reviewed files with 2 lines max, ~32 characters per line, and 1–7s durations achieve `reviewed=true` status and are approved for publication (resulting in **0.0% WER** in production).
+No caption word-error-rate study or human editorial review was performed as part of this integration pass. The API validates VTT structure and supports an authenticated caption-upload/review route; that structural gate does not certify linguistic accuracy or production approval.
 
 ---
 
 ## Data and privacy
 
-* **Privacy by Design (NFR-S3):** Disability choices and accommodation requests are stored **strictly in the browser's `localStorage`** (`savanna.prefs.v1`) and are never transmitted to employers or third parties without explicit user sync.
-* **Data Rights (FR-A4):** Learners can inspect, download, and delete all stored data:
-  - Download settings via player UI or `GET /v1/preferences/export`.
-  - Delete settings via player UI or `DELETE /v1/preferences`.
-* **Pseudonymous Identifiers:** Credentials use cryptographically secure random identifiers (`UUIDv7` / 128-bit tokens), never exposing real names, phone numbers, or government IDs without consent.
-* **No Trackers:** Zero third-party trackers, telemetry, or invasive analytics scripts.
+The player and accessibility components keep their local preferences in the browser under namespaced keys. The API also exposes authenticated per-user preference read, export, update, and delete routes. Whether a deployment synchronizes preferences depends on how its host application calls those routes. Review deployment logging, storage, and credential policies before using real learner data; this repository review did not perform a privacy or telemetry audit.
 
 ---
 
 ## Cost to run
 
-The entire system is engineered for low-cost, self-hosted deployment without recurring commercial AI fees:
-- Open-source Whisper & Meta MMS for speech transcription.
-- Open TTS models (Piper / MMS-TTS) for pre-rendering audio summaries.
-- S3-compatible egress storage (Cloudflare R2 or MinIO) with zero egress charges.
-- Lightweight Node 22 / Express API container requiring less than 256MB RAM.
-- **Estimated operational cost for 3,000 learners:** **Under $15 – $20 USD / month**.
+No load test, cloud bill, or operating-cost estimate was produced in this integration pass. Hosting cost depends on deployment, storage, media delivery, and any external transcription or speech services selected by the operator.
 
 ---
 
-## Finished and not finished
+## Verification status
 
-### ✅ Finished & Fully Verified
-1. **Core Web Components (`<savanna-player>`, `<savanna-sign-window>`, `<savanna-audio-description>`, `<savanna-offline>`, `<savanna-job-card>`, `<savanna-credential>`)**: Full keyboard navigation, screen reader ARIA semantics, 200%/400% zoom reflow, and focus management.
-2. **Unified Production Bundle**: Generated at `dist/savanna-access.v1.js` and mounted in the Savanna starter `savanna/pages/concept-with-navigation.html`.
-3. **Outside-Savanna Proof**: Created at `demo/blank.html` proving framework-free third-party installation.
-4. **48 Component Tests Passing**: Zero axe-core critical or serious violations.
-5. **Content Pipeline Front-Half (80 Tests Passing)**: ffmpeg media normalization, Whisper transcription, Amharic ASR evaluation, cue formatting, and human review gate.
-6. **Access REST API**: Route auto-loading, Swagger UI at `/docs`, OpenAPI 3.1 export, generated TypeScript SDK (`@savanna/sdk`), and RFC 9457 error handling.
-7. **Docker Compose**: Clean single-command deployment (`docker compose up`) serving the web portal and API.
-8. **Co-Designer Testing**: Real session with Deaf, blind, and low-bandwidth users resulting in 6/6 tasks completed unaided.
-
-### ⚠️ Honest Scope Limits & Post-Hackathon Follow-up
-1. **Savanna Starter Defects Policy (FR-I5b):** Legacy defects in the provided Savanna starter (unlabelled div hamburger, unsupported ARIA on non-buttons, bad contrast in template navigation) remain logged in `docs/SAVANNA-DEFECTS.md`. Per the Hackathon instructions, original Savanna starter files were kept intact; non-invasive fixes are applied via separate files (`demo/savanna-patch.js` and `demo/savanna-patch.css`).
-2. **Pipeline Tagged PDF**: While the HTML certificate and lesson pages pass semantic checks, automated PAC 2024 / veraPDF PDF/UA-1 validation in CI remains a manual validation step for the post-hackathon sprint.
-3. **Amharic Braille (.brf)**: English Braille translation ships; Amharic Liblouis Braille table remains marked as draft pending native Braille reader validation.
-4. **Assistive Tech Testing Floor**: Tested on NVDA, TalkBack (Android 13), JAWS, and keyboard-only; iOS Safari VoiceOver was evaluated via desktop Safari emulation due to hardware availability.
+This repository has unit/contract tests, API tests, Playwright browser projects, TypeScript checks, a production build, and an axe-core runner. The actual results from the current integration pass and the remaining manual checks are recorded in [CONFORMANCE.md](CONFORMANCE.md). Automated accessibility checks do not establish WCAG conformance or replace keyboard, zoom, device, screen-reader, and human content review.
 
 ---
 

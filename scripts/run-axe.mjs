@@ -8,20 +8,18 @@
 import http from "node:http";
 import path from "node:path";
 import fs from "node:fs";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..");
 
 // Locate playwright and axe-core
 async function loadModules() {
-  const playwrightPath = path.resolve(root, "api/node_modules/playwright/index.mjs");
-  const axePath = path.resolve(
-    root,
-    "node_modules/.pnpm/@axe-core+playwright@4.14.0_playwright-core@1.65.1/node_modules/@axe-core/playwright/dist/index.js"
-  );
-  const { chromium } = await import(pathToFileURL(playwrightPath).href);
-  const AxeBuilder = (await import(pathToFileURL(axePath).href)).default;
+  const require = createRequire(path.join(root, "demo/sandbox-career/package.json"));
+  const { chromium } = require("playwright");
+  const axeModule = require("@axe-core/playwright");
+  const AxeBuilder = axeModule.default ?? axeModule;
   return { chromium, AxeBuilder };
 }
 
@@ -103,6 +101,11 @@ async function main() {
       console.log(`   Total rules checked: ${results.passes.length + results.violations.length}`);
       console.log(`   Violations total: ${results.violations.length}`);
       console.log(`   Critical / Serious issues: ${blocking.length}`);
+
+      for (const violation of results.violations) {
+        console.log(`   - [${violation.impact ?? "unknown"}] ${violation.id}: ${violation.help}`);
+        for (const node of violation.nodes) console.log(`     Target: ${node.target.join(", ")}`);
+      }
 
       if (blocking.length > 0) {
         hasFailures = true;

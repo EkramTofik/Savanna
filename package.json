@@ -9,6 +9,7 @@
   },
   "scripts": {
     "mock": "node contracts/mock/server.js",
+    "fixtures:pack": "node contracts/fixtures/update-packs.mjs",
     "format": "prettier --write .",
     "test": "node --test pipeline/src/pack/*.test.mjs module/src/**/*.test.ts module/src/member2-a11y.test.ts",
     "build": "tsx build-components.mjs",
