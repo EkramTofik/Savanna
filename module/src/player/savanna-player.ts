@@ -192,6 +192,16 @@ export class SavannaPlayer extends LitElement {
   @query('.btn-captions-settings')
   private captionsSettingsBtnElement!: HTMLButtonElement | null;
 
+  @query('.btn-fullscreen')
+  private fullscreenButtonElement!: HTMLButtonElement | null;
+
+  /** FR-P1a: Tracks the last focused control in the player for fullscreen restoration */
+  private lastFocusedControl: HTMLElement | null = null;
+
+  /** FR-P12: Whether non-speech sound descriptions should be voiced to screen readers */
+  @state()
+  private soundDescriptionsEnabled = false;
+
   /** Whether the interactive transcript panel is open (SRS FR-P8) */
   @state()
   private isTranscriptOpen = false;
@@ -1487,7 +1497,34 @@ export class SavannaPlayer extends LitElement {
       this.isFullscreen ? this.t('player.statusFullscreenOn') : this.t('player.statusFullscreenOff'),
       this.isFullscreen ? 'Fullscreen ⛶' : 'Exit Fullscreen'
     );
+    // FR-P1a: Entering or leaving fullscreen keeps keyboard focus on the player
+    // (on the fullscreen button or the last focused control)
+    window.requestAnimationFrame(() => {
+      if (this.lastFocusedControl && this.shadowRoot?.contains(this.lastFocusedControl)) {
+        this.lastFocusedControl.focus();
+      } else if (this.fullscreenButtonElement) {
+        this.fullscreenButtonElement.focus();
+      }
+    });
   };
+
+  private handleControlFocus = (e: FocusEvent): void => {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.classList?.contains('ctrl-btn') || target.tagName === 'BUTTON' || target.tagName === 'INPUT')) {
+      this.lastFocusedControl = target;
+    }
+  };
+
+  /**
+   * FR-P12: Formats cue text for screen readers. Bracketed non-speech cues
+   * (e.g. "[music]") stay out of screen-reader live speech unless sound descriptions are enabled.
+   */
+  public filterCueForScreenReader(cueText: string): string {
+    if (this.soundDescriptionsEnabled) {
+      return cueText;
+    }
+    return cueText.replace(/\[.*?\]/g, '').trim();
+  }
 
   private formatTime(seconds: number): string {
     if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -2262,6 +2299,11 @@ export class SavannaPlayer extends LitElement {
     if (!Number.isNaN(size)) {
       this.captionFontSize = size;
       this.saveCaptionsPreferences();
+      // FR-P3a: Polite live region announcement in active language
+      const msg = this.activeLang === 'am'
+        ? `የግርጌ ጽሑፍ መጠን ${size} በመቶ`
+        : `Caption size ${size} percent`;
+      this.announceStatus(msg);
     }
   };
 
@@ -2279,6 +2321,16 @@ export class SavannaPlayer extends LitElement {
       this.captionBgColor = '#ffffff';
     }
     this.saveCaptionsPreferences();
+    // FR-P3a: Polite announcement of caption style change
+    const presetName = preset === 'yellow-black'
+      ? (this.activeLang === 'am' ? 'ቢጫ በጥቁር ላይ' : 'Yellow on black')
+      : preset === 'white-black'
+        ? (this.activeLang === 'am' ? 'ነጭ በጥቁር ላይ' : 'White on black')
+        : (this.activeLang === 'am' ? 'ጥቁር በነጭ ላይ' : 'Black on white');
+    const msg = this.activeLang === 'am'
+      ? `የግርጌ ጽሑፍ ገጽታ ${presetName}`
+      : `Caption style ${presetName}`;
+    this.announceStatus(msg);
   };
 
   private handleCaptionTextColorChange = (e: Event): void => {
@@ -3072,15 +3124,16 @@ export class SavannaPlayer extends LitElement {
           class="player-controls"
           aria-label=${this.t('player.controlsLabel')}
           lang=${this.activeLang}
+          @focusin=${this.handleControlFocus}
         >
           <!-- Play / Pause (Toggle) -->
           <button
             type="button"
             class="ctrl-btn btn-play"
             @click=${this.togglePlay}
-            aria-label=${this.t('player.play')}
+            aria-label=${this.isPlaying ? this.t('player.pause') : this.t('player.play')}
             aria-pressed=${this.isPlaying ? 'true' : 'false'}
-            title="${this.t('player.play')} (K)"
+            title="${this.isPlaying ? this.t('player.pause') : this.t('player.play')} (K)"
           >
             ${this.isPlaying
               ? html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -3225,15 +3278,15 @@ export class SavannaPlayer extends LitElement {
             ${this.captionsShowing ? html`<span style="position: absolute; bottom: 4px; left: 10px; right: 10px; height: 2px; background: #e11d48; border-radius: 1px;"></span>` : ''}
           </button>
 
-          <!-- Preferences Settings Dialog Trigger (SRS FR-P3, FR-P9, Contract C3/C4) -->
+          <!-- Preferences / Caption Settings Dialog Trigger (SRS FR-P3, FR-P3a, Contract C3/C4) -->
           <button
             type="button"
             class="ctrl-btn btn-preferences btn-captions-settings ${this.showPreferencesDialog ? 'active' : ''}"
             @click=${() => this.togglePreferences('general')}
-            aria-label=${this.t('player.preferences')}
+            aria-label=${this.t('player.captionsSettings')}
             aria-haspopup="dialog"
             aria-expanded=${this.showPreferencesDialog ? 'true' : 'false'}
-            title="${this.t('player.preferences')} (P)"
+            title="${this.t('player.captionsSettings')} (P)"
           >
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"></circle>
