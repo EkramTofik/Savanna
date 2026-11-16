@@ -1492,20 +1492,27 @@ export class SavannaPlayer extends LitElement {
   };
 
   private handleFullscreenChange = (): void => {
-    this.isFullscreen = !!document.fullscreenElement;
+    const isNowFullscreen = !!document.fullscreenElement;
+    if (this.isFullscreen === isNowFullscreen) {
+      return;
+    }
+    const wasFullscreen = this.isFullscreen;
+    this.isFullscreen = isNowFullscreen;
     this.announceStatus(
       this.isFullscreen ? this.t('player.statusFullscreenOn') : this.t('player.statusFullscreenOff'),
       this.isFullscreen ? 'Fullscreen ⛶' : 'Exit Fullscreen'
     );
-    // FR-P1a: Entering or leaving fullscreen keeps keyboard focus on the player
-    // (on the fullscreen button or the last focused control)
-    window.requestAnimationFrame(() => {
-      if (this.lastFocusedControl && this.shadowRoot?.contains(this.lastFocusedControl)) {
-        this.lastFocusedControl.focus();
-      } else if (this.fullscreenButtonElement) {
-        this.fullscreenButtonElement.focus();
+    // FR-P1a: Only restore focus on actual fullscreen exit/entry when focus was lost to document.body
+    if (wasFullscreen !== isNowFullscreen) {
+      const active = this.shadowRoot?.activeElement;
+      if (!active || active === this.videoElement) {
+        if (this.lastFocusedControl && this.shadowRoot?.contains(this.lastFocusedControl)) {
+          this.lastFocusedControl.focus();
+        } else if (this.fullscreenButtonElement) {
+          this.fullscreenButtonElement.focus();
+        }
       }
-    });
+    }
   };
 
   private handleControlFocus = (e: FocusEvent): void => {
@@ -2201,14 +2208,18 @@ export class SavannaPlayer extends LitElement {
   private handlePrefsDialogClose = (): void => {
     this.showPreferencesDialog = false;
     this.showCaptionsDialog = false;
-    if (this.triggerElementBeforeDialog) {
-      this.triggerElementBeforeDialog.focus();
-      this.triggerElementBeforeDialog = null;
-    } else if (this.prefsBtnElement) {
-      this.prefsBtnElement.focus();
-    } else if (this.captionsSettingsBtnElement) {
-      this.captionsSettingsBtnElement.focus();
+    const dialog = this.prefsDialogElement || this.captionsDialogElement;
+    const active = this.shadowRoot?.activeElement;
+    if (!active || active === dialog || dialog?.contains(active)) {
+      if (this.triggerElementBeforeDialog) {
+        this.triggerElementBeforeDialog.focus();
+      } else if (this.prefsBtnElement) {
+        this.prefsBtnElement.focus();
+      } else if (this.captionsSettingsBtnElement) {
+        this.captionsSettingsBtnElement.focus();
+      }
     }
+    this.triggerElementBeforeDialog = null;
   };
 
   private handlePrefsDialogClick = (event: MouseEvent): void => {
@@ -2469,13 +2480,16 @@ export class SavannaPlayer extends LitElement {
 
   private handleDialogClose = (): void => {
     this.showHelpDialog = false;
-    // Restore focus to trigger element
-    if (this.triggerElementBeforeDialog) {
-      this.triggerElementBeforeDialog.focus();
-      this.triggerElementBeforeDialog = null;
-    } else if (this.helpButtonElement) {
-      this.helpButtonElement.focus();
+    // Restore focus to trigger element only if focus is still on/inside the dialog or lost
+    const active = this.shadowRoot?.activeElement;
+    if (!active || active === this.helpDialogElement || this.helpDialogElement?.contains(active)) {
+      if (this.triggerElementBeforeDialog) {
+        this.triggerElementBeforeDialog.focus();
+      } else if (this.helpButtonElement) {
+        this.helpButtonElement.focus();
+      }
     }
+    this.triggerElementBeforeDialog = null;
   };
 
   private handleDialogClick = (event: MouseEvent): void => {
