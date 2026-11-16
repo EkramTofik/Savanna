@@ -324,6 +324,393 @@ test.describe("Savanna Player - Member 1 Accessibility & Functional Suite", () =
     await expect.poll(() => player.evaluate((element: any) => element.showSignWindow)).toBe(false);
   });
 
+  test("1.16 integrated sign window stays inside the player and supports drag, resize, keyboard, fullscreen, and touch", async ({
+    page,
+    browser,
+  }) => {
+    const player = page.locator("savanna-player");
+    const sign = page.locator("savanna-sign-window");
+    const signVideo = sign.locator("video");
+
+    await expect
+      .poll(() =>
+        signVideo.evaluate(
+          (video: HTMLVideoElement) => video.readyState >= 1 && video.videoWidth > 0,
+        ),
+      )
+      .toBe(true);
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    const readLayout = () =>
+      player.evaluate((element: any) => {
+        const overlay = element.querySelector("savanna-sign-window") as HTMLElement;
+        const signVideo = overlay.shadowRoot.querySelector("video") as HTMLVideoElement;
+        const playerVideo = element.media as HTMLVideoElement;
+        const overlayRect = overlay.getBoundingClientRect();
+        const signVideoRect = signVideo.getBoundingClientRect();
+        const playerVideoRect = playerVideo.getBoundingClientRect();
+        const parentRect = overlay.offsetParent?.getBoundingClientRect();
+        return {
+          parent: {
+            left: parentRect?.left,
+            top: parentRect?.top,
+            width: (overlay.offsetParent as HTMLElement).clientWidth,
+            height: (overlay.offsetParent as HTMLElement).clientHeight,
+          },
+          savedPosition: (overlay as any).position,
+          boundMedia: {
+            same: (overlay as any).main === element.media,
+            rect: (overlay as any).main?.getBoundingClientRect().toJSON(),
+            clientWidth: (overlay as any).main?.clientWidth,
+            clientHeight: (overlay as any).main?.clientHeight,
+          },
+          overlayStyle: { left: overlay.style.left, top: overlay.style.top },
+          overlay: {
+            left: overlayRect.left,
+            top: overlayRect.top,
+            right: overlayRect.right,
+            bottom: overlayRect.bottom,
+            width: overlayRect.width,
+            height: overlayRect.height,
+          },
+          signVideo: { width: signVideoRect.width, height: signVideoRect.height },
+          playerVideo: {
+            left: playerVideoRect.left,
+            top: playerVideoRect.top,
+            right: playerVideoRect.right,
+            bottom: playerVideoRect.bottom,
+            clientWidth: playerVideo.clientWidth,
+            clientHeight: playerVideo.clientHeight,
+          },
+        };
+      });
+
+    const assertInsidePlayerVideo = async () => {
+      const layout = await readLayout();
+      expect(layout.overlay.left).toBeGreaterThanOrEqual(layout.playerVideo.left - 1);
+      expect(layout.overlay.top).toBeGreaterThanOrEqual(layout.playerVideo.top - 1);
+      expect(layout.overlay.right, JSON.stringify(layout)).toBeLessThanOrEqual(
+        layout.playerVideo.right + 1,
+      );
+      expect(layout.overlay.bottom, JSON.stringify(layout)).toBeLessThanOrEqual(
+        layout.playerVideo.bottom + 1,
+      );
+      expect(layout.signVideo.width, JSON.stringify(layout)).toBeGreaterThan(0);
+      expect(layout.signVideo.height, JSON.stringify(layout)).toBeGreaterThan(0);
+      expect(layout.signVideo.width / layout.signVideo.height).toBeCloseTo(16 / 9, 1);
+      return layout;
+    };
+
+    for (const width of [320, 375, 768, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.evaluate(
+        () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+      );
+      const layout = await assertInsidePlayerVideo();
+      expect(layout.overlay.width).toBeLessThanOrEqual(
+        layout.playerVideo.right - layout.playerVideo.left + 1,
+      );
+    }
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    const header = sign.locator("header");
+    const beforeDrag = await readLayout();
+    const headerBox = await header.boundingBox();
+    expect(beforeDrag).toBeTruthy();
+    expect(headerBox).toBeTruthy();
+    const dragStart = { x: headerBox!.x + 35, y: headerBox!.y + headerBox!.height / 2 };
+    await page.mouse.move(dragStart.x, dragStart.y);
+    await page.mouse.down();
+    await page.mouse.move(dragStart.x - 48, dragStart.y + 28, { steps: 4 });
+    await page.mouse.up();
+    await expect
+      .poll(async () => {
+        const after = await readLayout();
+        const beforeX = beforeDrag.overlay.left - beforeDrag.playerVideo.left;
+        const beforeY = beforeDrag.overlay.top - beforeDrag.playerVideo.top;
+        const afterX = after.overlay.left - after.playerVideo.left;
+        const afterY = after.overlay.top - after.playerVideo.top;
+        return afterX < beforeX - 20 && afterY > beforeY + 10;
+      })
+      .toBe(true);
+    await assertInsidePlayerVideo();
+
+    const beforeResize = await sign.boundingBox();
+    const resizeHandle = sign.locator(".handle.se");
+    const handleBox = await resizeHandle.boundingBox();
+    expect(beforeResize).toBeTruthy();
+    expect(handleBox).toBeTruthy();
+    await page.mouse.move(
+      handleBox!.x + handleBox!.width / 2,
+      handleBox!.y + handleBox!.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(handleBox!.x + 38, handleBox!.y + 24, { steps: 4 });
+    await page.mouse.up();
+    await expect
+      .poll(async () => {
+        const after = await sign.boundingBox();
+        return after && beforeResize ? after.width > beforeResize.width + 12 : false;
+      })
+      .toBe(true);
+    await assertInsidePlayerVideo();
+
+    await header.focus();
+    const beforeKeyboard = await readLayout();
+    await header.press("ArrowLeft");
+    await expect
+      .poll(async () => {
+        const after = await readLayout();
+        return (
+          after.overlay.left - after.playerVideo.left <
+          beforeKeyboard.overlay.left - beforeKeyboard.playerVideo.left
+        );
+      })
+      .toBe(true);
+    const beforeKeyboardResize = await sign.boundingBox();
+    await header.press("Alt+ArrowUp");
+    await expect
+      .poll(async () => {
+        const after = await sign.boundingBox();
+        return after && beforeKeyboardResize ? after.width < beforeKeyboardResize.width : false;
+      })
+      .toBe(true);
+    await expect(sign.locator("p[role=status]")).toContainText("Position");
+
+    await player.locator(".btn-fullscreen").click();
+    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
+    await assertInsidePlayerVideo();
+    await player.locator(".btn-fullscreen").click();
+    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+
+    const touchContext = await browser.newContext({
+      hasTouch: true,
+      isMobile: true,
+      viewport: { width: 768, height: 1024 },
+    });
+    try {
+      const touchPage = await touchContext.newPage();
+      await touchPage.goto("/");
+      const touchSign = touchPage.locator("savanna-sign-window");
+      await expect
+        .poll(() =>
+          touchSign
+            .locator("video")
+            .evaluate((video: HTMLVideoElement) => video.readyState >= 1 && video.videoWidth > 0),
+        )
+        .toBe(true);
+      const touchHeader = touchSign.locator("header");
+      await touchHeader.scrollIntoViewIfNeeded();
+      const touchPosition = () =>
+        touchPage.locator("savanna-player").evaluate((element: any) => {
+          const overlay = element.querySelector("savanna-sign-window").getBoundingClientRect();
+          const video = element.media.getBoundingClientRect();
+          return { x: overlay.left - video.left, y: overlay.top - video.top };
+        });
+      const touchPositionBefore = await touchPosition();
+      const touchHeaderBox = await touchHeader.boundingBox();
+      expect(touchHeaderBox).toBeTruthy();
+      const cdp = await touchContext.newCDPSession(touchPage);
+      await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+      const touchStart = {
+        x: touchHeaderBox!.x + 32,
+        y: touchHeaderBox!.y + touchHeaderBox!.height / 2,
+      };
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ id: 1, ...touchStart }],
+      });
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ id: 1, x: touchStart.x - 36, y: touchStart.y + 22 }],
+      });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await expect
+        .poll(async () => {
+          const after = await touchPosition();
+          return after.x < touchPositionBefore.x - 12 && after.y > touchPositionBefore.y + 8;
+        })
+        .toBe(true);
+
+      const touchResize = touchSign.locator(".handle.se");
+      const touchResizeBox = await touchResize.boundingBox();
+      const touchSignBefore = await touchSign.boundingBox();
+      expect(touchResizeBox).toBeTruthy();
+      expect(touchSignBefore).toBeTruthy();
+      const resizeStart = {
+        x: touchResizeBox!.x + touchResizeBox!.width / 2,
+        y: touchResizeBox!.y + touchResizeBox!.height / 2,
+      };
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ id: 2, ...resizeStart }],
+      });
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ id: 2, x: resizeStart.x + 28, y: resizeStart.y }],
+      });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await expect
+        .poll(async () => {
+          const after = await touchSign.boundingBox();
+          return after && touchSignBefore ? after.width > touchSignBefore.width + 10 : false;
+        })
+        .toBe(true);
+      await cdp.detach();
+    } finally {
+      await touchContext.close();
+    }
+  });
+
+  test("1.17 integrated Audio Description follows text/audio modes, seek, pause, resume, and extended playback", async ({
+    page,
+  }) => {
+    const player = page.locator("savanna-player");
+    const ad = page.locator("savanna-audio-description");
+    const audio = ad.locator("audio");
+
+    await expect
+      .poll(() =>
+        player.evaluate(
+          (element: any) => element.media.readyState >= 1 && element.media.duration > 0,
+        ),
+      )
+      .toBe(true);
+    await expect
+      .poll(() =>
+        audio.evaluate(
+          (element: HTMLAudioElement) => element.readyState >= 1 && element.duration > 0,
+        ),
+      )
+      .toBe(true);
+
+    const mode = ad.locator("select");
+    const extended = ad.locator('input[type="checkbox"]');
+    await mode.selectOption("text");
+    await expect
+      .poll(() =>
+        ad.evaluate((element: any) => element.shadowRoot.querySelectorAll(".sr-only").length > 0),
+      )
+      .toBe(true);
+    await expect.poll(() => ad.evaluate((element: any) => element.cues?.length > 0)).toBe(true);
+    await player.locator(".btn-ad").click();
+    await expect(ad.locator(".ad-badge")).toHaveText("🔊 AD ON");
+    await player.evaluate((element: any) => element.seekTo(3));
+    await expect(ad.locator(".sr-only")).toContainText(
+      "A colourful test pattern fills the screen.",
+    );
+
+    await mode.selectOption("audio");
+    await expect(ad.locator(".ad-badge")).toHaveText("🔊 AD ON");
+    await player.locator(".btn-ad").click();
+    await expect(ad.locator(".ad-badge")).toHaveText("AD OFF");
+    await extended.uncheck();
+    await player.locator(".btn-play").click();
+    await expect.poll(() => player.evaluate((element: any) => !element.media.paused)).toBe(true);
+    await player.locator(".btn-ad").click();
+    await expect
+      .poll(() => audio.evaluate((element: HTMLAudioElement) => !element.paused))
+      .toBe(true);
+
+    await player.evaluate((element: any) => element.seekTo(1.5));
+    await expect
+      .poll(
+        async () =>
+          Math.abs(
+            (await audio.evaluate((element: HTMLAudioElement) => element.currentTime)) - 1.5,
+          ) < 0.6,
+      )
+      .toBe(true);
+    await player.locator(".btn-play").click();
+    await expect
+      .poll(() => audio.evaluate((element: HTMLAudioElement) => element.paused))
+      .toBe(true);
+    await player.locator(".btn-play").click();
+    await expect
+      .poll(() => audio.evaluate((element: HTMLAudioElement) => !element.paused))
+      .toBe(true);
+
+    await extended.check();
+    await expect.poll(() => player.evaluate((element: any) => element.media.paused)).toBe(true);
+    await expect
+      .poll(() => audio.evaluate((element: HTMLAudioElement) => !element.paused))
+      .toBe(true);
+    await ad.locator("button").last().click();
+    await expect.poll(() => player.evaluate((element: any) => !element.media.paused)).toBe(true);
+    await expect
+      .poll(() => audio.evaluate((element: HTMLAudioElement) => element.paused))
+      .toBe(true);
+  });
+
+  test("1.18 integrated media loads without browser errors or duplicate player timeline events", async ({
+    page,
+  }) => {
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
+    const failedMediaRequests: string[] = [];
+    const badMediaResponses: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") consoleErrors.push(message.text());
+    });
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+    page.on("requestfailed", (request) => {
+      const failure = request.failure()?.errorText || "failed";
+      // Chromium reports intentional source changes (network URL to an already cached blob) as aborted.
+      if (
+        (request.resourceType() === "media" || request.url().includes("/media/")) &&
+        failure !== "net::ERR_ABORTED"
+      ) {
+        failedMediaRequests.push(`${request.url()}: ${failure}`);
+      }
+    });
+    page.on("response", (response) => {
+      if (response.url().includes("/media/") && response.status() >= 400)
+        badMediaResponses.push(`${response.status()} ${response.url()}`);
+    });
+
+    await page.reload();
+    const player = page.locator("savanna-player");
+    const signVideo = page.locator("savanna-sign-window video");
+    const adAudio = page.locator("savanna-audio-description audio");
+    const offline = page.locator("savanna-offline#offline-save");
+    await expect
+      .poll(() =>
+        player.evaluate(
+          (element: any) => element.media.readyState >= 1 && element.media.duration > 0,
+        ),
+      )
+      .toBe(true);
+    await expect
+      .poll(() =>
+        signVideo.evaluate(
+          (video: HTMLVideoElement) => video.readyState >= 1 && video.videoWidth > 0,
+        ),
+      )
+      .toBe(true);
+    await expect
+      .poll(() =>
+        adAudio.evaluate((audio: HTMLAudioElement) => audio.readyState >= 1 && audio.duration > 0),
+      )
+      .toBe(true);
+    await expect(offline).toContainText("Pack ready");
+
+    const timelineEvents = await page.evaluate(() => {
+      const player = document.querySelector("savanna-player") as any;
+      let timeUpdates = 0;
+      let seeks = 0;
+      player.addEventListener("savanna:timeupdate", () => timeUpdates++);
+      player.addEventListener("savanna:seek", () => seeks++);
+      player.media.dispatchEvent(new Event("timeupdate"));
+      player.media.dispatchEvent(new Event("seeking"));
+      return { timeUpdates, seeks };
+    });
+    expect(timelineEvents).toEqual({ timeUpdates: 1, seeks: 1 });
+    expect(failedMediaRequests, JSON.stringify(failedMediaRequests)).toEqual([]);
+    expect(badMediaResponses, JSON.stringify(badMediaResponses)).toEqual([]);
+    expect(pageErrors, JSON.stringify(pageErrors)).toEqual([]);
+    expect(consoleErrors, JSON.stringify(consoleErrors)).toEqual([]);
+  });
+
   test("1.13 offline lesson pack caches playable audio and the player switches to it when connectivity is lost", async ({
     page,
   }) => {

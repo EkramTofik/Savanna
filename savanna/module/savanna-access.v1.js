@@ -5641,7 +5641,7 @@ function needsDriftCorrection(signTime, mainTime, offsetMs) {
 // module/src/sign-window/sign-window.ts
 var KEY = "savanna.prefs.v1";
 var RATIO = 16 / 9;
-var HEADER = 48;
+var HEADER = 50;
 var MIN_WIDTH = 180;
 var GUTTER = 8;
 var CONTROL_CLEARANCE = 56;
@@ -5654,7 +5654,13 @@ function storedPosition() {
     const sign = JSON.parse(localStorage.getItem(KEY) || "{}")?.sign;
     if (!sign || typeof sign !== "object" || Array.isArray(sign)) return void 0;
     const corner = ["nw", "ne", "se", "sw"].includes(sign.corner || "") ? sign.corner : void 0;
-    return { x: number(sign.x, DEFAULT.x), y: number(sign.y, DEFAULT.y), width: number(sign.width, DEFAULT.width), height: number(sign.height, DEFAULT.height), corner };
+    return {
+      x: number(sign.x, DEFAULT.x),
+      y: number(sign.y, DEFAULT.y),
+      width: number(sign.width, DEFAULT.width),
+      height: number(sign.height, DEFAULT.height),
+      corner
+    };
   } catch {
     return void 0;
   }
@@ -5673,7 +5679,10 @@ function storedEnabled() {
 function save(position, enabled) {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || "{}"), prefs = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {}, previous = prefs.sign && typeof prefs.sign === "object" ? prefs.sign : {};
-    prefs.sign = { ...position, ...typeof enabled === "boolean" ? { enabled } : typeof previous.enabled === "boolean" ? { enabled: previous.enabled } : {} };
+    prefs.sign = {
+      ...position,
+      ...typeof enabled === "boolean" ? { enabled } : typeof previous.enabled === "boolean" ? { enabled: previous.enabled } : {}
+    };
     localStorage.setItem(KEY, JSON.stringify(prefs));
   } catch {
   }
@@ -5691,7 +5700,17 @@ var SavannaSignWindow = class extends i4 {
     this.loading = false;
     this.announcement = "";
     this.hasStoredPosition = !!storedPosition();
+    this.resizeFrame = 0;
     this.buffering = false;
+    this.playerReady = () => {
+      this.bindPlayer();
+      this.clamp();
+    };
+    this.handleResize = () => {
+      this.bindPlayer();
+      cancelAnimationFrame(this.resizeFrame);
+      this.resizeFrame = requestAnimationFrame(this.clamp);
+    };
     this.clamp = () => this.apply(this.position);
     this.language = (event) => {
       const lang = event.detail?.lang;
@@ -5699,10 +5718,12 @@ var SavannaSignWindow = class extends i4 {
     };
     this.sync = (event) => {
       const detail = event.detail;
-      if (typeof detail?.time === "number") this.syncTo(detail.time, !!detail.paused, detail.rate || 1);
+      if (typeof detail?.time === "number")
+        this.syncTo(detail.time, !!detail.paused, detail.rate || 1);
     };
     this.syncFromMain = () => {
-      if (this.main) this.syncTo(this.main.currentTime, this.main.paused, this.main.playbackRate || 1);
+      if (this.main)
+        this.syncTo(this.main.currentTime, this.main.paused, this.main.playbackRate || 1);
     };
     this.mainWaiting = () => {
       this.buffering = true;
@@ -5727,11 +5748,14 @@ var SavannaSignWindow = class extends i4 {
     if (!this.slot) this.slot = "overlay";
     this.bindPlayer();
     this.hasTrack = !!this.src;
-    window.addEventListener("resize", this.clamp);
+    window.addEventListener("resize", this.handleResize);
+    document.addEventListener("fullscreenchange", this.clamp);
     window.addEventListener("savanna:lang-change", this.language);
   }
   disconnectedCallback() {
-    window.removeEventListener("resize", this.clamp);
+    window.removeEventListener("resize", this.handleResize);
+    cancelAnimationFrame(this.resizeFrame);
+    document.removeEventListener("fullscreenchange", this.clamp);
     window.removeEventListener("savanna:lang-change", this.language);
     this.unbindPlayer();
     super.disconnectedCallback();
@@ -5761,8 +5785,10 @@ var SavannaSignWindow = class extends i4 {
   bindPlayer() {
     const nextPlayer = this.closest("savanna-player");
     if (this.player !== nextPlayer) {
+      this.player?.removeEventListener("savanna:ready", this.playerReady);
       this.player?.removeEventListener("savanna:timeupdate", this.sync);
       this.player = nextPlayer || void 0;
+      this.player?.addEventListener("savanna:ready", this.playerReady);
       this.player?.addEventListener("savanna:timeupdate", this.sync);
     }
     const nextMain = this.player?.media;
@@ -5775,7 +5801,13 @@ var SavannaSignWindow = class extends i4 {
     this.main?.removeEventListener("ended", this.syncFromMain);
     this.main?.removeEventListener("pause", this.syncFromMain);
     this.main?.removeEventListener("ratechange", this.syncFromMain);
+    this.mediaResizeObserver?.disconnect();
+    this.mediaResizeObserver = void 0;
     this.main = nextMain;
+    if (this.main && typeof ResizeObserver !== "undefined") {
+      this.mediaResizeObserver = new ResizeObserver(this.clamp);
+      this.mediaResizeObserver.observe(this.main);
+    }
     this.main?.addEventListener("waiting", this.mainWaiting);
     this.main?.addEventListener("seeking", this.mainWaiting);
     this.main?.addEventListener("canplay", this.mainReady);
@@ -5786,6 +5818,7 @@ var SavannaSignWindow = class extends i4 {
     this.main?.addEventListener("ratechange", this.syncFromMain);
   }
   unbindPlayer() {
+    this.player?.removeEventListener("savanna:ready", this.playerReady);
     this.player?.removeEventListener("savanna:timeupdate", this.sync);
     this.player = void 0;
     this.main?.removeEventListener("waiting", this.mainWaiting);
@@ -5796,16 +5829,29 @@ var SavannaSignWindow = class extends i4 {
     this.main?.removeEventListener("ended", this.syncFromMain);
     this.main?.removeEventListener("pause", this.syncFromMain);
     this.main?.removeEventListener("ratechange", this.syncFromMain);
+    this.mediaResizeObserver?.disconnect();
+    this.mediaResizeObserver = void 0;
     this.main = void 0;
   }
   bounds() {
+    this.bindPlayer();
     const parent = this.offsetParent;
-    if (!parent) return { left: GUTTER, top: GUTTER, right: innerWidth - GUTTER, bottom: innerHeight - CONTROL_CLEARANCE };
-    const rect = parent.getBoundingClientRect(), viewport = window.visualViewport;
-    const left = Math.max(rect.left, viewport?.offsetLeft || 0), top = Math.max(rect.top, viewport?.offsetTop || 0);
-    const right = Math.min(rect.right, (viewport?.offsetLeft || 0) + (viewport?.width || innerWidth));
-    const bottom = Math.min(rect.bottom, (viewport?.offsetTop || 0) + (viewport?.height || innerHeight));
-    return { left: Math.max(GUTTER, left - rect.left + GUTTER), top: Math.max(GUTTER, top - rect.top + GUTTER), right: Math.max(GUTTER, right - rect.left - GUTTER), bottom: Math.max(GUTTER, bottom - rect.top - CONTROL_CLEARANCE) };
+    if (!parent)
+      return {
+        left: GUTTER,
+        top: GUTTER,
+        right: innerWidth - GUTTER,
+        bottom: innerHeight - CONTROL_CLEARANCE
+      };
+    const rect = this.main?.getBoundingClientRect();
+    const width = rect?.width || this.main?.clientWidth || parent.clientWidth;
+    const height = rect?.height || this.main?.clientHeight || parent.clientHeight;
+    return {
+      left: GUTTER,
+      top: GUTTER,
+      right: Math.max(GUTTER, width - GUTTER),
+      bottom: Math.max(GUTTER, height - CONTROL_CLEARANCE)
+    };
   }
   fit(position) {
     const bounds = this.bounds(), availableWidth = Math.max(1, bounds.right - bounds.left), availableHeight = Math.max(1, bounds.bottom - bounds.top);
@@ -5813,20 +5859,34 @@ var SavannaSignWindow = class extends i4 {
     const minimum = Math.min(MIN_WIDTH, maximum);
     const width = Math.max(minimum, Math.min(position.width, maximum));
     const height = width / RATIO + HEADER;
-    return { width, height, x: Math.max(bounds.left, Math.min(position.x, bounds.right - width)), y: Math.max(bounds.top, Math.min(position.y, bounds.bottom - height)), corner: position.corner };
+    return {
+      width,
+      height,
+      x: Math.max(bounds.left, Math.min(position.x, bounds.right - width)),
+      y: Math.max(bounds.top, Math.min(position.y, bounds.bottom - height)),
+      corner: position.corner
+    };
   }
   apply(position, persist = true) {
     this.position = this.fit(position);
     if (persist) save(this.position);
     this.style.setProperty("--panel-width", this.position.width + "px");
+    const parent = this.offsetParent;
+    const parentRect = parent?.getBoundingClientRect();
+    const mainRect = this.main?.getBoundingClientRect();
+    const leftOffset = parent && parentRect && mainRect ? mainRect.left - parentRect.left - parent.clientLeft : 0;
+    const topOffset = parent && parentRect && mainRect ? mainRect.top - parentRect.top - parent.clientTop : 0;
+    this.style.left = `${leftOffset + this.position.x}px`;
+    this.style.top = `${topOffset + this.position.y}px`;
   }
   syncTo(time, paused, rate) {
     if (!this.enabled || !this.video || !this.hasTrack || this.signUnavailable) return;
     const target = signTargetTime(time, this.offsetMs);
-    if (needsDriftCorrection(this.video.currentTime, time, this.offsetMs)) try {
-      this.video.currentTime = target;
-    } catch {
-    }
+    if (needsDriftCorrection(this.video.currentTime, time, this.offsetMs))
+      try {
+        this.video.currentTime = target;
+      } catch {
+      }
     if (this.video.playbackRate !== rate) this.video.playbackRate = rate;
     if (paused || this.buffering) this.video.pause();
     else if (this.video.paused) void this.video.play().catch(() => {
@@ -5836,8 +5896,19 @@ var SavannaSignWindow = class extends i4 {
     this.announcement = `${action}. Position ${Math.round(this.position.x)}, ${Math.round(this.position.y)}. Size ${Math.round(this.position.width)} by ${Math.round(this.position.height)} pixels.`;
   }
   move(dx, dy, announce = true) {
-    this.apply({ ...this.position, x: this.position.x + dx, y: this.position.y + dy, corner: void 0 });
-    this.dispatchEvent(new CustomEvent("savanna:sign-position", { bubbles: true, composed: true, detail: this.position }));
+    this.apply({
+      ...this.position,
+      x: this.position.x + dx,
+      y: this.position.y + dy,
+      corner: void 0
+    });
+    this.dispatchEvent(
+      new CustomEvent("savanna:sign-position", {
+        bubbles: true,
+        composed: true,
+        detail: this.position
+      })
+    );
     if (announce) this.announce("Sign window moved");
   }
   resizeBy(dx, dy, announce = true) {
@@ -5852,8 +5923,19 @@ var SavannaSignWindow = class extends i4 {
   }
   dragMove(event) {
     if (this.drag) {
-      this.apply({ ...this.drag.position, x: this.drag.position.x + event.clientX - this.drag.x, y: this.drag.position.y + event.clientY - this.drag.y, corner: void 0 });
-      this.dispatchEvent(new CustomEvent("savanna:sign-position", { bubbles: true, composed: true, detail: this.position }));
+      this.apply({
+        ...this.drag.position,
+        x: this.drag.position.x + event.clientX - this.drag.x,
+        y: this.drag.position.y + event.clientY - this.drag.y,
+        corner: void 0
+      });
+      this.dispatchEvent(
+        new CustomEvent("savanna:sign-position", {
+          bubbles: true,
+          composed: true,
+          detail: this.position
+        })
+      );
     }
   }
   endDrag() {
@@ -5870,7 +5952,12 @@ var SavannaSignWindow = class extends i4 {
     const horizontal = corner.includes("w") ? -dx : dx, vertical = (corner.includes("n") ? -dy : dy) * RATIO;
     const width = position.width + (Math.abs(horizontal) >= Math.abs(vertical) ? horizontal : vertical);
     const height = width / RATIO + HEADER;
-    this.apply({ width, height, x: corner.includes("w") ? position.x + position.width - width : position.x, y: corner.includes("n") ? position.y + position.height - height : position.y });
+    this.apply({
+      width,
+      height,
+      x: corner.includes("w") ? position.x + position.width - width : position.x,
+      y: corner.includes("n") ? position.y + position.height - height : position.y
+    });
   }
   endResize() {
     if (this.resize) this.announce("Sign window resized");
@@ -5878,21 +5965,50 @@ var SavannaSignWindow = class extends i4 {
   }
   snap(corner) {
     const bounds = this.bounds(), width = this.position.width, height = this.position.height;
-    this.apply({ ...this.position, corner, x: corner.includes("e") ? bounds.right - width : bounds.left, y: corner.includes("s") ? bounds.bottom - height : bounds.top });
-    this.announce(`Sign window snapped to the ${corner === "nw" ? "top left" : corner === "ne" ? "top right" : corner === "se" ? "bottom right" : "bottom left"} corner`);
+    this.apply({
+      ...this.position,
+      corner,
+      x: corner.includes("e") ? bounds.right - width : bounds.left,
+      y: corner.includes("s") ? bounds.bottom - height : bounds.top
+    });
+    this.announce(
+      `Sign window snapped to the ${corner === "nw" ? "top left" : corner === "ne" ? "top right" : corner === "se" ? "bottom right" : "bottom left"} corner`
+    );
   }
   toggle() {
     this.enabled = !this.enabled;
     if (!this.enabled) this.video?.pause();
     save(this.position, this.enabled);
     this.announcement = `Sign language ${this.enabled ? "enabled" : "disabled"}.`;
-    this.dispatchEvent(new CustomEvent("savanna:sign-toggle", { bubbles: true, composed: true, detail: { enabled: this.enabled } }));
+    this.dispatchEvent(
+      new CustomEvent("savanna:sign-toggle", {
+        bubbles: true,
+        composed: true,
+        detail: { enabled: this.enabled }
+      })
+    );
   }
   render() {
     const label = this.lang === "am" ? "\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B" : "Sign language";
     const fallback = this.lang === "am" ? "\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u121D\u120D\u12AD\u1275 \u126A\u12F2\u12EE \u12E8\u1208\u121D" : "Sign language interpretation is not available for this lesson.";
-    const handles = ["nw", "ne", "se", "sw"].map((corner) => b2`<button class="handle ${corner}" aria-label="Resize sign window from ${corner} corner" @pointerdown=${(event) => this.startResize(event, corner)} @pointermove=${this.resizeMove} @pointerup=${this.endResize} @pointercancel=${this.endResize}></button>`);
-    const snaps = ["nw", "ne", "sw", "se"].map((corner) => b2`<button @click=${() => this.snap(corner)} aria-label="Snap sign window to ${corner === "nw" ? "top left" : corner === "ne" ? "top right" : corner === "sw" ? "bottom left" : "bottom right"}">${corner === "nw" ? "\u2196" : corner === "ne" ? "\u2197" : corner === "sw" ? "\u2199" : "\u2198"}</button>`);
+    const handles = ["nw", "ne", "se", "sw"].map(
+      (corner) => b2`<button
+          class="handle ${corner}"
+          aria-label="Resize sign window from ${corner} corner"
+          @pointerdown=${(event) => this.startResize(event, corner)}
+          @pointermove=${this.resizeMove}
+          @pointerup=${this.endResize}
+          @pointercancel=${this.endResize}
+        ></button>`
+    );
+    const snaps = ["nw", "ne", "sw", "se"].map(
+      (corner) => b2`<button
+          @click=${() => this.snap(corner)}
+          aria-label="Snap sign window to ${corner === "nw" ? "top left" : corner === "ne" ? "top right" : corner === "sw" ? "bottom left" : "bottom right"}"
+        >
+          ${corner === "nw" ? "\u2196" : corner === "ne" ? "\u2197" : corner === "sw" ? "\u2199" : "\u2198"}
+        </button>`
+    );
     const keyboard = (e8) => {
       if (!e8.key.startsWith("Arrow")) return;
       e8.preventDefault();
@@ -5900,25 +6016,219 @@ var SavannaSignWindow = class extends i4 {
       const horizontal = e8.key === "ArrowRight" ? step : e8.key === "ArrowLeft" ? -step : 0;
       const right = horizontal;
       const down = e8.key === "ArrowDown" ? step : e8.key === "ArrowUp" ? -step : 0;
-      if (e8.altKey) this.resizeBy(right, down);
+      if (e8.altKey)
+        this.resizeBy(right, down);
       else this.move(right, down);
     };
-    const toggle = b2`<button class="toggle" type="button" aria-label="${label}: ${this.enabled ? "on" : "off"}" aria-pressed=${String(this.enabled)} @click=${this.toggle}>${this.enabled ? "On" : "Off"}</button>`;
-    return b2`<p class="sr-only" role="status" aria-live="polite">${this.announcement}</p>${this.enabled ? b2`<section aria-label="${label} window"><header tabindex="0" role="group" aria-label="${label} window. Use arrow keys to move, Shift plus arrow keys for larger moves, and Alt plus arrow keys to resize." @keydown=${keyboard} aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Shift+ArrowUp Shift+ArrowDown Alt+ArrowUp Alt+ArrowDown" @pointerdown=${this.startDrag} @pointermove=${this.dragMove} @pointerup=${this.endDrag} @pointercancel=${this.endDrag}><strong>${label}</strong><span class="actions">${snaps}${toggle}</span></header>${this.hasTrack && !this.signUnavailable ? b2`<video .src=${this.src} playsinline muted preload="metadata" aria-label="${label} interpreter video" @loadedmetadata=${this.signReady} @error=${this.signError}></video>${this.loading ? b2`<div class="fallback loading" role="status">Loading sign-language interpretation…</div>` : ""}` : b2`<div class="fallback" role="status">${fallback}</div>`}${handles}</section>` : toggle}`;
+    const toggle = b2`<button
+      class="toggle"
+      type="button"
+      aria-label="${label}: ${this.enabled ? "on" : "off"}"
+      aria-pressed=${String(this.enabled)}
+      @click=${this.toggle}
+    >
+      ${this.enabled ? "On" : "Off"}
+    </button>`;
+    return b2`<p class="sr-only" role="status" aria-live="polite">${this.announcement}</p>
+      ${this.enabled ? b2`<section aria-label="${label} window">
+              <header
+                tabindex="0"
+                role="group"
+                aria-label="${label} window. Use arrow keys to move, Shift plus arrow keys for larger moves, and Alt plus arrow keys to resize."
+                @keydown=${keyboard}
+                aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Shift+ArrowUp Shift+ArrowDown Alt+ArrowUp Alt+ArrowDown"
+                @pointerdown=${this.startDrag}
+                @pointermove=${this.dragMove}
+                @pointerup=${this.endDrag}
+                @pointercancel=${this.endDrag}
+              >
+                <strong>${label}</strong><span class="actions">${snaps}${toggle}</span>
+              </header>
+              ${this.hasTrack && !this.signUnavailable ? b2`<video .src=${this.src} playsinline muted preload="metadata" aria-label="${label} interpreter video" @loadedmetadata=${this.signReady} @error=${this.signError}></video>${this.loading ? b2`<div class="fallback loading" role="status">Loading sign-language interpretation…</div>` : ""}` : b2`<div class="fallback" role="status">${fallback}</div>`}${handles}
+            </section>` : toggle}`;
   }
 };
 SavannaSignWindow.styles = i`
-  :host{position:absolute;z-index:20;display:block;width:var(--panel-width,320px);max-width:calc(100% - 16px);color:#fff;font:16px/1.4 var(--savanna-font,system-ui,sans-serif)}:host(:not([enabled])){width:auto;max-width:none}
-  section{position:relative;overflow:hidden;background:#16131a;border:1px solid #ffffff73;border-radius:var(--savanna-radius,8px);box-shadow:0 8px 24px #0009;transition:border-color .2s,box-shadow .2s}
-  section:has(header:focus-visible){border-color:var(--savanna-focus,#ffbf47);box-shadow:0 0 0 3px var(--savanna-focus,#ffbf47),0 8px 24px #0009}
-  section:has(header:active){border-color:#fff;box-shadow:0 0 0 2px #fff,0 8px 24px #0009}
-  header{display:flex;min-height:48px;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 0 12px;background:#27202d;touch-action:none;cursor:grab;user-select:none}
-  header:active{cursor:grabbing;background:#372841}
-  header:focus-visible{outline:none} strong{font-size:14px}.actions{display:flex;gap:4px}button{display:grid;min-width:36px;min-height:36px;place-items:center;border:1px solid #ffffff66;border-radius:5px;background:#3d3049;color:#fff;font:inherit;cursor:pointer}button:hover{background:#594267}button:focus-visible{outline:3px solid var(--savanna-focus,#ffbf47);outline-offset:2px}.toggle{min-width:68px;padding:0 10px;font-size:13px;font-weight:700}.toggle[aria-pressed="true"]{background:var(--savanna-accent,#6e4a8e)}
-  video{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#08070a}.fallback{display:grid;min-height:180px;place-items:center;padding:16px;text-align:center;color:#f4eef8;background:#18151c}.loading{position:absolute;inset:48px 0 0;min-height:0;background:#18151ccc}.sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
-  .handle{position:absolute;z-index:1;width:20px;min-width:20px;height:20px;min-height:20px;padding:0;border:2px solid #fff;border-radius:4px;background:var(--savanna-accent,#6e4a8e);touch-action:none}.nw{top:4px;left:4px;cursor:nwse-resize}.ne{top:4px;right:4px;cursor:nesw-resize}.se{right:4px;bottom:4px;cursor:nwse-resize}.sw{bottom:4px;left:4px;cursor:nesw-resize}
-  @media (max-width:600px){:host{max-width:calc(100% - 12px)}header{min-height:44px;padding-left:10px}button{min-width:40px;min-height:40px}.toggle{min-width:72px}.handle{width:24px;min-width:24px;height:24px;min-height:24px}.fallback{min-height:120px}}
- `;
+    :host {
+      position: absolute;
+      z-index: 20;
+      display: block;
+      width: var(--panel-width, 320px);
+      max-width: calc(100% - 16px);
+      color: #fff;
+      font: 16px/1.4 var(--savanna-font, system-ui, sans-serif);
+    }
+    :host(:not([enabled])) {
+      width: auto;
+      max-width: none;
+    }
+    section {
+      position: relative;
+      overflow: hidden;
+      background: #16131a;
+      border: 1px solid #ffffff73;
+      border-radius: var(--savanna-radius, 8px);
+      box-shadow: 0 8px 24px #0009;
+      transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
+    }
+    section:has(header:focus-visible) {
+      border-color: var(--savanna-focus, #ffbf47);
+      box-shadow:
+        0 0 0 3px var(--savanna-focus, #ffbf47),
+        0 8px 24px #0009;
+    }
+    section:has(header:active) {
+      border-color: #fff;
+      box-shadow:
+        0 0 0 2px #fff,
+        0 8px 24px #0009;
+    }
+    header {
+      display: flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 6px 0 12px;
+      background: #27202d;
+      touch-action: none;
+      cursor: grab;
+      user-select: none;
+    }
+    header:active {
+      cursor: grabbing;
+      background: #372841;
+    }
+    header:focus-visible {
+      outline: none;
+    }
+    strong {
+      font-size: 14px;
+    }
+    .actions {
+      display: flex;
+      gap: 4px;
+    }
+    button {
+      display: grid;
+      min-width: 36px;
+      min-height: 36px;
+      place-items: center;
+      border: 1px solid #ffffff66;
+      border-radius: 5px;
+      background: #3d3049;
+      color: #fff;
+      font: inherit;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #594267;
+    }
+    button:focus-visible {
+      outline: 3px solid var(--savanna-focus, #ffbf47);
+      outline-offset: 2px;
+    }
+    .toggle {
+      min-width: 68px;
+      padding: 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .toggle[aria-pressed="true"] {
+      background: var(--savanna-accent, #6e4a8e);
+    }
+    video {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: contain;
+      background: #08070a;
+    }
+    .fallback {
+      display: grid;
+      min-height: 180px;
+      place-items: center;
+      padding: 16px;
+      text-align: center;
+      color: #f4eef8;
+      background: #18151c;
+    }
+    .loading {
+      position: absolute;
+      inset: 48px 0 0;
+      min-height: 0;
+      background: #18151ccc;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+    .handle {
+      position: absolute;
+      z-index: 1;
+      width: 20px;
+      min-width: 20px;
+      height: 20px;
+      min-height: 20px;
+      padding: 0;
+      border: 2px solid #fff;
+      border-radius: 4px;
+      background: var(--savanna-accent, #6e4a8e);
+      touch-action: none;
+    }
+    .nw {
+      top: 4px;
+      left: 4px;
+      cursor: nwse-resize;
+    }
+    .ne {
+      top: 4px;
+      right: 4px;
+      cursor: nesw-resize;
+    }
+    .se {
+      right: 4px;
+      bottom: 4px;
+      cursor: nwse-resize;
+    }
+    .sw {
+      bottom: 4px;
+      left: 4px;
+      cursor: nesw-resize;
+    }
+    @media (max-width: 600px) {
+      :host {
+        max-width: calc(100% - 12px);
+      }
+      header {
+        min-height: 44px;
+        padding-left: 10px;
+      }
+      button {
+        min-width: 40px;
+        min-height: 40px;
+      }
+      .toggle {
+        min-width: 72px;
+      }
+      .handle {
+        width: 24px;
+        min-width: 24px;
+        height: 24px;
+        min-height: 24px;
+      }
+      .fallback {
+        min-height: 120px;
+      }
+    }
+  `;
 __decorateClass([
   n4()
 ], SavannaSignWindow.prototype, "src", 2);
@@ -6561,7 +6871,10 @@ function cacheName(lessonId, version) {
   return `${CACHE_PREFIX2}${lessonId}-v${version}`;
 }
 function chunkRequest(lessonId, index, offset) {
-  const url = new URL(`/__savanna_offline__/${encodeURIComponent(lessonId)}/${index}/${offset}`, location.origin);
+  const url = new URL(
+    `/__savanna_offline__/${encodeURIComponent(lessonId)}/${index}/${offset}`,
+    location.origin
+  );
   return new Request(url.href);
 }
 function contentRange(value) {
@@ -6634,7 +6947,8 @@ var SavannaOffline = class extends i4 {
   }
   apiUrl(path) {
     const base = new URL(this.api, document.baseURI);
-    if (base.protocol !== "https:" && base.protocol !== "http:") throw new Error("The API URL must use HTTP or HTTPS.");
+    if (base.protocol !== "https:" && base.protocol !== "http:")
+      throw new Error("The API URL must use HTTP or HTTPS.");
     return new URL(path, base).href;
   }
   apiHeaders(url) {
@@ -6643,7 +6957,9 @@ var SavannaOffline = class extends i4 {
   parsePackForLesson(lesson, value) {
     const pack = parsePackManifest(value, lesson.id);
     if (!lesson.pack || pack.sizeBytes !== lesson.pack.sizeBytes) {
-      throw new Error("The lesson and offline pack report different download sizes. Refresh the lesson data and try again.");
+      throw new Error(
+        "The lesson and offline pack report different download sizes. Refresh the lesson data and try again."
+      );
     }
     return pack;
   }
@@ -6662,8 +6978,14 @@ var SavannaOffline = class extends i4 {
       let lesson;
       let usedCachedManifest = false;
       try {
-        const lessonResponse = await fetch(lessonUrl, { headers: this.apiHeaders(lessonUrl), signal: controller.signal });
-        if (!lessonResponse.ok) throw new Error(lessonResponse.status === 404 ? "This lesson is not available." : `Lesson request failed (${lessonResponse.status}).`);
+        const lessonResponse = await fetch(lessonUrl, {
+          headers: this.apiHeaders(lessonUrl),
+          signal: controller.signal
+        });
+        if (!lessonResponse.ok)
+          throw new Error(
+            lessonResponse.status === 404 ? "This lesson is not available." : `Lesson request failed (${lessonResponse.status}).`
+          );
         lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
       } catch (error) {
         if (controller.signal.aborted) throw error;
@@ -6678,8 +7000,14 @@ var SavannaOffline = class extends i4 {
       }
       if (!lesson.pack) throw new Error("This lesson does not have an offline pack.");
       const packUrl = new URL(lesson.pack.manifestUrl, this.apiUrl("/")).href;
-      const packResponse = await fetch(packUrl, { headers: this.apiHeaders(packUrl), signal: controller.signal });
-      if (!packResponse.ok) throw new Error(packResponse.status === 404 ? "An offline pack has not been published for this lesson." : `Pack request failed (${packResponse.status}).`);
+      const packResponse = await fetch(packUrl, {
+        headers: this.apiHeaders(packUrl),
+        signal: controller.signal
+      });
+      if (!packResponse.ok)
+        throw new Error(
+          packResponse.status === 404 ? "An offline pack has not been published for this lesson." : `Pack request failed (${packResponse.status}).`
+        );
       const pack = this.parsePackForLesson(lesson, await packResponse.json());
       if (generation !== this.generation) return;
       this.lessonManifest = lesson;
@@ -6688,17 +7016,19 @@ var SavannaOffline = class extends i4 {
       if (this.saved && typeof caches !== "undefined") {
         const cache = await caches.open(cacheName(this.lessonId, pack.version));
         const resources = buildPackResources(lesson, pack, this.api, this.apiKey);
-        const complete = await Promise.all(resources.map(async (resource) => {
-          const response = await cache.match(resource.url);
-          if (!response) return false;
-          try {
-            await this.verifyResource(resource, await response.arrayBuffer());
-            return true;
-          } catch {
-            await cache.delete(resource.url);
-            return false;
-          }
-        }));
+        const complete = await Promise.all(
+          resources.map(async (resource) => {
+            const response = await cache.match(resource.url);
+            if (!response) return false;
+            try {
+              await this.verifyResource(resource, await response.arrayBuffer());
+              return true;
+            } catch {
+              await cache.delete(resource.url);
+              return false;
+            }
+          })
+        );
         if (!complete.every(Boolean)) {
           const preferences = readOfflinePreferences();
           preferences.savedLessons = preferences.savedLessons.filter((id) => id !== this.lessonId);
@@ -6724,17 +7054,30 @@ var SavannaOffline = class extends i4 {
     if (!navigator.storage?.estimate) return;
     const estimate = await navigator.storage.estimate();
     const remaining = (estimate.quota ?? Number.POSITIVE_INFINITY) - (estimate.usage ?? 0);
-    if (remaining < requiredBytes) throw new Error("There is not enough device storage for this download. Free space and try again.");
+    if (remaining < requiredBytes)
+      throw new Error(
+        "There is not enough device storage for this download. Free space and try again."
+      );
   }
   async verifyResource(resource, bytes) {
     if (resource.expectedBytes !== void 0 && bytes.byteLength !== resource.expectedBytes) {
-      throw new Error(`The downloaded file size does not match the offline pack for ${new URL(resource.url).pathname.split("/").pop()}.`);
+      throw new Error(
+        `The downloaded file size does not match the offline pack for ${new URL(resource.url).pathname.split("/").pop()}.`
+      );
     }
-    if (!globalThis.crypto?.subtle) throw new Error("This browser cannot verify offline file checksums. Use a current browser over HTTPS or localhost.");
+    if (!globalThis.crypto?.subtle)
+      throw new Error(
+        "This browser cannot verify offline file checksums. Use a current browser over HTTPS or localhost."
+      );
     const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
-    const actual = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+    const actual = Array.from(
+      new Uint8Array(digest),
+      (value) => value.toString(16).padStart(2, "0")
+    ).join("");
     if (actual !== resource.expectedSha256) {
-      throw new Error(`The checksum for ${new URL(resource.url).pathname.split("/").pop()} does not match the offline pack. Its partial download was removed; try again.`);
+      throw new Error(
+        `The checksum for ${new URL(resource.url).pathname.split("/").pop()} does not match the offline pack. Its partial download was removed; try again.`
+      );
     }
   }
   async discardPartial(cache, index, total) {
@@ -6761,20 +7104,30 @@ var SavannaOffline = class extends i4 {
     try {
       let lesson = this.lessonManifest;
       if (!lesson) {
-        const lessonResponse = await fetch(lessonUrl, { headers: this.apiHeaders(lessonUrl), signal: controller.signal });
-        if (!lessonResponse.ok) throw new Error(`Lesson request failed (${lessonResponse.status}).`);
+        const lessonResponse = await fetch(lessonUrl, {
+          headers: this.apiHeaders(lessonUrl),
+          signal: controller.signal
+        });
+        if (!lessonResponse.ok)
+          throw new Error(`Lesson request failed (${lessonResponse.status}).`);
         lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
       }
       if (!lesson.pack) throw new Error("This lesson does not have an offline pack.");
       const packUrl = new URL(lesson.pack.manifestUrl, this.apiUrl("/")).href;
-      const packResponse = await fetch(packUrl, { headers: this.apiHeaders(packUrl), signal: controller.signal });
+      const packResponse = await fetch(packUrl, {
+        headers: this.apiHeaders(packUrl),
+        signal: controller.signal
+      });
       if (!packResponse.ok) throw new Error(`Pack request failed (${packResponse.status}).`);
       const pack = this.parsePackForLesson(lesson, await packResponse.json());
       if (generation !== this.generation) return;
       const resources = buildPackResources(lesson, pack, this.api, this.apiKey);
       const cache = await caches.open(cacheName(this.lessonId, pack.version));
       const preferences = readOfflinePreferences();
-      const resourceEstimate = resources.reduce((sum, resource) => sum + (resource.expectedBytes ?? 0), 0);
+      const resourceEstimate = resources.reduce(
+        (sum, resource) => sum + (resource.expectedBytes ?? 0),
+        0
+      );
       const totalExpected = Math.max(pack.sizeBytes, resourceEstimate);
       let savedBefore = 0;
       for (const resource of resources) {
@@ -6811,38 +7164,66 @@ var SavannaOffline = class extends i4 {
             if (response.status === 200 && offset === 0) {
               const responseSize = Number(response.headers.get("Content-Length")) || resource.expectedBytes || 0;
               if (responseSize > CHUNK_BYTES) {
-                throw new Error(`The server does not support resumable byte ranges for ${new URL(resource.url).pathname.split("/").pop()}.`);
+                throw new Error(
+                  `The server does not support resumable byte ranges for ${new URL(resource.url).pathname.split("/").pop()}.`
+                );
               }
               const body = await response.arrayBuffer();
               await this.verifyResource(resource, body);
               await this.ensureStorage(body.byteLength);
-              await cache.put(resource.url, new Response(body, {
-                headers: { "Content-Type": response.headers.get("Content-Type") || responseContentType(resource.url), "Content-Length": String(body.byteLength) }
-              }));
+              await cache.put(
+                resource.url,
+                new Response(body, {
+                  headers: {
+                    "Content-Type": response.headers.get("Content-Type") || responseContentType(resource.url),
+                    "Content-Length": String(body.byteLength)
+                  }
+                })
+              );
               savedBefore += body.byteLength;
-              this.progress = Math.round(Math.min(99, savedBefore / Math.max(1, totalExpected) * 100));
+              this.progress = Math.round(
+                Math.min(99, savedBefore / Math.max(1, totalExpected) * 100)
+              );
               savedWholeResponse = true;
               break;
             }
-            throw new Error(`Download failed (${response.status}) for ${new URL(resource.url).pathname.split("/").pop()}.`);
+            throw new Error(
+              `Download failed (${response.status}) for ${new URL(resource.url).pathname.split("/").pop()}.`
+            );
           }
           const range = contentRange(response.headers.get("Content-Range"));
           if (!range || range.start !== offset || range.end > end || total && range.total !== total || resource.expectedBytes !== void 0 && range.total !== resource.expectedBytes) {
-            throw new Error("The server returned an invalid byte range. The download was paused safely.");
+            throw new Error(
+              "The server returned an invalid byte range. The download was paused safely."
+            );
           }
           await this.ensureStorage(range.end - range.start + 1);
           total = range.total;
           const bytes = await response.arrayBuffer();
-          if (bytes.byteLength !== range.end - range.start + 1) throw new Error("The downloaded chunk was incomplete. Resume the download to continue.");
-          await cache.put(chunkRequest(this.lessonId, index, offset), new Response(bytes, {
-            headers: { "Content-Length": String(bytes.byteLength), "X-Savanna-Total": String(total) }
-          }));
+          if (bytes.byteLength !== range.end - range.start + 1)
+            throw new Error(
+              "The downloaded chunk was incomplete. Resume the download to continue."
+            );
+          await cache.put(
+            chunkRequest(this.lessonId, index, offset),
+            new Response(bytes, {
+              headers: {
+                "Content-Length": String(bytes.byteLength),
+                "X-Savanna-Total": String(total)
+              }
+            })
+          );
           chunks.push(new Response(bytes));
           offset = range.end + 1;
-          preferences.partials[this.lessonId] = { version: pack.version, bytes: savedBefore + offset };
+          preferences.partials[this.lessonId] = {
+            version: pack.version,
+            bytes: savedBefore + offset
+          };
           writeOfflinePreferences(preferences);
           this.canResume = true;
-          this.progress = Math.round(Math.min(99, (savedBefore + offset) / Math.max(1, totalExpected) * 100));
+          this.progress = Math.round(
+            Math.min(99, (savedBefore + offset) / Math.max(1, totalExpected) * 100)
+          );
           this.status = `Saving lesson resources \xB7 ${this.progress}%`;
         }
         if (savedWholeResponse) continue;
@@ -6856,8 +7237,14 @@ var SavannaOffline = class extends i4 {
           throw error;
         }
         await this.ensureStorage(blob.size);
-        await cache.put(resource.url, new Response(blob, { headers: { "Content-Type": blob.type, "Content-Length": String(blob.size) } }));
-        for (let offset2 = 0; offset2 < total; offset2 += CHUNK_BYTES) await cache.delete(chunkRequest(this.lessonId, index, offset2));
+        await cache.put(
+          resource.url,
+          new Response(blob, {
+            headers: { "Content-Type": blob.type, "Content-Length": String(blob.size) }
+          })
+        );
+        for (let offset2 = 0; offset2 < total; offset2 += CHUNK_BYTES)
+          await cache.delete(chunkRequest(this.lessonId, index, offset2));
         savedBefore += blob.size;
         this.progress = Math.round(Math.min(99, savedBefore / Math.max(1, totalExpected) * 100));
       }
@@ -6917,21 +7304,104 @@ var SavannaOffline = class extends i4 {
     const size = this.manifest ? this.formatSize(this.manifest.sizeBytes) : "";
     return b2`
       <div class="row">
-        ${this.saved ? b2`<button type="button" @click=${this.removeClick} ?disabled=${this.busy}>Delete offline copy</button>` : b2`<button type="button" @click=${this.saveClick} ?disabled=${this.busy || !this.manifest}>${this.busy ? "Saving\u2026" : this.canResume ? "Resume download" : "Save for offline"}${size ? b2` <span class="size">(${size})</span>` : ""}</button>`}
-        ${this.busy ? b2`<button type="button" @click=${this.pause} aria-label="Pause offline download">Pause</button>` : b2`<button type="button" @click=${this.refreshClick} ?disabled=${!this.api || !this.lessonId}>Refresh</button>`}
+        ${this.saved ? b2`<button type="button" @click=${this.removeClick} ?disabled=${this.busy}>
+                Delete offline copy
+              </button>` : b2`<button
+                type="button"
+                @click=${this.saveClick}
+                ?disabled=${this.busy || !this.manifest}
+              >
+                ${this.busy ? "Saving\u2026" : this.canResume ? "Resume download" : "Save for offline"}${size ? b2` <span class="size">(${size})</span>` : ""}
+              </button>`}
+        ${this.busy ? b2`<button type="button" @click=${this.pause} aria-label="Pause offline download">
+                Pause
+              </button>` : b2`<button
+                type="button"
+                @click=${this.refreshClick}
+                ?disabled=${!this.api || !this.lessonId}
+              >
+                Refresh
+              </button>`}
       </div>
-      ${this.busy || this.progress > 0 ? b2`<div class="progress-container"><progress max="100" .value=${this.progress} aria-label=${`Offline download progress ${this.progress}%`}></progress><p class="progress-text">${this.progress}%</p></div>` : ""}
+      ${this.busy || this.progress > 0 ? b2`<div class="progress-container">
+              <progress
+                max="100"
+                .value=${this.progress}
+                aria-label=${`Offline download progress ${this.progress}%`}
+              ></progress>
+              <p class="progress-text">${this.progress}%</p>
+            </div>` : ""}
       <p class="status" role="status" aria-live="polite" aria-atomic="true">${this.status}</p>
     `;
   }
 };
 SavannaOffline.styles = i`
-    :host{display:block;color:inherit;font:16px/1.5 system-ui,sans-serif}
-    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    button{min-height:44px;padding:8px 14px;border:1px solid #594267;border-radius:8px;background:#5b3477;color:#fff;font:inherit;font-weight:600;cursor:pointer}
-    button:hover:not(:disabled){background:#4a2a62}button:focus-visible{outline:3px solid #e09b00;outline-offset:3px}button:disabled{opacity:.55;cursor:not-allowed}
-    progress{width:min(100%,360px);height:20px}.progress-container{margin:12px 0}.progress-text{margin:6px 0 0}.size{font-size:.875em;opacity:.9}.status{margin:.75rem 0}
-    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+    :host {
+      display: block;
+      color: inherit;
+      font:
+        16px/1.5 system-ui,
+        sans-serif;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    button {
+      min-height: 44px;
+      padding: 8px 14px;
+      border: 1px solid #594267;
+      border-radius: 8px;
+      background: #5b3477;
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) {
+      background: #4a2a62;
+    }
+    button:focus-visible {
+      outline: 3px solid #e09b00;
+      outline-offset: 3px;
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    progress {
+      width: min(100%, 360px);
+      height: 20px;
+    }
+    .progress-container {
+      margin: 12px 0;
+    }
+    .progress-text {
+      margin: 6px 0 0;
+    }
+    .size {
+      font-size: 0.875em;
+      opacity: 0.9;
+    }
+    .status {
+      margin: 0.75rem 0;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
+      color: #0f172a;
+      overflow-wrap: anywhere;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+      }
+    }
   `;
 __decorateClass([
   n4()

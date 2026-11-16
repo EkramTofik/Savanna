@@ -17,22 +17,26 @@ import fs from "node:fs/promises";
 
 test("sign-window: focus ring visible on header", async () => {
   const src = await fs.readFile(new URL("./sign-window/sign-window.ts", import.meta.url), "utf8");
-  assert.match(src, /focus-visible.*outline/, "Must define focus-visible style");
-  assert.match(src, /outline.*3px/, "Focus ring must be visible (3px+)");
+  assert.match(src, /focus-visible[\s\S]*?outline/, "Must define focus-visible style");
+  assert.match(src, /outline:\s*3px/, "Focus ring must be visible (3px+)");
 });
 
 test("sign-window: keyboard shortcuts work without mouse", async () => {
   const src = await fs.readFile(new URL("./sign-window/sign-window.ts", import.meta.url), "utf8");
 
   // Arrow keys move
-  assert.match(src, /@keydown.*Arrow/, "Must handle arrow key events");
-  assert.match(src, /ArrowRight.*right|ArrowLeft.*left/, "Arrow keys must map to directions");
+  assert.match(src, /@keydown[\s\S]*?Arrow/, "Must handle arrow key events");
+  assert.match(
+    src,
+    /ArrowRight[\s\S]*?step[\s\S]*?ArrowLeft[\s\S]*?-step/,
+    "Arrow keys must map to directions",
+  );
 
   // Shift = big step
-  assert.match(src, /e\.shiftKey.*100/, "Shift + arrow should move 100px (larger step)");
+  assert.match(src, /e\.shiftKey\s*\?\s*100/, "Shift + arrow should move 100px (larger step)");
 
   // Alt = resize
-  assert.match(src, /e\.altKey.*Alt.*arrow/, "Alt + arrow must resize");
+  assert.match(src, /e\.altKey[\s\S]*?resizeBy/, "Alt + arrow must resize");
 });
 
 test("sign-window: semantic HTML for screen readers", async () => {
@@ -46,8 +50,12 @@ test("sign-window: semantic HTML for screen readers", async () => {
 test("sign-window: screen reader announces position changes", async () => {
   const src = await fs.readFile(new URL("./sign-window/sign-window.ts", import.meta.url), "utf8");
 
-  assert.match(src, /dispatchEvent.*savanna:sign-position/, "Must dispatch position event");
-  assert.match(src, /bubbles:true.*composed:true/, "Event must bubble (for screen readers)");
+  assert.match(src, /dispatchEvent\([\s\S]*?savanna:sign-position/, "Must dispatch position event");
+  assert.match(
+    src,
+    /bubbles:\s*true[\s\S]*?composed:\s*true/,
+    "Event must bubble (for screen readers)",
+  );
 });
 
 // Test: Audio Description Accessibility

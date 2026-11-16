@@ -21,3 +21,43 @@ a[aria-current="true"] > div > span,
 #sidebar a:hover {
   color: #0c4a6e !important;
 }
+
+/* Reflow legacy lesson cards before their inline column layouts overflow mobile viewports. */
+@media (max-width: 767px) {
+  #curriculum_navigation_content
+    .savanna-styles
+    div[style*="grid-template-columns: repeat(2, 1fr)"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+
+  #curriculum_navigation_content
+    .savanna-styles
+    div[style*="grid-template-columns: repeat(2, 1fr)"]
+    > div {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  #curriculum_navigation_content .savanna-styles div[style*="display: flex"][style*="gap: 18px"] {
+    flex-wrap: wrap !important;
+    min-width: 0;
+  }
+
+  #curriculum_navigation_content
+    .savanna-styles
+    div[style*="display: flex"][style*="gap: 18px"]
+    > div {
+    box-sizing: border-box;
+    flex: 1 1 250px !important;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #curriculum_navigation_content .savanna-styles img,
+  #curriculum_navigation_content .savanna-styles video,
+  #curriculum_navigation_content .savanna-styles .savanna-player-mount {
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+}

@@ -94,7 +94,7 @@ async function main() {
 
       const results = await new AxeBuilder({ page }).analyze();
       const blocking = results.violations.filter(
-        (v) => v.impact === "critical" || v.impact === "serious"
+        (v) => v.impact === "critical" || v.impact === "serious",
       );
 
       console.log(`\n📄 Auditing: ${pageInfo.name} (${pageInfo.path})`);
@@ -109,7 +109,9 @@ async function main() {
 
       if (blocking.length > 0) {
         hasFailures = true;
-        console.error(`❌ Gate Failure: Found ${blocking.length} critical/serious issues on ${pageInfo.name}:`);
+        console.error(
+          `❌ Gate Failure: Found ${blocking.length} critical/serious issues on ${pageInfo.name}:`,
+        );
         for (const v of blocking) {
           console.error(`   - [${v.impact.toUpperCase()}] ${v.id}: ${v.help}`);
           console.error(`     Help URL: ${v.helpUrl}`);
@@ -120,6 +122,22 @@ async function main() {
         }
       } else {
         console.log(`✅ Gate Pass: 0 critical and 0 serious issues on ${pageInfo.name}`);
+      }
+
+      if (pageInfo.path === "/savanna/pages/concept-with-navigation.html") {
+        await page.setViewportSize({ width: 320, height: 800 });
+        const layout = await page.evaluate(() => ({
+          viewport: window.innerWidth,
+          document: document.documentElement.scrollWidth,
+          body: document.body.scrollWidth,
+        }));
+        console.log(
+          `   Mobile reflow at ${layout.viewport}px: document ${layout.document}px, body ${layout.body}px`,
+        );
+        if (layout.document > layout.viewport || layout.body > layout.viewport) {
+          hasFailures = true;
+          console.error(`❌ Mobile layout overflow on ${pageInfo.name}: ${JSON.stringify(layout)}`);
+        }
       }
     } catch (err) {
       console.error(`❌ Error auditing ${pageInfo.name}:`, err.message);
@@ -136,7 +154,9 @@ async function main() {
     console.error("\n❌ axe audit failed: critical or serious accessibility issues detected.");
     process.exit(1);
   } else {
-    console.log("\n🎉 axe audit passed: All tested pages have ZERO critical and ZERO serious issues!");
+    console.log(
+      "\n🎉 axe audit passed: All tested pages have ZERO critical and ZERO serious issues!",
+    );
     process.exit(0);
   }
 }

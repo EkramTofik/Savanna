@@ -64,7 +64,7 @@ test('offline player assets are cached by original URL and downloads can resume 
   assert.match(src, /Range:\s*`bytes=\$\{offset\}-\$\{end\}`/);
   assert.match(src, /chunkRequest/);
   assert.match(src, /caches\.open/);
-  assert.match(src, /cache\.put\(resource\.url/);
+  assert.match(src, /cache\.put\(\s*resource\.url/);
   assert.match(src, /navigator\.storage\?\.estimate/);
   assert.match(src, /aria-live="polite"/);
   assert.match(player, /getCachedObjectUrl/);
