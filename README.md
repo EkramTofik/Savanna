@@ -211,7 +211,7 @@ curl http://localhost:4010/.well-known/did.json
 
 The offline control validates the lesson and pack manifests, downloads only declared resources, supports HTTP byte-range resume, checks each resource's byte count and SHA-256 hash, and stores completed assets in Cache Storage. The player and caption loader can reuse those cached assets after connectivity is lost. Service-worker shell caching is available when the built site serves `media-sw.js` from its root; offline media fallback also uses Cache Storage directly.
 
-The checked-in fixture packs currently declare 29,657 payload bytes for L-102 (Opus audio and English/Amharic VTT) and 51,761 bytes for L-103 (the same plus audio-description tracks and an ESL placeholder video). These are fixture sizes, not network-performance measurements or production lesson content. The current browser tests verify offline playback fallback on an already loaded page and a resumed interrupted range download; they do not verify a cold offline page reload.
+The checked-in fixture packs currently declare 29,657 payload bytes for L-102 (Opus audio and English/Amharic VTT) and 51,761 bytes for L-103 (the same plus audio-description tracks and an ESL placeholder video). These are fixture sizes, not network-performance measurements or production lesson content. Browser tests verify offline playback fallback, a cold offline reload, interrupted range-download resumption, and checksum-mismatch cleanup.
 
 ---
 

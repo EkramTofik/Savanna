@@ -1,9 +1,17 @@
-export async function registerSavannaMediaWorker(url='/media-sw.js') {
-  if (!('serviceWorker' in navigator) || !window.isSecureContext) return null;
+export async function registerSavannaMediaWorker(url = "/media-sw.js") {
+  if (!("serviceWorker" in navigator) || !window.isSecureContext) return null;
   try {
-    const script = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-    if (!script.ok) return null;
-    const registration = await navigator.serviceWorker.register(url, { scope: '/' });
+    const existing = await navigator.serviceWorker.getRegistration(url);
+    if (!navigator.onLine && existing?.active) {
+      await navigator.serviceWorker.ready;
+      await cacheApplicationShell();
+      return existing;
+    }
+    const script = await fetch(url, { method: "HEAD", cache: "no-store" });
+    if (!script.ok || !script.headers.get("content-type")?.toLowerCase().includes("javascript"))
+      return null;
+    const registration = await navigator.serviceWorker.register(url, { scope: "/" });
+    await navigator.serviceWorker.ready;
     await cacheApplicationShell();
     if (navigator.storage?.persist) await navigator.storage.persist().catch(() => false);
     return registration;
@@ -14,7 +22,7 @@ export async function registerSavannaMediaWorker(url='/media-sw.js') {
 }
 
 async function cacheApplicationShell(): Promise<void> {
-  const cache = await caches.open('savanna-media-v2-static');
+  const cache = await caches.open("savanna-media-v2-static");
   const urls = new Set<string>([window.location.href]);
   for (const element of document.querySelectorAll<HTMLScriptElement | HTMLLinkElement>(
     'script[src], link[rel="stylesheet"][href], link[rel="modulepreload"][href]',
@@ -24,9 +32,9 @@ async function cacheApplicationShell(): Promise<void> {
   }
   for (const source of urls) {
     const parsed = new URL(source);
-    if (parsed.pathname.startsWith('/v1/') || parsed.pathname.startsWith('/api/v1/')) continue;
+    if (parsed.pathname.startsWith("/v1/") || parsed.pathname.startsWith("/api/v1/")) continue;
     try {
-      const response = await fetch(source, { credentials: 'same-origin', cache: 'no-store' });
+      const response = await fetch(source, { credentials: "same-origin", cache: "no-store" });
       if (response.ok) await cache.put(source, response);
     } catch {
       // Keep already cached shell files if the host becomes temporarily unavailable.

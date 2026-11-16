@@ -6493,9 +6493,17 @@ function buildPackResources(manifest, pack, api, apiKey) {
 async function registerSavannaMediaWorker(url = "/media-sw.js") {
   if (!("serviceWorker" in navigator) || !window.isSecureContext) return null;
   try {
+    const existing = await navigator.serviceWorker.getRegistration(url);
+    if (!navigator.onLine && existing?.active) {
+      await navigator.serviceWorker.ready;
+      await cacheApplicationShell();
+      return existing;
+    }
     const script = await fetch(url, { method: "HEAD", cache: "no-store" });
-    if (!script.ok) return null;
+    if (!script.ok || !script.headers.get("content-type")?.toLowerCase().includes("javascript"))
+      return null;
     const registration = await navigator.serviceWorker.register(url, { scope: "/" });
+    await navigator.serviceWorker.ready;
     await cacheApplicationShell();
     if (navigator.storage?.persist) await navigator.storage.persist().catch(() => false);
     return registration;
@@ -6579,6 +6587,8 @@ var SavannaOffline = class extends i4 {
     this.canResume = false;
     this.lessonManifest = null;
     this.generation = 0;
+    this.connectionGeneration = 0;
+    this.serviceWorkerReady = false;
     this.refreshClick = () => {
       void this.refresh();
     };
@@ -6592,10 +6602,16 @@ var SavannaOffline = class extends i4 {
   connectedCallback() {
     super.connectedCallback();
     this.refreshSavedState();
-    void registerSavannaMediaWorker();
-    void this.refresh();
+    const connectionGeneration = ++this.connectionGeneration;
+    void registerSavannaMediaWorker().finally(() => {
+      if (!this.isConnected || connectionGeneration !== this.connectionGeneration) return;
+      this.serviceWorkerReady = true;
+      void this.refresh();
+    });
   }
   disconnectedCallback() {
+    this.connectionGeneration++;
+    this.serviceWorkerReady = false;
     this.controller?.abort();
     this.refreshController?.abort();
     super.disconnectedCallback();
@@ -6608,7 +6624,7 @@ var SavannaOffline = class extends i4 {
       this.lessonManifest = null;
       this.progress = 0;
       this.refreshSavedState();
-      if (this.api && this.lessonId) void this.refresh();
+      if (this.serviceWorkerReady && this.api && this.lessonId) void this.refresh();
     }
   }
   refreshSavedState() {
@@ -6643,9 +6659,23 @@ var SavannaOffline = class extends i4 {
     this.status = "Checking lesson and offline pack\u2026";
     try {
       const lessonUrl = this.apiUrl(`/v1/lessons/${encodeURIComponent(this.lessonId)}`);
-      const lessonResponse = await fetch(lessonUrl, { headers: this.apiHeaders(lessonUrl), signal: controller.signal });
-      if (!lessonResponse.ok) throw new Error(lessonResponse.status === 404 ? "This lesson is not available." : `Lesson request failed (${lessonResponse.status}).`);
-      const lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
+      let lesson;
+      let usedCachedManifest = false;
+      try {
+        const lessonResponse = await fetch(lessonUrl, { headers: this.apiHeaders(lessonUrl), signal: controller.signal });
+        if (!lessonResponse.ok) throw new Error(lessonResponse.status === 404 ? "This lesson is not available." : `Lesson request failed (${lessonResponse.status}).`);
+        lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
+      } catch (error) {
+        if (controller.signal.aborted) throw error;
+        const cached = localStorage.getItem(`savanna.cached_manifest.${this.lessonId}`);
+        if (!cached) throw error;
+        try {
+          lesson = parseLessonManifest(JSON.parse(cached), this.lessonId);
+          usedCachedManifest = true;
+        } catch {
+          throw error;
+        }
+      }
       if (!lesson.pack) throw new Error("This lesson does not have an offline pack.");
       const packUrl = new URL(lesson.pack.manifestUrl, this.apiUrl("/")).href;
       const packResponse = await fetch(packUrl, { headers: this.apiHeaders(packUrl), signal: controller.signal });
@@ -6676,7 +6706,7 @@ var SavannaOffline = class extends i4 {
           this.saved = false;
         }
       }
-      this.status = `Pack ready \xB7 ${this.formatSize(pack.sizeBytes)}${this.saved ? " \xB7 Saved offline" : this.canResume ? " \xB7 Download can resume" : ""}`;
+      this.status = `${usedCachedManifest ? "Offline pack ready" : "Pack ready"} \xB7 ${this.formatSize(pack.sizeBytes)}${this.saved ? " \xB7 Saved offline" : this.canResume ? " \xB7 Download can resume" : ""}`;
     } catch (error) {
       if (controller.signal.aborted || generation !== this.generation) return;
       this.manifest = null;

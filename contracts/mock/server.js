@@ -9,19 +9,57 @@ import archiver from "archiver";
 
 const root = path.resolve("contracts/fixtures");
 const app = express();
-app.use(cors({ exposedHeaders: ["Accept-Ranges", "Content-Range", "Content-Length", "Content-Disposition", "ETag"] }));
+app.use(
+  cors({
+    exposedHeaders: [
+      "Accept-Ranges",
+      "Content-Range",
+      "Content-Length",
+      "Content-Disposition",
+      "ETag",
+    ],
+  }),
+);
 app.use("/media", express.static(path.join(root, "media")));
+
+function rewriteLocalFixtureUrls(value, origin) {
+  if (Array.isArray(value)) return value.map((item) => rewriteLocalFixtureUrls(item, origin));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, rewriteLocalFixtureUrls(item, origin)]),
+    );
+  }
+  if (typeof value !== "string") return value;
+  try {
+    const url = new URL(value);
+    if (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      ["localhost", "127.0.0.1"].includes(url.hostname)
+    ) {
+      return new URL(`${url.pathname}${url.search}${url.hash}`, origin).href;
+    }
+  } catch {
+    // Keep fixture text and non-URL values unchanged.
+  }
+  return value;
+}
 
 // Serve pack.zip dynamically for any lesson that has a pack.json fixture
 app.get("/v1/lessons/:id/pack.zip", (req, res) => {
   const id = req.params.id;
   // Validate id to prevent path traversal
   if (!/^[\w-]{1,80}$/.test(id)) {
-    return res.status(400).type("application/problem+json").json({ title: "Bad request", status: 400 });
+    return res
+      .status(400)
+      .type("application/problem+json")
+      .json({ title: "Bad request", status: 400 });
   }
   const packJson = path.resolve(root, "v1/lessons", id, "pack.json");
   if (!packJson.startsWith(root) || !fs.existsSync(packJson)) {
-    return res.status(404).type("application/problem+json").json({ title: "Not found", status: 404 });
+    return res
+      .status(404)
+      .type("application/problem+json")
+      .json({ title: "Not found", status: 404 });
   }
   res.setHeader("Content-Type", "application/zip");
   res.setHeader("Content-Disposition", `attachment; filename="${id}-pack.zip"`);
@@ -29,7 +67,10 @@ app.get("/v1/lessons/:id/pack.zip", (req, res) => {
   const archive = archiver("zip", { zlib: { level: 1 } });
   const chunks = [];
   archive.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-  archive.on("error", (err) => { if (!res.headersSent) res.status(500).end(); console.error(err); });
+  archive.on("error", (err) => {
+    if (!res.headersSent) res.status(500).end();
+    console.error(err);
+  });
   archive.on("end", () => {
     const zip = Buffer.concat(chunks);
     res.setHeader("Content-Length", String(zip.length));
@@ -39,14 +80,26 @@ app.get("/v1/lessons/:id/pack.zip", (req, res) => {
     const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader);
     if (!match || (!match[1] && !match[2])) {
       res.setHeader("Content-Range", `bytes */${zip.length}`);
-      return res.status(416).type("application/problem+json").json({ title: "Invalid range", status: 416 });
+      return res
+        .status(416)
+        .type("application/problem+json")
+        .json({ title: "Invalid range", status: 416 });
     }
     const suffixLength = match[1] ? 0 : Number(match[2]);
     const start = match[1] ? Number(match[1]) : Math.max(0, zip.length - suffixLength);
     const requestedEnd = match[1] && match[2] ? Number(match[2]) : zip.length - 1;
-    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(requestedEnd) || !Number.isSafeInteger(suffixLength) || start >= zip.length || requestedEnd < start) {
+    if (
+      !Number.isSafeInteger(start) ||
+      !Number.isSafeInteger(requestedEnd) ||
+      !Number.isSafeInteger(suffixLength) ||
+      start >= zip.length ||
+      requestedEnd < start
+    ) {
       res.setHeader("Content-Range", `bytes */${zip.length}`);
-      return res.status(416).type("application/problem+json").json({ title: "Range not satisfiable", status: 416 });
+      return res
+        .status(416)
+        .type("application/problem+json")
+        .json({ title: "Range not satisfiable", status: 416 });
     }
     const end = Math.min(requestedEnd, zip.length - 1);
     res.status(206);
@@ -58,13 +111,19 @@ app.get("/v1/lessons/:id/pack.zip", (req, res) => {
   const mediaDir = path.join(root, "media");
   const pack = JSON.parse(fs.readFileSync(packJson, "utf8"));
   if (!Array.isArray(pack.files) || pack.files.some((file) => typeof file.path !== "string")) {
-    return res.status(500).type("application/problem+json").json({ title: "Invalid pack manifest", status: 500 });
+    return res
+      .status(500)
+      .type("application/problem+json")
+      .json({ title: "Invalid pack manifest", status: 500 });
   }
   for (const file of pack.files) {
     const resolvedMediaDir = path.resolve(mediaDir);
     const resolvedFile = path.resolve(resolvedMediaDir, file.path);
     if (!resolvedFile.startsWith(resolvedMediaDir + path.sep) || !fs.existsSync(resolvedFile)) {
-      return res.status(500).type("application/problem+json").json({ title: "Invalid pack asset", status: 500 });
+      return res
+        .status(500)
+        .type("application/problem+json")
+        .json({ title: "Invalid pack asset", status: 500 });
     }
     archive.file(resolvedFile, { name: file.path });
   }
@@ -81,7 +140,8 @@ app.get("/v1/*", (req, res) => {
       .type("application/problem+json")
       .json({ title: "Not found", status: 404 });
   }
-  res.json(JSON.parse(fs.readFileSync(file, "utf8")));
+  const fixtureOrigin = process.env.FIXTURE_URL_ORIGIN || `${req.protocol}://${req.get("host")}`;
+  res.json(rewriteLocalFixtureUrls(JSON.parse(fs.readFileSync(file, "utf8")), fixtureOrigin));
 });
 const port = process.env.MOCK_PORT || 4010;
 app.listen(port, () => console.log(`Mock API on http://localhost:${port}`));

@@ -90,15 +90,23 @@ export class SavannaOffline extends LitElement {
   private controller?: AbortController;
   private refreshController?: AbortController;
   private generation = 0;
+  private connectionGeneration = 0;
+  private serviceWorkerReady = false;
 
   connectedCallback(): void {
     super.connectedCallback();
     this.refreshSavedState();
-    void registerSavannaMediaWorker();
-    void this.refresh();
+    const connectionGeneration = ++this.connectionGeneration;
+    void registerSavannaMediaWorker().finally(() => {
+      if (!this.isConnected || connectionGeneration !== this.connectionGeneration) return;
+      this.serviceWorkerReady = true;
+      void this.refresh();
+    });
   }
 
   disconnectedCallback(): void {
+    this.connectionGeneration++;
+    this.serviceWorkerReady = false;
     this.controller?.abort();
     this.refreshController?.abort();
     super.disconnectedCallback();
@@ -112,7 +120,7 @@ export class SavannaOffline extends LitElement {
       this.lessonManifest = null;
       this.progress = 0;
       this.refreshSavedState();
-      if (this.api && this.lessonId) void this.refresh();
+      if (this.serviceWorkerReady && this.api && this.lessonId) void this.refresh();
     }
   }
 
@@ -152,9 +160,23 @@ export class SavannaOffline extends LitElement {
     this.status = 'Checking lesson and offline pack…';
     try {
       const lessonUrl = this.apiUrl(`/v1/lessons/${encodeURIComponent(this.lessonId)}`);
-      const lessonResponse = await fetch(lessonUrl, { headers: this.apiHeaders(lessonUrl), signal: controller.signal });
-      if (!lessonResponse.ok) throw new Error(lessonResponse.status === 404 ? 'This lesson is not available.' : `Lesson request failed (${lessonResponse.status}).`);
-      const lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
+      let lesson: LessonManifest;
+      let usedCachedManifest = false;
+      try {
+        const lessonResponse = await fetch(lessonUrl, { headers: this.apiHeaders(lessonUrl), signal: controller.signal });
+        if (!lessonResponse.ok) throw new Error(lessonResponse.status === 404 ? 'This lesson is not available.' : `Lesson request failed (${lessonResponse.status}).`);
+        lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
+      } catch (error) {
+        if (controller.signal.aborted) throw error;
+        const cached = localStorage.getItem(`savanna.cached_manifest.${this.lessonId}`);
+        if (!cached) throw error;
+        try {
+          lesson = parseLessonManifest(JSON.parse(cached), this.lessonId);
+          usedCachedManifest = true;
+        } catch {
+          throw error;
+        }
+      }
       if (!lesson.pack) throw new Error('This lesson does not have an offline pack.');
 
       const packUrl = new URL(lesson.pack.manifestUrl, this.apiUrl('/')).href;
@@ -186,7 +208,7 @@ export class SavannaOffline extends LitElement {
           this.saved = false;
         }
       }
-      this.status = `Pack ready · ${this.formatSize(pack.sizeBytes)}${this.saved ? ' · Saved offline' : this.canResume ? ' · Download can resume' : ''}`;
+      this.status = `${usedCachedManifest ? 'Offline pack ready' : 'Pack ready'} · ${this.formatSize(pack.sizeBytes)}${this.saved ? ' · Saved offline' : this.canResume ? ' · Download can resume' : ''}`;
     } catch (error) {
       if (controller.signal.aborted || generation !== this.generation) return;
       this.manifest = null;
