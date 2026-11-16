@@ -15,8 +15,11 @@ export function loadSeedData(dir = FIXTURES_DIR): { lessons: LessonRecord[]; tra
   for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
     const manifest = LessonManifestSchema.parse(JSON.parse(fs.readFileSync(path.join(dir, file), "utf8")));
     lessons.push(fromManifest(manifest));
-    const tFile = path.join(dir, manifest.id, "transcript.json");
-    if (fs.existsSync(tFile)) transcripts.push(TranscriptSchema.parse(JSON.parse(fs.readFileSync(tFile, "utf8"))));
+    const lessonDir = path.join(dir, manifest.id);
+    for (const transcriptName of ["transcript.json", "transcript-am.json"]) {
+      const tFile = path.join(lessonDir, transcriptName);
+      if (fs.existsSync(tFile)) transcripts.push(TranscriptSchema.parse(JSON.parse(fs.readFileSync(tFile, "utf8"))));
+    }
   }
   return { lessons, transcripts };
 }

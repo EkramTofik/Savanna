@@ -375,6 +375,7 @@ export class SavannaPlayer extends LitElement {
     video {
       display: block;
       width: 100%;
+      aspect-ratio: 16 / 9;
       height: auto;
     }
 

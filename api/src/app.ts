@@ -33,7 +33,15 @@ export async function createApp(opts: AppOptions = {}) {
   if (config.production) app.set("trust proxy", 1);
 
   const allOrigins = config.partners.flatMap((p) => p.origins);
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          mediaSrc: ["'self'", "blob:"],
+        },
+      },
+    }),
+  );
   app.use(
     cors({
       origin: (origin, cb) => cb(null, !origin || originAllowed(origin, allOrigins, config.production)),

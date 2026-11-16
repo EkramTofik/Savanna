@@ -125,18 +125,70 @@ async function main() {
       }
 
       if (pageInfo.path === "/savanna/pages/concept-with-navigation.html") {
-        await page.setViewportSize({ width: 320, height: 800 });
-        const layout = await page.evaluate(() => ({
-          viewport: window.innerWidth,
-          document: document.documentElement.scrollWidth,
-          body: document.body.scrollWidth,
-        }));
-        console.log(
-          `   Mobile reflow at ${layout.viewport}px: document ${layout.document}px, body ${layout.body}px`,
+        const languageButton = page.locator("[data-savanna-language-toggle]");
+        await languageButton.waitFor({ state: "visible" });
+        await page.waitForFunction(() => {
+          const button = document.querySelector("[data-savanna-language-toggle]");
+          return button instanceof HTMLButtonElement && !button.disabled;
+        });
+        const startingLanguage = await page.locator("#lesson-player").evaluate((player) => player.lang);
+        await languageButton.click();
+        await page.waitForFunction(
+          (language) => document.querySelector("#lesson-player")?.lang !== language,
+          startingLanguage,
         );
-        if (layout.document > layout.viewport || layout.body > layout.viewport) {
+        const switchedLanguage = await page.locator("#lesson-player").evaluate((player) => player.lang);
+        if (switchedLanguage === startingLanguage || (await page.locator("html").getAttribute("lang")) !== "en") {
           hasFailures = true;
-          console.error(`❌ Mobile layout overflow on ${pageInfo.name}: ${JSON.stringify(layout)}`);
+          console.error("❌ Integrated player language toggle did not switch the player while preserving page language.");
+        } else {
+          console.log(`   Integrated language toggle: ${startingLanguage} → ${switchedLanguage}; host page remains English`);
+        }
+
+        for (const width of [320, 375, 768, 1280]) {
+          await page.setViewportSize({ width, height: 800 });
+          const layout = await page.evaluate(() => ({
+            viewport: window.innerWidth,
+            document: document.documentElement.scrollWidth,
+            body: document.body.scrollWidth,
+            offenders: [...document.querySelectorAll("body *")]
+              .map((element) => ({
+                tag: element.tagName,
+                id: element.id,
+                className: typeof element.className === "string" ? element.className : "",
+                right: Math.round(element.getBoundingClientRect().right),
+                width: Math.round(element.getBoundingClientRect().width),
+                style: element.getAttribute("style"),
+                parents: (() => {
+                  const chain = [];
+                  let current = element.parentElement;
+                  while (current && chain.length < 4) {
+                    const rect = current.getBoundingClientRect();
+                    chain.push({
+                      tag: current.tagName,
+                      id: current.id,
+                      className: typeof current.className === "string" ? current.className : "",
+                      left: Math.round(rect.left),
+                      right: Math.round(rect.right),
+                      width: Math.round(rect.width),
+                      scroll: current.scrollWidth,
+                      client: current.clientWidth,
+                    });
+                    current = current.parentElement;
+                  }
+                  return chain;
+                })(),
+              }))
+              .filter((element) => element.right > window.innerWidth + 1)
+              .slice(0, 5),
+          }));
+          console.log(
+            `   Responsive layout at ${layout.viewport}px: document ${layout.document}px, body ${layout.body}px`,
+          );
+          if (layout.document > layout.viewport || layout.body > layout.viewport) {
+            hasFailures = true;
+            console.error(`❌ Layout overflow on ${pageInfo.name}: ${JSON.stringify(layout)}`);
+          }
         }
       }
     } catch (err) {

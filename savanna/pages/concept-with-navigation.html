@@ -552,16 +552,26 @@
                   <p><img src="../assets/img/VA-Content-Banner.png" alt="VA-Content-Banner" loading="lazy" /></p>
                   <!-- Savanna Access Kit: Accessible Video Player & Adaptive Learning Media -->
                   <div class="savanna-player-mount" style="margin: 1.5rem 0;">
+                    <div class="savanna-player-language" role="group" aria-label="Lesson player language">
+                      <span>Player language</span>
+                      <button
+                        type="button"
+                        data-savanna-language-toggle
+                        disabled
+                      >
+                        አማርኛ / Amharic
+                      </button>
+                    </div>
                     <savanna-player
                       id="lesson-player"
-                      lesson="L-102"
-                      lang="am"
+                      lesson="L-103"
+                      lang="en"
                       api="/"
                       api-key="pk_demo_public"
                     >
                       <savanna-sign-window slot="overlay"></savanna-sign-window>
                       <savanna-audio-description></savanna-audio-description>
-                      <savanna-offline api="/" api-key="pk_demo_public" lesson-id="L-102"></savanna-offline>
+                      <savanna-offline api="/" api-key="pk_demo_public" lesson-id="L-103"></savanna-offline>
                     </savanna-player>
                   </div>
                   <figure>

@@ -45,6 +45,7 @@ describe("contract C1: fixtures and API agree", () => {
   }
   it("transcript fixtures satisfy the transcript schema", () => {
     expect(TranscriptSchema.safeParse(readJson("L-102/transcript.json")).success).toBe(true);
+    expect(TranscriptSchema.safeParse(readJson("L-103/transcript-am.json")).success).toBe(true);
   });
 });
 
@@ -91,6 +92,12 @@ describe("lessons routes", () => {
     const res = await request(await app()).get("/v1/lessons/L-102/transcript").set(KEY);
     expect(res.status).toBe(200);
     expect(res.body.lang).toBe("en");
+    expect(res.body.lines.length).toBeGreaterThan(0);
+  });
+  it("serves the Amharic L-103 transcript for the integrated language switch", async () => {
+    const res = await request(await app()).get("/v1/lessons/L-103/transcript?lang=am").set(KEY);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: "L-103", lang: "am" });
     expect(res.body.lines.length).toBeGreaterThan(0);
   });
   it("404s a missing transcript language and 400s a bad one", async () => {

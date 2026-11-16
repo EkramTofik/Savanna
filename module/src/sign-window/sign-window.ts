@@ -72,6 +72,7 @@ export class SavannaSignWindow extends LitElement {
       display: block;
       width: var(--panel-width, 320px);
       max-width: calc(100% - 16px);
+      container-type: inline-size;
       color: #fff;
       font: 16px/1.4 var(--savanna-font, system-ui, sans-serif);
     }
@@ -127,6 +128,40 @@ export class SavannaSignWindow extends LitElement {
     .actions {
       display: flex;
       gap: 4px;
+    }
+    @container (max-width: 260px) {
+      header {
+        gap: 4px;
+        padding-inline: 4px;
+      }
+      header > strong {
+        font-size: 12px;
+      }
+      .actions {
+        gap: 2px;
+      }
+      .actions button[aria-label^="Snap sign window"] {
+        display: none;
+      }
+      .handle.nw,
+      .handle.ne {
+        display: none;
+      }
+      .actions .toggle {
+        min-width: 48px;
+        padding-inline: 4px;
+      }
+    }
+    @container (max-width: 180px) {
+      header {
+        justify-content: center;
+      }
+      header > strong {
+        display: none;
+      }
+      .actions {
+        margin-inline: auto;
+      }
     }
     button {
       display: grid;

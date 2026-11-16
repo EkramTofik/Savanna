@@ -9,7 +9,7 @@ var __decorateClass = (decorators, target, key, kind) => {
   return result;
 };
 
-// node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/css-tag.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/css-tag.js
 var t = globalThis;
 var e = t.ShadowRoot && (void 0 === t.ShadyCSS || t.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype;
 var s = /* @__PURE__ */ Symbol();
@@ -54,7 +54,7 @@ var c = e ? (t6) => t6 : (t6) => t6 instanceof CSSStyleSheet ? ((t7) => {
   return r(e8);
 })(t6) : t6;
 
-// node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/reactive-element.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/reactive-element.js
 var { is: i2, defineProperty: e2, getOwnPropertyDescriptor: h, getOwnPropertyNames: r2, getOwnPropertySymbols: o2, getPrototypeOf: n2 } = Object;
 var a = globalThis;
 var c2 = a.trustedTypes;
@@ -276,7 +276,7 @@ var y = class extends HTMLElement {
 };
 y.elementStyles = [], y.shadowRootOptions = { mode: "open" }, y[d("elementProperties")] = /* @__PURE__ */ new Map(), y[d("finalized")] = /* @__PURE__ */ new Map(), p?.({ ReactiveElement: y }), (a.reactiveElementVersions ??= []).push("2.1.2");
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/lit-html.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/lit-html.js
 var t2 = globalThis;
 var i3 = (t6) => t6;
 var s2 = t2.trustedTypes;
@@ -531,7 +531,7 @@ var D = (t6, i6, s5) => {
   return h5._$AI(t6), h5;
 };
 
-// node_modules/.pnpm/lit-element@4.2.2/node_modules/lit-element/lit-element.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-element@4.2.2/node_modules/lit-element/lit-element.js
 var s3 = globalThis;
 var i4 = class extends y {
   constructor() {
@@ -560,14 +560,14 @@ var o4 = s3.litElementPolyfillSupport;
 o4?.({ LitElement: i4 });
 (s3.litElementVersions ??= []).push("4.2.2");
 
-// node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/custom-element.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/custom-element.js
 var t3 = (t6) => (e8, o8) => {
   void 0 !== o8 ? o8.addInitializer(() => {
     customElements.define(t6, e8);
   }) : customElements.define(t6, e8);
 };
 
-// node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/property.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/property.js
 var o5 = { attribute: true, type: String, converter: u, reflect: false, hasChanged: f };
 var r4 = (t6 = o5, e8, r8) => {
   const { kind: n7, metadata: i6 } = r8;
@@ -597,15 +597,15 @@ function n4(t6) {
   })(t6, e8, o8);
 }
 
-// node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/state.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/state.js
 function r5(r8) {
   return n4({ ...r8, state: true, attribute: false });
 }
 
-// node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/base.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/base.js
 var e4 = (e8, t6, c5) => (c5.configurable = true, c5.enumerable = true, Reflect.decorate && "object" != typeof t6 && Object.defineProperty(e8, t6, c5), c5);
 
-// node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/query.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/query.js
 function e5(e8, r8) {
   return (n7, s5, i6) => {
     const o8 = (t6) => t6.renderRoot?.querySelector(e8) ?? null;
@@ -4569,6 +4569,7 @@ SavannaPlayer.styles = i`
     video {
       display: block;
       width: 100%;
+      aspect-ratio: 16 / 9;
       height: auto;
     }
 
@@ -6055,6 +6056,7 @@ SavannaSignWindow.styles = i`
       display: block;
       width: var(--panel-width, 320px);
       max-width: calc(100% - 16px);
+      container-type: inline-size;
       color: #fff;
       font: 16px/1.4 var(--savanna-font, system-ui, sans-serif);
     }
@@ -6110,6 +6112,40 @@ SavannaSignWindow.styles = i`
     .actions {
       display: flex;
       gap: 4px;
+    }
+    @container (max-width: 260px) {
+      header {
+        gap: 4px;
+        padding-inline: 4px;
+      }
+      header > strong {
+        font-size: 12px;
+      }
+      .actions {
+        gap: 2px;
+      }
+      .actions button[aria-label^="Snap sign window"] {
+        display: none;
+      }
+      .handle.nw,
+      .handle.ne {
+        display: none;
+      }
+      .actions .toggle {
+        min-width: 48px;
+        padding-inline: 4px;
+      }
+    }
+    @container (max-width: 180px) {
+      header {
+        justify-content: center;
+      }
+      header > strong {
+        display: none;
+      }
+      .actions {
+        margin-inline: auto;
+      }
     }
     button {
       display: grid;
@@ -7446,11 +7482,11 @@ function responseContentType(url) {
   return "application/octet-stream";
 }
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive-helpers.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive-helpers.js
 var { I: t4 } = j;
 var r6 = (o8) => void 0 === o8.strings;
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive.js
 var t5 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
 var e6 = (t6) => (...e8) => ({ _$litDirective$: t6, values: e8 });
 var i5 = class {
@@ -7470,7 +7506,7 @@ var i5 = class {
   }
 };
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/async-directive.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/async-directive.js
 var s4 = (i6, t6) => {
   const e8 = i6._$AN;
   if (void 0 === e8) return false;
@@ -7527,7 +7563,7 @@ var f3 = class extends i5 {
   }
 };
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/ref.js
+// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/ref.js
 var e7 = () => new h4();
 var h4 = class {
 };
