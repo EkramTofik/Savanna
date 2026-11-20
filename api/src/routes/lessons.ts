@@ -7,7 +7,12 @@ import type { LessonRecord } from "../db/store";
 import { toManifest } from "../lib/manifest";
 import { z } from "zod";
 import type { OperationDoc } from "../lib/openapi";
-import { LangQuery, LessonListSchema, LessonManifestSchema, TranscriptSchema } from "../schemas/lesson";
+import {
+  LangQuery,
+  LessonListSchema,
+  LessonManifestSchema,
+  TranscriptSchema,
+} from "../schemas/lesson";
 import { requireScope } from "../middleware/auth";
 import { validateWebVTT } from "../lib/captionValidation";
 
@@ -31,7 +36,8 @@ function redirectTarget(url: string, origin: string): string {
       parsed.hostname === "localhost" ||
       parsed.hostname === "127.0.0.1" ||
       parsed.hostname === "[::1]"
-    ) return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    )
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
     return parsed.href;
   } catch {
     return url;
@@ -43,10 +49,16 @@ function manifestForRequest(lesson: LessonRecord, origin: string, production: bo
   if (!production) return manifest;
   manifest.media.video = hostedManifestUrl(manifest.media.video, origin);
   manifest.media.audio = hostedManifestUrl(manifest.media.audio, origin);
-  manifest.captions = manifest.captions.map((caption) => ({ ...caption, url: hostedManifestUrl(caption.url, origin) }));
+  manifest.captions = manifest.captions.map((caption) => ({
+    ...caption,
+    url: hostedManifestUrl(caption.url, origin),
+  }));
   if (manifest.sign) manifest.sign.url = hostedManifestUrl(manifest.sign.url, origin);
   if (manifest.audioDescription) {
-    manifest.audioDescription.audioUrl = hostedManifestUrl(manifest.audioDescription.audioUrl, origin);
+    manifest.audioDescription.audioUrl = hostedManifestUrl(
+      manifest.audioDescription.audioUrl,
+      origin,
+    );
     manifest.audioDescription.vttUrl = hostedManifestUrl(manifest.audioDescription.vttUrl, origin);
   }
   return manifest;
@@ -55,13 +67,17 @@ function manifestForRequest(lesson: LessonRecord, origin: string, production: bo
 export function register(router: Router, ctx: Ctx) {
   router.get("/lessons", async (_req, res) => {
     const lessons = await ctx.store.listLessons();
-    res.json({ lessons: lessons.map((l) => ({ id: l.id, title: l.title, durationSec: l.durationSec })) });
+    res.json({
+      lessons: lessons.map((l) => ({ id: l.id, title: l.title, durationSec: l.durationSec })),
+    });
   });
 
   router.get("/lessons/:id", async (req, res) => {
     const lesson = await ctx.store.getLesson(req.params.id);
     if (!lesson) throw new HttpError(404, "Not Found", `No lesson "${req.params.id}".`);
-    res.json(manifestForRequest(lesson, `${req.protocol}://${req.get("host")}`, ctx.config.production));
+    res.json(
+      manifestForRequest(lesson, `${req.protocol}://${req.get("host")}`, ctx.config.production),
+    );
   });
 
   // Captions live in object storage or memory store; we hand back the file location.
@@ -77,15 +93,25 @@ export function register(router: Router, ctx: Ctx) {
       }
     }
     const lesson = await ctx.store.getLesson(req.params.id);
-    const cap = lesson && manifestForRequest(lesson, `${req.protocol}://${req.get("host")}`, ctx.config.production).captions.find((c) => c.lang === lang);
-    if (!cap) throw new HttpError(404, "Not Found", `No ${lang} captions for lesson "${req.params.id}".`);
+    const cap =
+      lesson &&
+      manifestForRequest(
+        lesson,
+        `${req.protocol}://${req.get("host")}`,
+        ctx.config.production,
+      ).captions.find((c) => c.lang === lang);
+    if (!cap)
+      throw new HttpError(404, "Not Found", `No ${lang} captions for lesson "${req.params.id}".`);
     res.redirect(302, redirectTarget(cap.url, `${req.protocol}://${req.get("host")}`));
   });
 
   router.get("/lessons/:id/transcript", async (req, res) => {
     const { lang } = LangQuery.parse(req.query);
-    const t = await ctx.store.getTranscript(req.params.id, lang);
-    if (!t) throw new HttpError(404, "Not Found", `No ${lang} transcript for lesson "${req.params.id}".`);
+    const t =
+      (await ctx.store.getTranscript(req.params.id, lang)) ??
+      (lang === "am" ? await ctx.store.getTranscript(req.params.id, "en") : undefined);
+    if (!t)
+      throw new HttpError(404, "Not Found", `No ${lang} transcript for lesson "${req.params.id}".`);
     // Offline pack checksums cover transcript.json bytes. Use a stable wire
     // representation so the browser can verify those same bytes after fetch.
     res.type("application/json; charset=utf-8").send(`${JSON.stringify(t, null, 2)}\n`);
@@ -122,7 +148,11 @@ export function register(router: Router, ctx: Ctx) {
 
     const validation = validateWebVTT(vttText);
     if (!validation.valid) {
-      const firstError = validation.errors[0] ?? { message: "Caption validation failed", cueIndex: null, code: "validation-error" };
+      const firstError = validation.errors[0] ?? {
+        message: "Caption validation failed",
+        cueIndex: null,
+        code: "validation-error",
+      };
       return res.status(400).type("application/problem+json").json({
         type: "about:blank",
         title: "Caption Validation Failed",
@@ -150,33 +180,66 @@ const IdParam = z.object({ id: z.string().describe("Lesson id, e.g. L-102") });
 
 export const openapi: OperationDoc[] = [
   {
-    method: "get", path: "/lessons", summary: "List lessons", tags: ["Lessons"],
+    method: "get",
+    path: "/lessons",
+    summary: "List lessons",
+    tags: ["Lessons"],
     responses: { 200: { description: "Published lessons.", schema: LessonListSchema } },
   },
   {
-    method: "get", path: "/lessons/{id}", summary: "Get a lesson manifest", tags: ["Lessons"],
-    description: "Everything a player needs: media, English and Amharic captions, sign video, audio description, transcript and offline pack. Fields that do not exist for a lesson are null. Alias: /api/v1/lessons/{id}",
+    method: "get",
+    path: "/lessons/{id}",
+    summary: "Get a lesson manifest",
+    tags: ["Lessons"],
+    description:
+      "Everything a player needs: media, English and Amharic captions, sign video, audio description, transcript and offline pack. Fields that do not exist for a lesson are null. Alias: /api/v1/lessons/{id}",
     params: IdParam,
-    responses: { 200: { description: "The lesson manifest (contract C1).", schema: LessonManifestSchema }, 404: { description: "Unknown lesson." } },
+    responses: {
+      200: { description: "The lesson manifest (contract C1).", schema: LessonManifestSchema },
+      404: { description: "Unknown lesson." },
+    },
   },
   {
-    method: "get", path: "/lessons/{id}/captions/{file}", summary: "Get a caption file", tags: ["Lessons"],
+    method: "get",
+    path: "/lessons/{id}/captions/{file}",
+    summary: "Get a caption file",
+    tags: ["Lessons"],
     description: "Redirects to or serves the WebVTT file for the requested language.",
     params: IdParam.extend({ file: z.enum(["en.vtt", "am.vtt"]) }),
-    responses: { 302: { description: "Redirect to the caption file.", headers: { Location: "URL of the WebVTT file" } }, 404: { description: "No captions in that language." } },
+    responses: {
+      302: {
+        description: "Redirect to the caption file.",
+        headers: { Location: "URL of the WebVTT file" },
+      },
+      404: { description: "No captions in that language." },
+    },
   },
   {
-    method: "get", path: "/lessons/{id}/transcript", summary: "Get a lesson transcript", tags: ["Lessons"],
+    method: "get",
+    path: "/lessons/{id}/transcript",
+    summary: "Get a lesson transcript",
+    tags: ["Lessons"],
     description: "Timed transcript lines. Alias: /api/v1/lessons/{id}/transcript",
-    params: IdParam, query: LangQuery,
-    responses: { 200: { description: "Timed transcript lines.", schema: TranscriptSchema }, 404: { description: "No transcript in that language." } },
+    params: IdParam,
+    query: LangQuery,
+    responses: {
+      200: { description: "Timed transcript lines.", schema: TranscriptSchema },
+      404: { description: "No transcript in that language." },
+    },
   },
   {
-    method: "post", path: "/lessons/{id}/captions", summary: "Upload and review corrected captions", tags: ["Lessons"],
+    method: "post",
+    path: "/lessons/{id}/captions",
+    summary: "Upload and review corrected captions",
+    tags: ["Lessons"],
     access: "admin",
-    description: "Accepts and validates a WebVTT file for one language (2 lines max, ~32 chars/line, 1-7s duration, valid timestamps). Sets reviewed=true on success. Alias: /api/v1/lessons/{id}/captions",
+    description:
+      "Accepts and validates a WebVTT file for one language (2 lines max, ~32 chars/line, 1-7s duration, valid timestamps). Sets reviewed=true on success. Alias: /api/v1/lessons/{id}/captions",
     params: IdParam,
-    body: z.object({ lang: z.enum(["en", "am"]), vtt: z.string().describe("WebVTT caption content") }),
+    body: z.object({
+      lang: z.enum(["en", "am"]),
+      vtt: z.string().describe("WebVTT caption content"),
+    }),
     responses: {
       200: {
         description: "Caption accepted and approved.",

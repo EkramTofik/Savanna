@@ -48,14 +48,15 @@ export async function createApp(opts: AppOptions = {}) {
   const cspDirectives: Record<string, string[]> = {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'"],
-    styleSrc: ["'self'", "'unsafe-inline'"], // Lit uses constructable stylesheets; Swagger UI needs inline styles
+    styleSrc: ["'self'", "'unsafe-inline'", "https://googleapis.com"],
     connectSrc: [
       "'self'",
       ...(config.production && config.publicBaseUrl ? [config.publicBaseUrl] : []),
     ],
     mediaSrc: ["'self'", "blob:"], // blob: needed for offline playback with Blob URLs
     imgSrc: ["'self'", "data:"], // data: needed for QR codes
-    fontSrc: ["'self'"], // Self-hosted Noto Sans Ethiopic subset
+    fontSrc: ["'self'", "https://gstatic.com"],
+    // Self-hosted Noto Sans Ethiopic subset
     workerSrc: ["'self'"], // Service worker for offline functionality
     objectSrc: ["'none'"],
     baseUri: ["'self'"],
@@ -156,7 +157,9 @@ export async function createApp(opts: AppOptions = {}) {
   if (config.webRoot) {
     app.use(express.static(config.webRoot, { index: "index.html", fallthrough: true }));
   }
-
+  app.get("/favicon_alx.ico", (_req, res) => res.status(204).end());
+  app.use(notFound);
+  app.use(errorHandler);
   app.use(notFound);
   app.use(errorHandler);
   return app;
