@@ -56,7 +56,7 @@ export function getDefaultUiPreferences(): UiPreferences {
     speed: 1,
     theme: "dark",
     shortcuts: true,
-    lowData: true,
+    lowData: false,
   };
 }
 

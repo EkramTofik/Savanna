@@ -107,9 +107,7 @@ export function register(router: Router, ctx: Ctx) {
 
   router.get("/lessons/:id/transcript", async (req, res) => {
     const { lang } = LangQuery.parse(req.query);
-    const t =
-      (await ctx.store.getTranscript(req.params.id, lang)) ??
-      (lang === "am" ? await ctx.store.getTranscript(req.params.id, "en") : undefined);
+    const t = await ctx.store.getTranscript(req.params.id, lang);
     if (!t)
       throw new HttpError(404, "Not Found", `No ${lang} transcript for lesson "${req.params.id}".`);
     // Offline pack checksums cover transcript.json bytes. Use a stable wire
