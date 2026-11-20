@@ -2,6 +2,8 @@
 
 > **Protocol Reference:** SRS v1.0 Section 10 ("Saturday Session Protocol with a Person with a Disability") and Task Delegation Plan Section 11.
 
+> **Release scope:** The findings below are historical entries and were not repeated in this final readiness pass. Current L-102/L-103 manifests have no sign or audio-description media. The old sandbox media files are demo fixtures, not approved recordings; the entries below do not establish that either track is available or production-ready.
+
 ---
 
 ## 1. Testing Protocol
@@ -36,7 +38,7 @@
 | **2. Amharic Captions** | A (Deaf) | **Unaided** | Amharic font (Noto Sans Ethiopic) rendered all Fidel characters without missing glyph boxes or clipping on low-end Android. | WebVTT parser dynamically parsed Ethiopic text with custom font stack. |
 | **3. Sign Window Move & Resize** | A (Deaf) | **Unaided** | Tabbed to header, moved window using arrow keys (20px) and Shift+arrows (100px). Used snap buttons (↗, ↘). Drift stayed < 200ms. | Participant quoted: *"I can finally watch ALX lessons in sign language and keep them on my phone. It just works."* |
 | **4. Offline Pack** | C (Low-Bandwidth) | **Unaided** | Download size (1.8 MB) was visible before clicking. Pack streamed and saved via Service Worker. Lesson played smoothly in airplane mode. | Added download time estimate (`~18s remaining`) and emoji indicators. |
-| **5. Audio Description** | B (Blind) | **Unaided** | 'D' key toggled recorded AD. Extended AD paused the video during diagram explanation. | Added visual green "AD ON" badge after Deaf participant noted they couldn't tell if AD was active. |
+| **5. Audio Description** | B (Blind) | **Unaided (historical UI check)** | The report records a D-key check against sandbox media. It did not verify a production recording or cue timing. | Current player keeps AD disabled until the manifest supplies media and valid timed cues; current lessons have no AD track. |
 | **6. Career & Credential** | B (Blind) | **Unaided** | Pre-rendered audio summary played without autoplay. Reflow tested at 200% and 400% zoom with single-column layout. | Verified zero horizontal scroll at 320 CSS px width. |
 
 **Final Score:** 6 of 6 tasks completed unaided across all test participants. Zero critical barriers identified.
