@@ -12,6 +12,7 @@
     "fixtures:pack": "node contracts/fixtures/update-packs.mjs",
     "format": "prettier --write .",
     "test": "node --test pipeline/src/pack/*.test.mjs module/src/**/*.test.ts module/src/member2-a11y.test.ts scripts/*.test.mjs",
+    "test:csp": "node --test scripts/check-inline-scripts.test.mjs",
     "build": "tsx build-components.mjs",
     "size": "node build-components.mjs && node scripts/size-check.mjs",
     "build:site": "node scripts/prepare-static-site.mjs",

@@ -1140,36 +1140,6 @@ alert(example);
     <script src="../assets/js/popper.js"></script>
     <script src="../assets/js/bootstrap.bundle.js"></script>
     <script src="../assets/js/static-page.js"></script>
-    <script>
-      (() => {
-        const availableLessons = new Set(["L-102", "L-103"]);
-        const applyLessonRoute = () => {
-          const requested = new URL(window.location.href).searchParams.get("lesson");
-          const lessonId = requested && availableLessons.has(requested) ? requested : "L-102";
-          const player = document.querySelector("savanna-player#lesson-player");
-          const offline = player?.querySelector("savanna-offline");
-          if (player) player.setAttribute("lesson", lessonId);
-          if (offline) offline.setAttribute("lesson-id", lessonId);
-
-          document.querySelectorAll("#course-lesson-links [data-lesson-id]").forEach((link) => {
-            const selected = link.getAttribute("data-lesson-id") === lessonId;
-            link.classList.toggle("active", selected);
-            if (selected) link.setAttribute("aria-current", "page");
-            else link.removeAttribute("aria-current");
-          });
-
-          const status = document.getElementById("course-lesson-nav-status");
-          if (status) {
-            status.textContent = requested && !availableLessons.has(requested)
-              ? `Lesson ${requested} is not available in this local export. Showing L-102.`
-              : "";
-          }
-        };
-
-        applyLessonRoute();
-        window.addEventListener("popstate", applyLessonRoute);
-        window.addEventListener("hashchange", applyLessonRoute);
-      })();
-    </script>
+    <script src="../assets/js/lesson-routing.js" defer></script>
   </body>
 </html>
