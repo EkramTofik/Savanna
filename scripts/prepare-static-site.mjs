@@ -73,19 +73,32 @@ copy("media-sw.js", "media-sw.js");
 
 const coursePath = "savanna/pages/concept-with-navigation.html";
 const sourcePage = fs.readFileSync(path.join(root, coursePath), "utf8");
-const localApiCount = sourcePage.split('api="http://localhost:4010"').length - 1;
-const localKeyCount = sourcePage.split('api-key="pk_dev_local"').length - 1;
+// The course page is also served by the same-origin Render deployment, where
+// api="/" and pk_demo_public are intentional. The separate static-site build
+// must rewrite either supported local/demo configuration to the real API origin
+// and publishable key supplied by the deployment environment.
+const apiAttributes = [...sourcePage.matchAll(/(?:^|\\s)api="([^"]*)"/g)].map((match) => match[1]);
+const keyAttributes = [...sourcePage.matchAll(/(?:^|\\s)api-key="([^"]*)"/g)].map((match) => match[1]);
+const supportedApiValues = new Set(["http://localhost:4010", "/"]);
+const supportedKeyValues = new Set(["pk_dev_local", "pk_demo_public"]);
 const faviconCount = sourcePage.split('href="/favicon_alx.ico"').length - 1;
 const touchIconCount = sourcePage.split('href="/apple-touch-icon_alx.png"').length - 1;
-if (localApiCount !== 2 || localKeyCount !== 2 || faviconCount !== 1 || touchIconCount !== 1) {
+if (
+  apiAttributes.length !== 2 ||
+  keyAttributes.length !== 2 ||
+  apiAttributes.some((value) => !supportedApiValues.has(value)) ||
+  keyAttributes.some((value) => !supportedKeyValues.has(value)) ||
+  faviconCount !== 1 ||
+  touchIconCount !== 1
+) {
   throw new Error(
-    `Unexpected deploy-sensitive attributes in ${coursePath}: local API=${localApiCount}, local key=${localKeyCount}, favicon=${faviconCount}, touch icon=${touchIconCount}. Review the page before publishing.`,
+    `Unexpected deploy-sensitive attributes in ${coursePath}: API attributes=${apiAttributes.length}, API keys=${keyAttributes.length}, favicon=${faviconCount}, touch icon=${touchIconCount}. Review the page before publishing.`,
   );
 }
 
 const pageWithoutLegacyIcons = sourcePage
-  .replaceAll('api="http://localhost:4010"', `api="${apiBase.origin}"`)
-  .replaceAll('api-key="pk_dev_local"', `api-key="${publicKey}"`)
+  .replace(/(^|\\s)api="(?:http:\\/\\/localhost:4010|\\/)"/g, (_, prefix) => `${prefix}api="${apiBase.origin}"`)
+  .replace(/(^|\\s)api-key="(?:pk_dev_local|pk_demo_public)"/g, (_, prefix) => `${prefix}api-key="${publicKey}"`)
   .replace(/^[ \t]*<link rel="icon" type="image\/x-icon" href="\/favicon_alx\.ico" \/>\r?\n/gm, "")
   .replace(/^[ \t]*<link rel="apple-touch-icon" href="\/apple-touch-icon_alx\.png" \/>\r?\n/gm, "");
 if (pageWithoutLegacyIcons.toLowerCase().split("</head>").length !== 2) {
