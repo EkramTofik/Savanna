@@ -41,13 +41,30 @@ export async function createApp(opts: AppOptions = {}) {
   if (config.production) app.set("trust proxy", 1);
 
   const allOrigins = config.partners.flatMap((p) => p.origins);
+  
+  // Content Security Policy for production security
+  // Different routes may need different policies (e.g., /docs for Swagger UI)
+  const cspDirectives = {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'"],
+    styleSrc: ["'self'", "'unsafe-inline'"], // Lit uses constructable stylesheets; Swagger UI needs inline styles
+    connectSrc: ["'self'", ...(config.production ? [config.publicBaseUrl] : [])],
+    mediaSrc: ["'self'", "blob:"], // blob: needed for offline playback with Blob URLs
+    imgSrc: ["'self'", "data:"], // data: needed for QR codes
+    fontSrc: ["'self'"], // Self-hosted Noto Sans Ethiopic subset
+    workerSrc: ["'self'"], // Service worker for offline functionality
+    objectSrc: ["'none'"],
+    baseUri: ["'self'"],
+    formAction: ["'self'"],
+    frameAncestors: ["'self'"], // Prevent clickjacking; adjust if embedding is needed
+    upgradeInsecureRequests: config.production ? [] : undefined,
+  };
+
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: "cross-origin" },
       contentSecurityPolicy: {
-        directives: {
-          mediaSrc: ["'self'", "blob:"],
-        },
+        directives: cspDirectives,
       },
     }),
   );
@@ -80,17 +97,28 @@ export async function createApp(opts: AppOptions = {}) {
   });
   const swaggerDist = createRequire(import.meta.url)("swagger-ui-dist").getAbsoluteFSPath() as string;
   app.use("/docs/assets", express.static(swaggerDist, { index: false }));
-  app.get("/docs/init.js", (_req, res) =>
-    void res.type("application/javascript").send('window.ui = SwaggerUIBundle({ url: "/v1/openapi.json", dom_id: "#swagger-ui", persistAuthorization: true });'),
-  );
-  app.get("/docs", (_req, res) =>
-    void res.type("html").send(
+  
+  // Serve Swagger UI init script
+  app.get("/docs/init.js", (_req, res) => {
+    res.setHeader("Content-Type", "application/javascript");
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.send('window.ui = SwaggerUIBundle({ url: "/v1/openapi.json", dom_id: "#swagger-ui", persistAuthorization: true });');
+  });
+  
+  // Swagger UI HTML page with relaxed CSP for Swagger's inline scripts
+  app.get("/docs", (_req, res) => {
+    // Swagger UI uses inline scripts, so we need to relax CSP for this route only
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'",
+    );
+    res.type("html").send(
       '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
         "<title>Savanna Access Kit API</title>" +
         '<link rel="stylesheet" href="/docs/assets/swagger-ui.css"></head><body><div id="swagger-ui"></div>' +
         '<script src="/docs/assets/swagger-ui-bundle.js"></script><script src="/docs/init.js"></script></body></html>',
-    ),
-  );
+    );
+  });
 
   // Public modules first (full paths, no auth), then key-protected modules under /v1 and /api/v1 (FR-N3).
   for (const { mod } of modules.filter((m) => m.mod.access === "public")) {
