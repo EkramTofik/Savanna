@@ -98,11 +98,11 @@ export class SavannaPlayer extends LitElement {
 
   /** Save bandwidth by waiting for the learner to press Play before fetching video bytes. */
   @state()
-  private lowDataMode = false;
+  private lowDataMode = true;
 
   /** The large media URL is attached only after a learner explicitly starts playback. */
   @state()
-  private mediaRequested = true;
+  private mediaRequested = false;
   private mediaFallbackAttempted = false;
 
   @state()
@@ -1860,20 +1860,18 @@ export class SavannaPlayer extends LitElement {
   };
 
   private handleSpeedMenuKeydown = (event: KeyboardEvent): void => {
-    if (!this.isSpeedMenuOpen || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key))
-      return;
+    if (!this.isSpeedMenuOpen || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
     const items = Array.from(
       this.shadowRoot?.querySelectorAll<HTMLButtonElement>(".speed-opt-btn") ?? [],
     );
     if (!items.length) return;
     event.preventDefault();
     const current = items.indexOf(this.shadowRoot?.activeElement as HTMLButtonElement);
-    const next =
-      event.key === "Home"
-        ? 0
-        : event.key === "End"
-          ? items.length - 1
-          : (current + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+    const next = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? items.length - 1
+        : (current + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
     items[next]?.focus();
   };
 
@@ -1990,9 +1988,7 @@ export class SavannaPlayer extends LitElement {
 
   private revokeOfflineMediaUrls(): void {
     for (const url of this.offlineMediaUrls.values()) {
-      try {
-        URL.revokeObjectURL(url);
-      } catch {}
+      try { URL.revokeObjectURL(url); } catch {}
     }
     this.offlineMediaUrls.clear();
   }
@@ -2137,10 +2133,9 @@ export class SavannaPlayer extends LitElement {
       }
       const res = await fetch(endpoint, { headers, signal: controller.signal });
       if (!res.ok) {
-        const detail =
-          res.status === 401 || res.status === 403
-            ? "The lesson API key was rejected."
-            : `The lesson service returned HTTP ${res.status}.`;
+        const detail = res.status === 401 || res.status === 403
+          ? "The lesson API key was rejected."
+          : `The lesson service returned HTTP ${res.status}.`;
         throw new Error(detail);
       }
       const manifest = parseLessonManifest(await res.json(), lessonId);
@@ -2190,12 +2185,8 @@ export class SavannaPlayer extends LitElement {
     if (typeof manifest?.sign?.url === "string" && manifest.sign.url) {
       optionalMediaLoads.push(import("../sign-window/sign-window.js"));
     }
-    if (
-      typeof manifest?.audioDescription?.audioUrl === "string" &&
-      manifest.audioDescription.audioUrl &&
-      typeof manifest?.audioDescription?.vttUrl === "string" &&
-      manifest.audioDescription.vttUrl
-    ) {
+    if (typeof manifest?.audioDescription?.audioUrl === "string" && manifest.audioDescription.audioUrl &&
+        typeof manifest?.audioDescription?.vttUrl === "string" && manifest.audioDescription.vttUrl) {
       optionalMediaLoads.push(import("../audio-description/audio-description.js"));
     }
     await Promise.all(optionalMediaLoads);
@@ -2232,14 +2223,15 @@ export class SavannaPlayer extends LitElement {
     this.showSignWindow = this.hasSignTrack && this.showSignWindow;
 
     const signEl = this.querySelector("savanna-sign-window, [data-sign-window]") as
-      | (HTMLElement & {
+      (
+        HTMLElement & {
           src?: string;
           offsetMs?: number;
           lang?: string;
           languageName?: string;
           enabled?: boolean;
-        })
-      | null;
+        }
+      ) | null;
     if (signEl) {
       signEl.src = manifest?.sign?.url || "";
       signEl.offsetMs = Number(manifest?.sign?.offsetMs) || 0;
@@ -2250,13 +2242,12 @@ export class SavannaPlayer extends LitElement {
     }
 
     const adEl = this.querySelector("savanna-audio-description") as
-      | (HTMLElement & {
-          src?: string;
-          textVtt?: string;
-          offsetMs?: number;
-          validateTrack?: () => Promise<boolean>;
-        })
-      | null;
+      (HTMLElement & {
+        src?: string;
+        textVtt?: string;
+        offsetMs?: number;
+        validateTrack?: () => Promise<boolean>;
+      }) | null;
     if (adEl) {
       const audioUrl = manifest?.audioDescription?.audioUrl || "";
       const textVtt = manifest?.audioDescription?.vttUrl || "";
@@ -2268,7 +2259,8 @@ export class SavannaPlayer extends LitElement {
       adEl.textVtt = textVtt;
       adEl.offsetMs = offsetMs;
       adEl.hidden = !this.hasAdTrack;
-      if (!trackChanged && audioUrl && textVtt && !this.hasAdTrack) void adEl.validateTrack?.();
+      if (!trackChanged && audioUrl && textVtt && !this.hasAdTrack)
+        void adEl.validateTrack?.();
     }
 
     // Load interactive transcript (SRS FR-P8)
@@ -2308,20 +2300,11 @@ export class SavannaPlayer extends LitElement {
 
     const ad = this.manifestData?.audioDescription;
     const adElement = this.querySelector("savanna-audio-description") as
-      | (HTMLElement & {
-          src?: string;
-          textVtt?: string;
-          offsetMs?: number;
-          lang?: string;
-          api?: string;
-          apiKey?: string;
-        })
-      | null;
+      (HTMLElement & { src?: string; textVtt?: string; offsetMs?: number; lang?: string; api?: string; apiKey?: string }) | null;
     if (adElement) {
       adElement.hidden = !this.hasAdTrack;
       adElement.src = ad?.audioUrl ?? "";
-      if (ad?.audioUrl)
-        void this.useCachedChildMedia(ad.audioUrl, adElement, this.manifestData?.id);
+      if (ad?.audioUrl) void this.useCachedChildMedia(ad.audioUrl, adElement, this.manifestData?.id);
       adElement.textVtt = ad?.vttUrl ?? "";
       adElement.offsetMs = ad?.offsetMs ?? 0;
       adElement.lang = this.activeLang;
@@ -2593,36 +2576,22 @@ export class SavannaPlayer extends LitElement {
    */
   public async togglePlay(): Promise<void> {
     if (!this.media) return;
-
     if (this.media.paused || this.media.ended) {
       this.mediaLoadError = false;
       this.mediaLoading = true;
-
       if (!this.mediaRequested) {
         this.mediaRequested = true;
         await this.updateComplete;
       }
-
-      // Ensure the browser starts loading the newly attached src
-      if (this.media.readyState === 0) {
-        this.media.load();
-      }
-
       try {
         await this.media.play();
         this.isPlaying = true;
         this.mediaLoading = false;
         this.announceStatus(this.t("player.statusPlay"), "Play ▶");
-      } catch (err: unknown) {
+      } catch {
+        this.mediaLoadError = true;
         this.mediaLoading = false;
         this.isPlaying = false;
-
-        // Ignore AbortError (happens if pause() is called while play() is still starting)
-        if (err instanceof DOMException && err.name === "AbortError") {
-          return;
-        }
-
-        this.mediaLoadError = true;
         this.announceStatus(this.t("player.errorMediaLoad"));
       }
     } else {
@@ -3585,11 +3554,6 @@ export class SavannaPlayer extends LitElement {
     this.lowDataMode = !this.lowDataMode;
     if (!this.lowDataMode) {
       this.mediaRequested = true;
-      void this.updateComplete.then(() => {
-        if (this.videoElement?.src) {
-          this.videoElement.load();
-        }
-      });
     } else if (!this.isPlaying && this.currentTime === 0 && this.videoElement?.readyState === 0) {
       this.mediaRequested = false;
       this.videoElement.removeAttribute("src");
@@ -3964,7 +3928,7 @@ export class SavannaPlayer extends LitElement {
                   ? html`<div class="media-pending" role="status" aria-live="polite">
                       <strong>${this.t("player.loadingVideo")}</strong>
                     </div>`
-                  : nothing
+                : nothing
           }
 
           <div class="overlay">
@@ -4053,7 +4017,7 @@ export class SavannaPlayer extends LitElement {
               class="ctrl-btn btn-low-data"
               @click=${this.toggleLowDataMode}
               aria-pressed=${this.lowDataMode ? "true" : "false"}
-              aria-label=${this.lowDataMode ? this.t("player.lowDataOn") : this.t("player.lowDataOff")}
+                aria-label=${this.lowDataMode ? this.t("player.lowDataOn") : this.t("player.lowDataOff")}
               title=${this.t("player.lowDataHelp")}
             >
               ${this.lowDataMode ? this.t("player.lowDataOn") : this.t("player.lowDataOff")}
