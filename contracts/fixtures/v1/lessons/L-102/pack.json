@@ -2,24 +2,18 @@
   "id": "L-102",
   "version": 1,
   "createdAt": "2024-01-01T00:00:00.000Z",
-  "sizeBytes": 2128323,
+  "sizeBytes": 29657,
   "content": {
-    "video": "lesson.mp4",
     "audio": "lesson.opus",
     "captions": {
       "en": "en.vtt",
       "am": "am.vtt"
     },
-    "transcript": "transcript.json",
+    "transcript": "transcript.html",
     "audioDescription": null,
-    "signLanguage": null
+    "optionalVideo": null
   },
   "files": [
-    {
-      "path": "lesson.mp4",
-      "sizeBytes": 2096006,
-      "sha256": "1bf702505926ee1d365cff5b759fdb132d69d854e21dd2b15a7d143665793584"
-    },
     {
       "path": "lesson.opus",
       "sizeBytes": 24808,
@@ -34,11 +28,6 @@
       "path": "am.vtt",
       "sizeBytes": 2830,
       "sha256": "cdd8d38a656cfb6b73d71053848f95855b50c3258acfbb3cc6689736e00e9e16"
-    },
-    {
-      "path": "transcript.json",
-      "sizeBytes": 2660,
-      "sha256": "5ee1f2495bb191160b0539b0a8103ab26826b24878e8fc7c330ba2d5fdbdfbb2"
     }
   ]
 }

@@ -8,20 +8,18 @@
 import http from "node:http";
 import path from "node:path";
 import fs from "node:fs";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..");
 
 // Locate playwright and axe-core
 async function loadModules() {
-  const playwrightPath = path.resolve(root, "api/node_modules/playwright/index.mjs");
-  const axePath = path.resolve(
-    root,
-    "node_modules/.pnpm/@axe-core+playwright@4.14.0_playwright-core@1.65.1/node_modules/@axe-core/playwright/dist/index.js"
-  );
-  const { chromium } = await import(pathToFileURL(playwrightPath).href);
-  const AxeBuilder = (await import(pathToFileURL(axePath).href)).default;
+  const require = createRequire(path.join(root, "demo/sandbox-career/package.json"));
+  const { chromium } = require("playwright");
+  const axeModule = require("@axe-core/playwright");
+  const AxeBuilder = axeModule.default ?? axeModule;
   return { chromium, AxeBuilder };
 }
 
@@ -96,7 +94,7 @@ async function main() {
 
       const results = await new AxeBuilder({ page }).analyze();
       const blocking = results.violations.filter(
-        (v) => v.impact === "critical" || v.impact === "serious"
+        (v) => v.impact === "critical" || v.impact === "serious",
       );
 
       console.log(`\n📄 Auditing: ${pageInfo.name} (${pageInfo.path})`);
@@ -104,9 +102,16 @@ async function main() {
       console.log(`   Violations total: ${results.violations.length}`);
       console.log(`   Critical / Serious issues: ${blocking.length}`);
 
+      for (const violation of results.violations) {
+        console.log(`   - [${violation.impact ?? "unknown"}] ${violation.id}: ${violation.help}`);
+        for (const node of violation.nodes) console.log(`     Target: ${node.target.join(", ")}`);
+      }
+
       if (blocking.length > 0) {
         hasFailures = true;
-        console.error(`❌ Gate Failure: Found ${blocking.length} critical/serious issues on ${pageInfo.name}:`);
+        console.error(
+          `❌ Gate Failure: Found ${blocking.length} critical/serious issues on ${pageInfo.name}:`,
+        );
         for (const v of blocking) {
           console.error(`   - [${v.impact.toUpperCase()}] ${v.id}: ${v.help}`);
           console.error(`     Help URL: ${v.helpUrl}`);
@@ -117,6 +122,74 @@ async function main() {
         }
       } else {
         console.log(`✅ Gate Pass: 0 critical and 0 serious issues on ${pageInfo.name}`);
+      }
+
+      if (pageInfo.path === "/savanna/pages/concept-with-navigation.html") {
+        const languageButton = page.locator("[data-savanna-language-toggle]");
+        await languageButton.waitFor({ state: "visible" });
+        await page.waitForFunction(() => {
+          const button = document.querySelector("[data-savanna-language-toggle]");
+          return button instanceof HTMLButtonElement && !button.disabled;
+        });
+        const startingLanguage = await page.locator("#lesson-player").evaluate((player) => player.lang);
+        await languageButton.click();
+        await page.waitForFunction(
+          (language) => document.querySelector("#lesson-player")?.lang !== language,
+          startingLanguage,
+        );
+        const switchedLanguage = await page.locator("#lesson-player").evaluate((player) => player.lang);
+        if (switchedLanguage === startingLanguage || (await page.locator("html").getAttribute("lang")) !== "en") {
+          hasFailures = true;
+          console.error("❌ Integrated player language toggle did not switch the player while preserving page language.");
+        } else {
+          console.log(`   Integrated language toggle: ${startingLanguage} → ${switchedLanguage}; host page remains English`);
+        }
+
+        for (const width of [320, 375, 768, 1280]) {
+          await page.setViewportSize({ width, height: 800 });
+          const layout = await page.evaluate(() => ({
+            viewport: window.innerWidth,
+            document: document.documentElement.scrollWidth,
+            body: document.body.scrollWidth,
+            offenders: [...document.querySelectorAll("body *")]
+              .map((element) => ({
+                tag: element.tagName,
+                id: element.id,
+                className: typeof element.className === "string" ? element.className : "",
+                right: Math.round(element.getBoundingClientRect().right),
+                width: Math.round(element.getBoundingClientRect().width),
+                style: element.getAttribute("style"),
+                parents: (() => {
+                  const chain = [];
+                  let current = element.parentElement;
+                  while (current && chain.length < 4) {
+                    const rect = current.getBoundingClientRect();
+                    chain.push({
+                      tag: current.tagName,
+                      id: current.id,
+                      className: typeof current.className === "string" ? current.className : "",
+                      left: Math.round(rect.left),
+                      right: Math.round(rect.right),
+                      width: Math.round(rect.width),
+                      scroll: current.scrollWidth,
+                      client: current.clientWidth,
+                    });
+                    current = current.parentElement;
+                  }
+                  return chain;
+                })(),
+              }))
+              .filter((element) => element.right > window.innerWidth + 1)
+              .slice(0, 5),
+          }));
+          console.log(
+            `   Responsive layout at ${layout.viewport}px: document ${layout.document}px, body ${layout.body}px`,
+          );
+          if (layout.document > layout.viewport || layout.body > layout.viewport) {
+            hasFailures = true;
+            console.error(`❌ Layout overflow on ${pageInfo.name}: ${JSON.stringify(layout)}`);
+          }
+        }
       }
     } catch (err) {
       console.error(`❌ Error auditing ${pageInfo.name}:`, err.message);
@@ -133,7 +206,9 @@ async function main() {
     console.error("\n❌ axe audit failed: critical or serious accessibility issues detected.");
     process.exit(1);
   } else {
-    console.log("\n🎉 axe audit passed: All tested pages have ZERO critical and ZERO serious issues!");
+    console.log(
+      "\n🎉 axe audit passed: All tested pages have ZERO critical and ZERO serious issues!",
+    );
     process.exit(0);
   }
 }

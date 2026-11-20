@@ -33,7 +33,7 @@ test("sign-window: keyboard shortcuts work without mouse", async () => {
   );
 
   // Shift = big step
-  assert.match(src, /e\.shiftKey.*100/, "Shift + arrow should move 100px (larger step)");
+  assert.match(src, /e\.shiftKey\s*\?\s*100/, "Shift + arrow should move 100px (larger step)");
 
   // Alt = resize
   assert.match(src, /e\.altKey[\s\S]*?Alt.*arrow/, "Alt + arrow must resize");
@@ -250,7 +250,7 @@ test("offline: pack size targets for low-end devices", async () => {
   // The build-pack.mjs enforces this, but the component should handle large packs gracefully
   assert.match(src, /sizeBytes/, "Must read and display size");
   assert.match(src, /toFixed/, "Formats size for readability");
-  assert.match(src, /size\(/, "Has a size formatting function");
+  assert.match(src, /formatSize\(/, "Has a size formatting function");
 });
 
 test("pack-builder: uses Opus codec for low bandwidth", async () => {

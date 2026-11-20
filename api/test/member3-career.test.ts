@@ -100,7 +100,7 @@ describe("Member 3 CareerGateway routes", () => {
 
     const did = await request(server).get("/.well-known/did.json");
     expect(did.status).toBe(200);
-    expect(did.body.assertionMethod).toContain("did:web:localhost%3A4000#key-1");
+    expect(did.body.assertionMethod).toContain(`did:web:localhost%3A${loadConfig({ STORE: "memory" }).port}#key-1`);
   });
 
   it("includes the Member 3 operations in the generated OpenAPI document", async () => {

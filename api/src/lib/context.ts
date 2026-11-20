@@ -23,8 +23,12 @@ export interface AppConfig {
   rateLimitPerMin: number;
   /** "memory" (default in dev, no database needed) or "prisma" (PostgreSQL). */
   store: "memory" | "prisma";
+  /** Optional local media directory. Production assets may instead be served by the frontend host. */
+  mediaRoot?: string;
   /** Optional persistent root containing <lesson-id>/pack.json and optional pack.zip files. */
   packRoot?: string;
+  /** Optional directory containing public site files served by the API process. */
+  webRoot?: string;
   /** Public HTTPS API origin used for did:web and credential links in production. */
   publicBaseUrl?: string;
   /** Server-only Ed25519 JWK JSON. Never expose this value to browser clients. */
@@ -39,6 +43,10 @@ export interface Ctx {
   config: AppConfig;
   /** Optional persistent lesson pack directory; defaults to repository fixtures. */
   packRoot?: string;
+  /** Public origin used when creating absolute credential and job URLs. */
+  publicBaseUrl: string;
+  /** Server-only Ed25519 JWK used to issue signed credentials. */
+  issuerPrivateJwk?: string;
 }
 
 export type RegisterRoutes = (router: Router, ctx: Ctx) => void;

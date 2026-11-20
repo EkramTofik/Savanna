@@ -9,6 +9,7 @@
     "ui": "concurrently -k -n API,UI \"npm:api\" \"npm:ui-only\"",
     "ui-only": "vite --port 5173 --strictPort",
     "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "test": "vite build && playwright test",
     "audio": "tsx scripts/render-audio.ts",
     "audio:azure": "node scripts/render-audio-azure.mjs",

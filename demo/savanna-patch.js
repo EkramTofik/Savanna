@@ -41,6 +41,44 @@ function patchSavannaDefects() {
     hr.parentNode.insertBefore(li, hr);
     li.appendChild(hr);
   });
+
+  wireLessonPlayerLanguage();
+}
+
+function wireLessonPlayerLanguage() {
+  const button = document.querySelector('[data-savanna-language-toggle]');
+  const player = document.querySelector('#lesson-player');
+  if (!button || !player || button.dataset.languageBound === 'true') return;
+  button.dataset.languageBound = 'true';
+
+  const syncButton = (activeLanguage) => {
+    if (activeLanguage !== 'en' && activeLanguage !== 'am') return;
+    const nextLanguage = activeLanguage === 'am' ? 'en' : 'am';
+    button.textContent = nextLanguage === 'am' ? 'አማርኛ / Amharic' : 'English';
+  };
+
+  button.disabled = true;
+  window.addEventListener('savanna:lang-change', (event) => {
+    const language = event.detail?.lang;
+    if (language === 'en' || language === 'am') {
+      syncButton(language);
+      // The surrounding Savanna lesson content remains English; only the player changes language.
+      document.documentElement.lang = 'en';
+    }
+  });
+
+  void customElements.whenDefined('savanna-player').then(async () => {
+    if (typeof player.setLanguage !== 'function') return;
+    await Promise.resolve(player.updateComplete);
+    syncButton(player.lang);
+    button.disabled = false;
+    button.addEventListener('click', () => {
+      const nextLanguage = player.lang === 'am' ? 'en' : 'am';
+      player.setLanguage(nextLanguage);
+      syncButton(nextLanguage);
+      document.documentElement.lang = 'en';
+    });
+  });
 }
 
 if (document.readyState === 'loading') {

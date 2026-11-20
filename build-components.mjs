@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 let esbuild;
 try {
@@ -67,7 +68,18 @@ console.log(`✅ Copied ${bundleAssets.length} bundle assets to savanna/module/`
 
 // 2b. Serve the lesson cache worker at the application root so it can control the Savanna page.
 fs.copyFileSync("module/src/offline/media-sw.js", "media-sw.js");
+fs.copyFileSync("module/src/offline/media-sw.js", "dist/media-sw.js");
 console.log("✅ Copied offline worker to media-sw.js");
+
+// The Career Gateway is shipped by the starter page too, so produce its bundle
+// as part of the same release build.
+const careerRoot = path.resolve("demo/sandbox-career");
+execFileSync(process.execPath, [path.join(careerRoot, "node_modules/vite/bin/vite.js"), "build"], {
+  cwd: careerRoot,
+  stdio: "inherit",
+});
+fs.copyFileSync(path.join(careerRoot, "dist/savanna-career.v1.js"), "savanna/module/savanna-career.v1.js");
+console.log("✅ Built and copied Career Gateway bundle to savanna/module/");
 
 // 3. Build modular standalone components in module/dist/
 await esbuild.build({

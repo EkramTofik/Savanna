@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5174 --strictPort",
-    "build": "vite build",
-    "test": "playwright test"
+    "build": "vite build --base=./",
+    "test": "vite build && playwright test"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.1",

@@ -57,6 +57,19 @@ export function resolveCaptionUrl(options: ResolveCaptionUrlOptions): string {
     );
   }
 
+  // Resolve relative bases (for example api="/") against this page's origin.
+  try {
+    if (!/^[a-z][a-z\d+.-]*:/i.test(base)) {
+      const resolutionBase = typeof window !== 'undefined' && window.location?.href
+        ? window.location.href
+        : documentOrigin?.trim();
+      if (!resolutionBase) throw new Error('No page origin is available for a relative API base.');
+      base = new URL(base, resolutionBase).href;
+    }
+  } catch (err: any) {
+    throw new Error(`Invalid base URL "${base}": ${err.message}`);
+  }
+
   // Validate base protocol
   try {
     const parsedBase = new URL(base);
@@ -90,7 +103,10 @@ export function isTrustedApiEndpoint(url: string, apiBase?: string): boolean {
   if (!apiBase) return false;
   try {
     const target = new URL(url);
-    const api = new URL(apiBase);
+    const resolutionBase = typeof window !== 'undefined' && window.location?.href
+      ? window.location.href
+      : undefined;
+    const api = new URL(apiBase, resolutionBase);
     if (target.origin !== api.origin) return false;
     // API routes typically start with /v1/ or the API base pathname
     return target.pathname.startsWith('/v1/') && !target.pathname.startsWith('/media/');
@@ -137,6 +153,7 @@ export interface FetchCaptionOptions {
   apiBase?: string;
   createBlobUrl?: boolean;
   fetchFn?: typeof fetch;
+  signal?: AbortSignal;
 }
 
 export interface FetchCaptionResult {
@@ -151,7 +168,7 @@ export interface FetchCaptionResult {
  * - Optionally generates an in-memory Blob URL for native <track> elements.
  */
 export async function fetchCaptionTrack(options: FetchCaptionOptions): Promise<FetchCaptionResult> {
-  const { url, apiKey, apiBase, createBlobUrl = false, fetchFn = fetch } = options;
+  const { url, apiKey, apiBase, createBlobUrl = false, fetchFn = fetch, signal } = options;
 
   const mustAuthenticate = shouldSendApiKey(url, apiKey, apiBase);
   const headers: Record<string, string> = {};
@@ -161,10 +178,22 @@ export async function fetchCaptionTrack(options: FetchCaptionOptions): Promise<F
   }
 
   // When authenticating, use redirect: 'manual' to prevent credential leakage
-  const response = await fetchFn(url, {
-    headers,
-    redirect: mustAuthenticate ? 'manual' : 'follow',
-  });
+  let response: Response;
+  try {
+    response = await fetchFn(url, {
+      headers,
+      redirect: mustAuthenticate ? 'manual' : 'follow',
+      signal,
+    });
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    // Offline packs store the exact declared VTT URL under its original request key.
+    if (typeof caches !== 'undefined') {
+      const cached = await caches.match(url).catch(() => undefined);
+      if (cached?.ok) return processCaptionText(await cached.text(), createBlobUrl);
+    }
+    throw error;
+  }
 
   // Handle redirect responses safely
   if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
@@ -175,6 +204,7 @@ export async function fetchCaptionTrack(options: FetchCaptionOptions): Promise<F
       const targetResponse = await fetchFn(targetUrl, {
         headers: {}, // Do NOT forward API key to redirect target
         redirect: 'follow',
+        signal,
       });
       if (!targetResponse.ok) {
         throw new Error(`Failed to fetch redirected caption file: HTTP ${targetResponse.status}`);

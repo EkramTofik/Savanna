@@ -5,10 +5,10 @@ import { needsDriftCorrection, signTargetTime } from "./sync.js";
 type Position = { x: number; y: number; width: number; height: number; corner?: Corner };
 type Corner = "nw" | "ne" | "se" | "sw";
 type Bounds = { left: number; top: number; right: number; bottom: number };
+type PlayerElement = HTMLElement & { media?: HTMLMediaElement };
 const KEY = "savanna.prefs.v1",
   RATIO = 16 / 9,
-  HEADER = 48,
-  MOBILE_HEADER = 96,
+  HEADER = 50,
   MIN_WIDTH = 180,
   GUTTER = 8,
   CONTROL_CLEARANCE = 56;
@@ -66,17 +66,18 @@ function save(position: Position, enabled?: boolean) {
 @customElement("savanna-sign-window")
 export class SavannaSignWindow extends LitElement {
   static styles = css`
-    :host([hidden]) {
-      display: none !important;
-    }
     :host {
       position: absolute;
       z-index: 20;
       display: block;
       width: var(--panel-width, 320px);
       max-width: calc(100% - 16px);
+      container-type: inline-size;
       color: #fff;
       font: 16px/1.4 var(--savanna-font, system-ui, sans-serif);
+    }
+    :host([hidden]) {
+      display: none !important;
     }
     :host(:not([enabled])) {
       width: auto;
@@ -129,13 +130,41 @@ export class SavannaSignWindow extends LitElement {
     }
     .actions {
       display: flex;
-      flex: 0 0 auto;
-      gap: 2px;
+      gap: 4px;
     }
-    .actions > button:not(.toggle) {
-      min-width: 32px;
-      min-height: 32px;
-      padding: 0;
+    @container (max-width: 260px) {
+      header {
+        gap: 4px;
+        padding-inline: 4px;
+      }
+      header > strong {
+        font-size: 12px;
+      }
+      .actions {
+        gap: 2px;
+      }
+      .actions button[aria-label^="Snap sign window"] {
+        display: none;
+      }
+      .handle.nw,
+      .handle.ne {
+        display: none;
+      }
+      .actions .toggle {
+        min-width: 48px;
+        padding-inline: 4px;
+      }
+    }
+    @container (max-width: 180px) {
+      header {
+        justify-content: center;
+      }
+      header > strong {
+        display: none;
+      }
+      .actions {
+        margin-inline: auto;
+      }
     }
     button {
       display: grid;
@@ -157,7 +186,7 @@ export class SavannaSignWindow extends LitElement {
       outline-offset: 2px;
     }
     .toggle {
-      min-width: 64px;
+      min-width: 68px;
       padding: 0 10px;
       font-size: 13px;
       font-weight: 700;
@@ -229,30 +258,37 @@ export class SavannaSignWindow extends LitElement {
       left: 4px;
       cursor: nesw-resize;
     }
+    @media (forced-colors: active) {
+      :host {
+        color: CanvasText;
+      }
+      section,
+      header,
+      .fallback {
+        border-color: ButtonText;
+        background: Canvas;
+        color: CanvasText;
+      }
+      button,
+      .handle {
+        border-color: ButtonText;
+        background: ButtonFace;
+        color: ButtonText;
+      }
+      header:focus-visible,
+      button:focus-visible {
+        outline: 3px solid Highlight;
+      }
+    }
     @media (max-width: 600px) {
       :host {
         max-width: calc(100% - 12px);
       }
       header {
-        min-height: ${MOBILE_HEADER}px;
-        padding: 6px;
-        flex-wrap: wrap;
-        align-content: center;
-        gap: 4px;
-      }
-      strong {
-        flex: 1 1 100%;
-      }
-      .actions {
-        flex: 1 1 100%;
-        justify-content: space-between;
-        gap: 4px;
+        min-height: 44px;
+        padding-left: 10px;
       }
       button {
-        min-width: 40px;
-        min-height: 40px;
-      }
-      .actions > button:not(.toggle) {
         min-width: 40px;
         min-height: 40px;
       }
@@ -269,22 +305,11 @@ export class SavannaSignWindow extends LitElement {
         min-height: 120px;
       }
     }
-    @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        scroll-behavior: auto !important;
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
   `;
 
   @property() src = "";
   @property({ type: Number, attribute: "offset-ms" }) offsetMs = 0;
   @property() lang = "";
-  @property({ attribute: "language-name" }) languageName = "";
   @property({ type: Boolean, reflect: true }) enabled = storedEnabled() ?? true;
   @state() private position = read();
   @state() private hasTrack = true;
@@ -292,61 +317,44 @@ export class SavannaSignWindow extends LitElement {
   @state() private loading = false;
   @state() private announcement = "";
   private hasStoredPosition = !!storedPosition();
-  private player?: HTMLElement;
+  private player?: PlayerElement;
   private main?: HTMLMediaElement;
   private video?: HTMLVideoElement;
+  private mediaResizeObserver?: ResizeObserver;
+  private resizeFrame = 0;
   private drag?: { x: number; y: number; position: Position };
   private resize?: { x: number; y: number; position: Position; corner: Corner };
   private buffering = false;
-
-  private bindMainMedia() {
-    const main = (this.player as { media?: HTMLMediaElement } | undefined)?.media;
-    if (!main || main === this.main) return;
-    this.unbindMainMedia();
-    this.main = main;
-    this.main.addEventListener("waiting", this.mainWaiting);
-    this.main.addEventListener("seeking", this.mainWaiting);
-    this.main.addEventListener("canplay", this.mainReady);
-    this.main.addEventListener("seeked", this.mainReady);
-    this.main.addEventListener("playing", this.mainReady);
-    this.main.addEventListener("ended", this.syncFromMain);
-    this.main.addEventListener("pause", this.syncFromMain);
-    this.main.addEventListener("ratechange", this.syncFromMain);
-    this.syncFromMain();
-  }
-  private unbindMainMedia() {
-    if (!this.main) return;
-    this.main.removeEventListener("waiting", this.mainWaiting);
-    this.main.removeEventListener("seeking", this.mainWaiting);
-    this.main.removeEventListener("canplay", this.mainReady);
-    this.main.removeEventListener("seeked", this.mainReady);
-    this.main.removeEventListener("playing", this.mainReady);
-    this.main.removeEventListener("ended", this.syncFromMain);
-    this.main.removeEventListener("pause", this.syncFromMain);
-    this.main.removeEventListener("ratechange", this.syncFromMain);
-    this.main = undefined;
-  }
+  private playerReady = () => {
+    this.bindPlayer();
+    this.clamp();
+  };
+  private handleResize = () => {
+    this.bindPlayer();
+    cancelAnimationFrame(this.resizeFrame);
+    this.resizeFrame = requestAnimationFrame(this.clamp);
+  };
 
   connectedCallback() {
     super.connectedCallback();
     if (!this.slot) this.slot = "overlay";
-    this.player = this.closest("savanna-player") as HTMLElement | undefined;
-    this.bindMainMedia();
+    this.bindPlayer();
     this.hasTrack = !!this.src;
-    window.addEventListener("resize", this.clamp);
+    window.addEventListener("resize", this.handleResize);
+    document.addEventListener("fullscreenchange", this.clamp);
     window.addEventListener("savanna:lang-change", this.language);
-    this.player?.addEventListener("savanna:timeupdate", this.sync as EventListener);
   }
   disconnectedCallback() {
-    window.removeEventListener("resize", this.clamp);
+    window.removeEventListener("resize", this.handleResize);
+    cancelAnimationFrame(this.resizeFrame);
+    document.removeEventListener("fullscreenchange", this.clamp);
     window.removeEventListener("savanna:lang-change", this.language);
-    this.player?.removeEventListener("savanna:timeupdate", this.sync as EventListener);
-    this.unbindMainMedia();
+    this.unbindPlayer();
     super.disconnectedCallback();
   }
   firstUpdated() {
     this.video = this.renderRoot.querySelector("video") || undefined;
-    void Promise.resolve((this.player as any)?.updateComplete).then(() => this.bindMainMedia());
+    this.bindPlayer();
     if (!this.hasStoredPosition) {
       const bounds = this.bounds();
       this.position = { ...this.position, x: bounds.right - this.position.width, y: bounds.top };
@@ -360,21 +368,65 @@ export class SavannaSignWindow extends LitElement {
       this.loading = !!this.src;
       this.video = this.renderRoot.querySelector("video") || undefined;
     }
+    this.bindPlayer();
     if (changed.has("enabled")) {
       this.video = this.renderRoot.querySelector("video") || undefined;
       if (this.enabled) this.syncFromMain();
     }
   }
-  private bounds(): Bounds {
-    const overlay = this.player?.shadowRoot?.querySelector<HTMLElement>(".overlay");
-    if (overlay) {
-      return {
-        left: GUTTER,
-        top: GUTTER,
-        right: Math.max(GUTTER, overlay.clientWidth - GUTTER),
-        bottom: Math.max(GUTTER, overlay.clientHeight - CONTROL_CLEARANCE),
-      };
+  private bindPlayer() {
+    const nextPlayer = this.closest("savanna-player") as PlayerElement | null;
+    if (this.player !== nextPlayer) {
+      this.player?.removeEventListener("savanna:ready", this.playerReady);
+      this.player?.removeEventListener("savanna:timeupdate", this.sync as EventListener);
+      this.player = nextPlayer || undefined;
+      this.player?.addEventListener("savanna:ready", this.playerReady);
+      this.player?.addEventListener("savanna:timeupdate", this.sync as EventListener);
     }
+    const nextMain = this.player?.media;
+    if (this.main === nextMain) return;
+    this.main?.removeEventListener("waiting", this.mainWaiting);
+    this.main?.removeEventListener("seeking", this.mainWaiting);
+    this.main?.removeEventListener("canplay", this.mainReady);
+    this.main?.removeEventListener("seeked", this.mainReady);
+    this.main?.removeEventListener("playing", this.mainReady);
+    this.main?.removeEventListener("ended", this.syncFromMain);
+    this.main?.removeEventListener("pause", this.syncFromMain);
+    this.main?.removeEventListener("ratechange", this.syncFromMain);
+    this.mediaResizeObserver?.disconnect();
+    this.mediaResizeObserver = undefined;
+    this.main = nextMain;
+    if (this.main && typeof ResizeObserver !== "undefined") {
+      this.mediaResizeObserver = new ResizeObserver(this.clamp);
+      this.mediaResizeObserver.observe(this.main);
+    }
+    this.main?.addEventListener("waiting", this.mainWaiting);
+    this.main?.addEventListener("seeking", this.mainWaiting);
+    this.main?.addEventListener("canplay", this.mainReady);
+    this.main?.addEventListener("seeked", this.mainReady);
+    this.main?.addEventListener("playing", this.mainReady);
+    this.main?.addEventListener("ended", this.syncFromMain);
+    this.main?.addEventListener("pause", this.syncFromMain);
+    this.main?.addEventListener("ratechange", this.syncFromMain);
+  }
+  private unbindPlayer() {
+    this.player?.removeEventListener("savanna:ready", this.playerReady);
+    this.player?.removeEventListener("savanna:timeupdate", this.sync as EventListener);
+    this.player = undefined;
+    this.main?.removeEventListener("waiting", this.mainWaiting);
+    this.main?.removeEventListener("seeking", this.mainWaiting);
+    this.main?.removeEventListener("canplay", this.mainReady);
+    this.main?.removeEventListener("seeked", this.mainReady);
+    this.main?.removeEventListener("playing", this.mainReady);
+    this.main?.removeEventListener("ended", this.syncFromMain);
+    this.main?.removeEventListener("pause", this.syncFromMain);
+    this.main?.removeEventListener("ratechange", this.syncFromMain);
+    this.mediaResizeObserver?.disconnect();
+    this.mediaResizeObserver = undefined;
+    this.main = undefined;
+  }
+  private bounds(): Bounds {
+    this.bindPlayer();
     const parent = this.offsetParent as HTMLElement | null;
     if (!parent)
       return {
@@ -383,34 +435,27 @@ export class SavannaSignWindow extends LitElement {
         right: innerWidth - GUTTER,
         bottom: innerHeight - CONTROL_CLEARANCE,
       };
-    const rect = parent.getBoundingClientRect(),
-      viewport = window.visualViewport;
-    const left = Math.max(rect.left, viewport?.offsetLeft || 0),
-      top = Math.max(rect.top, viewport?.offsetTop || 0);
-    const right = Math.min(
-      rect.right,
-      (viewport?.offsetLeft || 0) + (viewport?.width || innerWidth),
-    );
-    const bottom = Math.min(
-      rect.bottom,
-      (viewport?.offsetTop || 0) + (viewport?.height || innerHeight),
-    );
+    // The slotted overlay is positioned against the player element, whose box
+    // also includes controls and lesson content. Clamp to the actual video size.
+    // Use local dimensions so scroll position cannot shrink the overlay.
+    const rect = this.main?.getBoundingClientRect();
+    const width = rect?.width || this.main?.clientWidth || parent.clientWidth;
+    const height = rect?.height || this.main?.clientHeight || parent.clientHeight;
     return {
-      left: Math.max(GUTTER, left - rect.left + GUTTER),
-      top: Math.max(GUTTER, top - rect.top + GUTTER),
-      right: Math.max(GUTTER, right - rect.left - GUTTER),
-      bottom: Math.max(GUTTER, bottom - rect.top - CONTROL_CLEARANCE),
+      left: GUTTER,
+      top: GUTTER,
+      right: Math.max(GUTTER, width - GUTTER),
+      bottom: Math.max(GUTTER, height - CONTROL_CLEARANCE),
     };
   }
   private fit(position: Position): Position {
     const bounds = this.bounds(),
-      headerHeight = matchMedia("(max-width: 600px)").matches ? MOBILE_HEADER : HEADER,
       availableWidth = Math.max(1, bounds.right - bounds.left),
       availableHeight = Math.max(1, bounds.bottom - bounds.top);
-    const maximum = Math.max(1, Math.min(availableWidth, (availableHeight - headerHeight) * RATIO));
+    const maximum = Math.max(1, Math.min(availableWidth, (availableHeight - HEADER) * RATIO));
     const minimum = Math.min(MIN_WIDTH, maximum);
     const width = Math.max(minimum, Math.min(position.width, maximum));
-    const height = width / RATIO + headerHeight;
+    const height = width / RATIO + HEADER;
     return {
       width,
       height,
@@ -422,9 +467,16 @@ export class SavannaSignWindow extends LitElement {
   private apply(position: Position, persist = true) {
     this.position = this.fit(position);
     if (persist) save(this.position);
-    this.style.left = `${this.position.x}px`;
-    this.style.top = `${this.position.y}px`;
     this.style.setProperty("--panel-width", this.position.width + "px");
+    const parent = this.offsetParent as HTMLElement | null;
+    const parentRect = parent?.getBoundingClientRect();
+    const mainRect = this.main?.getBoundingClientRect();
+    const leftOffset =
+      parent && parentRect && mainRect ? mainRect.left - parentRect.left - parent.clientLeft : 0;
+    const topOffset =
+      parent && parentRect && mainRect ? mainRect.top - parentRect.top - parent.clientTop : 0;
+    this.style.left = `${leftOffset + this.position.x}px`;
+    this.style.top = `${topOffset + this.position.y}px`;
   }
   private clamp = () => this.apply(this.position);
   private language = (event: Event) => {
@@ -532,8 +584,7 @@ export class SavannaSignWindow extends LitElement {
       vertical = (corner.includes("n") ? -dy : dy) * RATIO;
     const width =
       position.width + (Math.abs(horizontal) >= Math.abs(vertical) ? horizontal : vertical);
-    const headerHeight = matchMedia("(max-width: 600px)").matches ? MOBILE_HEADER : HEADER;
-    const height = width / RATIO + headerHeight;
+    const height = width / RATIO + HEADER;
     this.apply({
       width,
       height,
@@ -573,7 +624,7 @@ export class SavannaSignWindow extends LitElement {
     );
   }
   render() {
-    const label = this.languageName || (this.lang === "am" ? "የምልክት ቋንቋ" : "Sign language");
+    const label = this.lang === "am" ? "የምልክት ቋንቋ" : "Sign language";
     const fallback =
       this.lang === "am"
         ? "ለዚህ ትምህርት የምልክት ቪዲዮ የለም"

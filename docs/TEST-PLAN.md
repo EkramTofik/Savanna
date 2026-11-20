@@ -1,36 +1,31 @@
-# Savanna Access Kit — Accessibility Test Plan & Findings Log
+# Savanna Access Kit — Verification Plan and Findings
 
-> **Protocol Reference:** SRS v1.0 Section 10 ("Saturday Session Protocol with a Person with a Disability") and Task Delegation Plan Section 11.
+**Last integration pass:** 16 November 2026
+**Purpose:** distinguish automated evidence from manual accessibility and content review.
 
 > **Release scope:** The findings below are historical entries and were not repeated in this final readiness pass. Current L-102/L-103 manifests have no sign or audio-description media. The old sandbox media files are demo fixtures, not approved recordings; the entries below do not establish that either track is available or production-ready.
 
 ---
 
-## 1. Testing Protocol
+The repository includes the lesson player and its accessibility components, the Career Gateway, an API and mock API, offline fixtures, and browser test projects. A successful build or automated axe scan does not establish WCAG conformance, screen-reader usability, content quality, or real-world network performance.
 
-1. **Consent & Setup:** Obtained explicit consent. Ensured participants used their own devices, operating systems, and assistive technologies. Did not alter or "fix" their personal accessibility configurations.
-2. **Task-Based Evaluation:** Prompts were goal-directed without step-by-step instructions:
-   - *Task 1 (Player):* "Find the lesson and watch it."
-   - *Task 2 (Captions):* "Turn on Amharic captions and make them larger."
-   - *Task 3 (Sign Language):* "Find the sign language window and place it where you like."
-   - *Task 4 (Offline):* "Save the lesson for offline viewing, enable airplane mode, and play it."
-   - *Task 5 (Audio Description):* "Follow the diagram-heavy lesson using audio description."
-   - *Task 6 (Career & Credential):* "Open a job opportunity, listen to the audio summary, and view your certificate."
-3. **Scoring Model:** Completed Unaided (2 pts), Completed with Help (1 pt), Failed (0 pts). Target: Each persona completes at least 5 of 6 tasks unaided.
+No participant session record or assistive-technology test evidence was verified during this integration pass. The persona workflows elsewhere in project materials are treated as goals, not completed research.
 
----
+## Automated checks
 
-## 2. Participant Profiles & Devices
+Run from the repository root after `corepack pnpm install --frozen-lockfile`. Install Chromium for first-time browser runs with `corepack pnpm --filter @savanna/sandbox-player exec playwright install chromium`:
 
-| Persona / Co-Designer | Primary Assistive Tech | Hardware & OS | Connection |
-| :--- | :--- | :--- | :--- |
-| **Participant A (Deaf Learner)** | Ethiopian Sign Language (ESL) first language; Amharic/English second; keyboard navigation | Laptop running Chrome + Windows (no mouse used) | Wi-Fi / Hotspot |
-| **Participant B (Blind Learner)** | NVDA 2024.3, TalkBack on Android 13 | Samsung Galaxy A13 (2GB RAM) & Windows Desktop | 3G Throttled |
-| **Participant C (Low-Bandwidth Learner)** | Low-end mobile device, touch screen, high contrast preferences | Tecno Spark (Android 11, 2GB RAM) | Intermittent 3G / Offline |
+```powershell
+corepack pnpm test
+corepack pnpm -r --if-present typecheck
+corepack pnpm -r --if-present test
+corepack pnpm build
+corepack pnpm axe
+```
 
----
+The root test command covers Node unit/contract tests for the pipeline and shared module. Recursive workspace tests also run API tests and Playwright projects. Player browser tests use the fixture mock API and exercise player controls, accessibility component integration, an offline cached-media fallback, interrupted byte-range resume, and removal of chunks after a checksum mismatch. The offline browser checks run in Chromium against a loaded page; they do not establish cold-start offline page reload behavior.
 
-## 3. Session Findings & Remediation Log
+Record the actual command outputs for this pass in `CONFORMANCE.md`. Do not infer assistive-technology results from axe, DOM inspection, or keyboard event tests.
 
 | Task | Participant | Score | Observation & Participant Feedback | Action Taken / Status |
 | :--- | :--- | :--- | :--- | :--- |
@@ -41,4 +36,14 @@
 | **5. Audio Description** | B (Blind) | **Unaided (historical UI check)** | The report records a D-key check against sandbox media. It did not verify a production recording or cue timing. | Current player keeps AD disabled until the manifest supplies media and valid timed cues; current lessons have no AD track. |
 | **6. Career & Credential** | B (Blind) | **Unaided** | Pre-rendered audio summary played without autoplay. Reflow tested at 200% and 400% zoom with single-column layout. | Verified zero horizontal scroll at 320 CSS px width. |
 
-**Final Score:** 6 of 6 tasks completed unaided across all test participants. Zero critical barriers identified.
+- Keyboard-only walkthrough across player, captions, transcript, sign window, audio description, offline controls, and Career Gateway; include focus order, visible focus, shortcut conflicts, and focus restoration.
+- Screen-reader checks with NVDA/Firefox or Chrome, TalkBack/Chrome on a physical Android device, and VoiceOver/Safari on Apple hardware where supported.
+- Actual browser zoom at 200% and 400%, text-spacing overrides, narrow viewport reflow, and touch target checks on devices.
+- Contrast measurements for each rendered theme and state, including focus, disabled, live, and error states.
+- Service-worker registration and cold reload while offline on a production-like HTTPS origin; storage eviction and low-quota behavior.
+- Human review of English and Amharic captions, recorded audio description, and sign-language content. The L-103 sign fixture is a placeholder and is not a substitute for an interpreter-produced track.
+- Network throttling and interrupted-connection checks on representative devices. Fixture byte counts are not timing measurements.
+
+## Findings and remediation
+
+Keep dated findings here only when supported by a reproducible run or an attributed, consented participant session. For each issue record the browser/device/assistive technology, exact steps, result, and code or content change. No participant quotes or scores are included because this pass has no verified participant record.

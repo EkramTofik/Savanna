@@ -1,35 +1,76 @@
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import {
-  buildLessonPackAssets,
-  findPackFileIntegrity,
-  verifyPackAssetBytes,
-  type LessonPackManifest,
-} from "./pack-assets.js";
+import { parseLessonManifest, type LessonManifest } from "../player/lesson-manifest.js";
+import { shouldSendApiKey } from "../player/caption-loader.js";
+import { buildPackResources, parsePackManifest, type PackManifest } from "./offline-pack.js";
 import { registerSavannaMediaWorker } from "./register-service-worker.js";
 
-const PREFS_KEY = "savanna.prefs.v1";
+const PREFERENCES_KEY = "savanna.prefs.v1";
 const CACHE_PREFIX = "savanna-pack-";
+const CHUNK_BYTES = 256 * 1024;
+const PACK_PATH = /^([A-Za-z0-9_-]{1,80})$/;
 
-type OfflinePreferences = { savedLessons: string[]; incompleteLessons: string[] };
+interface OfflinePreferences {
+  savedLessons: string[];
+  partials: Record<string, { version: number; bytes: number }>;
+}
 
 function readOfflinePreferences(): OfflinePreferences {
   try {
-    const root = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
-    return { savedLessons: [], incompleteLessons: [], ...(root.offline || {}) };
+    const root = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || "{}");
+    const offline = root?.offline;
+    return {
+      savedLessons: Array.isArray(offline?.savedLessons)
+        ? offline.savedLessons.filter((id: unknown): id is string => typeof id === "string")
+        : [],
+      partials:
+        offline?.partials &&
+        typeof offline.partials === "object" &&
+        !Array.isArray(offline.partials)
+          ? offline.partials
+          : {},
+    };
   } catch {
-    return { savedLessons: [], incompleteLessons: [] };
+    return { savedLessons: [], partials: {} };
   }
 }
 
 function writeOfflinePreferences(value: OfflinePreferences): void {
   try {
-    const root = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
-    root.offline = value;
-    localStorage.setItem(PREFS_KEY, JSON.stringify(root));
+    const root = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || "{}");
+    const preferences = root && typeof root === "object" && !Array.isArray(root) ? root : {};
+    preferences.offline = value;
+    localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
   } catch {
-    throw new Error("Browser settings storage is full or unavailable.");
+    // Cache Storage remains the source of truth if localStorage is unavailable.
   }
+}
+
+function cacheName(lessonId: string, version: number): string {
+  return `${CACHE_PREFIX}${lessonId}-v${version}`;
+}
+
+function chunkRequest(lessonId: string, index: number, offset: number): Request {
+  const url = new URL(
+    `/__savanna_offline__/${encodeURIComponent(lessonId)}/${index}/${offset}`,
+    location.origin,
+  );
+  return new Request(url.href);
+}
+
+function contentRange(value: string | null): { start: number; end: number; total: number } | null {
+  const match = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(value || "");
+  if (!match) return null;
+  const start = Number(match[1]!);
+  const end = Number(match[2]!);
+  const total = Number(match[3]!);
+  return Number.isSafeInteger(start) &&
+    Number.isSafeInteger(end) &&
+    Number.isSafeInteger(total) &&
+    start <= end &&
+    end < total
+    ? { start, end, total }
+    : null;
 }
 
 @customElement("savanna-offline")
@@ -37,99 +78,86 @@ export class SavannaOffline extends LitElement {
   static styles = css`
     :host {
       display: block;
-      color: #f8fafc;
-      background: #0b192c;
-      border: 1px solid #64748b;
-      border-radius: 10px;
-      padding: 0.9rem;
+      color: inherit;
       font:
-        1rem/1.5 system-ui,
+        16px/1.5 system-ui,
         sans-serif;
-    }
-    .summary {
-      margin: 0 0 0.65rem;
     }
     .row {
       display: flex;
       flex-wrap: wrap;
+      gap: 8px;
       align-items: center;
-      gap: 0.5rem;
     }
     button {
       min-height: 44px;
-      padding: 0.55rem 0.85rem;
-      border: 1px solid #49305f;
+      padding: 8px 14px;
+      border: 1px solid #594267;
       border-radius: 8px;
-      background: #4d2865;
+      background: #5b3477;
       color: #fff;
       font: inherit;
-      font-weight: 650;
+      font-weight: 600;
       cursor: pointer;
     }
     button:hover:not(:disabled) {
-      background: #38204a;
+      background: #4a2a62;
     }
     button:focus-visible {
       outline: 3px solid #e09b00;
       outline-offset: 3px;
     }
     button:disabled {
-      opacity: 0.58;
+      opacity: 0.55;
       cursor: not-allowed;
     }
-    button.secondary {
-      background: #fff;
-      color: #241b2b;
-    }
     progress {
-      display: block;
-      width: min(100%, 28rem);
-      height: 1.15rem;
-      margin-top: 0.8rem;
+      width: min(100%, 360px);
+      height: 20px;
     }
-    .progress-text,
+    .progress-container {
+      margin: 12px 0;
+    }
+    .progress-text {
+      margin: 6px 0 0;
+    }
+    .size {
+      font-size: 0.875em;
+      opacity: 0.9;
+    }
     .status {
-      margin: 0.45rem 0 0;
-    }
-    .status {
-      min-height: 1.5em;
-    }
-    .error {
-      color: #fca5a5;
-    }
-    .success {
-      color: #86efac;
-    }
-    .note {
-      color: #cbd5e1;
-      font-size: 0.92em;
+      margin: 0.75rem 0;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
+      color: #0f172a;
+      overflow-wrap: anywhere;
     }
     @media (forced-colors: active) {
-      :host {
-        color: CanvasText;
-        background: Canvas;
+      .status {
+        forced-color-adjust: none;
         border-color: CanvasText;
-      }
-      button,
-      button.secondary {
-        color: ButtonText;
-        background: ButtonFace;
-        border-color: ButtonText;
-      }
-      .error,
-      .success,
-      .note {
+        background: Canvas;
         color: CanvasText;
+      }
+      button {
+        forced-color-adjust: none;
+        border-color: ButtonText;
+        background: ButtonFace;
+        color: ButtonText;
+      }
+      button:focus-visible {
+        outline-color: Highlight;
       }
     }
+
     @media (prefers-reduced-motion: reduce) {
       *,
       *::before,
       *::after {
         scroll-behavior: auto !important;
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+        transition: none !important;
       }
     }
   `;
@@ -137,433 +165,520 @@ export class SavannaOffline extends LitElement {
   @property() api = "";
   @property({ attribute: "api-key" }) apiKey = "";
   @property({ attribute: "lesson-id" }) lessonId = "";
+  @property() lang = "en";
 
-  @state() private manifest: (LessonPackManifest & { sizeBytes?: number }) | null = null;
-  @state() private status = "Download this lesson to keep its available files on this device.";
+  @state() private manifest: PackManifest | null = null;
+  @state() private status = "Load a lesson pack to begin.";
   @state() private busy = false;
   @state() private progress = 0;
   @state() private saved = false;
-  @state() private incomplete = false;
-  @state() private error = false;
-  @state() private language: "en" | "am" = "en";
+  @state() private canResume = false;
 
+  private lessonManifest: LessonManifest | null = null;
   private controller?: AbortController;
+  private refreshController?: AbortController;
+  private generation = 0;
+  private connectionGeneration = 0;
+  private serviceWorkerReady = false;
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.saved = readOfflinePreferences().savedLessons.includes(this.lessonId);
-    this.incomplete = readOfflinePreferences().incompleteLessons.includes(this.lessonId);
-    this.language = this.currentLanguage();
-    void registerSavannaMediaWorker("/media-sw.js");
-    void this.refresh();
-  }
-
-  updated(changed: Map<string, unknown>): void {
-    if ((changed.has("api") || changed.has("lessonId")) && this.api && this.lessonId)
+    this.refreshSavedState();
+    const connectionGeneration = ++this.connectionGeneration;
+    void registerSavannaMediaWorker().finally(() => {
+      if (!this.isConnected || connectionGeneration !== this.connectionGeneration) return;
+      this.serviceWorkerReady = true;
       void this.refresh();
-    const lang = this.currentLanguage();
-    if (lang !== this.language) this.language = lang;
+    });
   }
 
-  private currentLanguage(): "en" | "am" {
-    const value =
-      this.closest("savanna-player")?.getAttribute("lang") || document.documentElement.lang || "en";
-    return value.toLowerCase().startsWith("am") ? "am" : "en";
+  disconnectedCallback(): void {
+    this.connectionGeneration++;
+    this.serviceWorkerReady = false;
+    this.controller?.abort();
+    this.refreshController?.abort();
+    super.disconnectedCallback();
   }
 
-  private text(en: string, am: string): string {
-    return this.language === "am" ? am : en;
+  protected updated(changed: Map<string, unknown>): void {
+    if (changed.has("api") || changed.has("apiKey") || changed.has("lessonId")) {
+      this.generation++;
+      this.refreshController?.abort();
+      this.manifest = null;
+      this.lessonManifest = null;
+      this.progress = 0;
+      this.refreshSavedState();
+      if (this.serviceWorkerReady && this.api && this.lessonId) void this.refresh();
+    }
   }
 
-  private apiOrigin(): string {
-    return this.api.replace(/\/$/, "");
+  private refreshSavedState(): void {
+    const preferences = readOfflinePreferences();
+    this.saved = preferences.savedLessons.includes(this.lessonId);
+    this.canResume = Boolean(preferences.partials[this.lessonId]);
   }
 
-  private packUrl(): string {
-    return `${this.apiOrigin()}/v1/lessons/${encodeURIComponent(this.lessonId)}/pack`;
+  private apiUrl(path: string): string {
+    const base = new URL(this.api, document.baseURI);
+    if (base.protocol !== "https:" && base.protocol !== "http:")
+      throw new Error("The API URL must use HTTP or HTTPS.");
+    return new URL(path, base).href;
   }
 
-  private lessonUrl(): string {
-    return `${this.apiOrigin()}/v1/lessons/${encodeURIComponent(this.lessonId)}`;
+  private apiHeaders(url: string): Record<string, string> {
+    return shouldSendApiKey(url, this.apiKey, this.api) ? { "X-Savanna-Key": this.apiKey } : {};
   }
 
-  private cacheName(): string {
-    return `${CACHE_PREFIX}${this.lessonId}`;
-  }
-
-  private headersFor(url: string): Record<string, string> {
-    if (!this.apiKey) return {};
-    try {
-      if (new URL(url).origin === new URL(this.apiOrigin()).origin)
-        return { "X-Savanna-Key": this.apiKey };
-    } catch {}
-    return {};
+  private parsePackForLesson(lesson: LessonManifest, value: unknown): PackManifest {
+    const pack = parsePackManifest(value, lesson.id);
+    if (!lesson.pack || pack.sizeBytes !== lesson.pack.sizeBytes) {
+      throw new Error(
+        "The lesson and offline pack report different download sizes. Refresh the lesson data and try again.",
+      );
+    }
+    return pack;
   }
 
   private async refresh(): Promise<void> {
-    if (!this.api || !this.lessonId || this.busy) return;
+    if (!this.api || !this.lessonId || !PACK_PATH.test(this.lessonId)) {
+      this.status = "Enter a valid lesson id and API address to load offline options.";
+      return;
+    }
+    const generation = ++this.generation;
+    this.refreshController?.abort();
+    const controller = new AbortController();
+    this.refreshController = controller;
+    this.status = "Checking lesson and offline pack…";
     try {
-      const fetchOrCached = async (url: string) => {
-        try {
-          const response = await fetch(url, { headers: this.headersFor(url) });
-          if (!response.ok)
-            throw new Error(
-              response.status === 404
-                ? "No offline pack is published for this lesson."
-                : `Pack information could not be loaded (${response.status}).`,
-            );
-          return response;
-        } catch (cause) {
-          if (typeof caches !== "undefined") {
-            const cache = await caches.open(this.cacheName());
-            const cached = await cache.match(url);
-            if (cached) return cached;
-          }
-          throw cause instanceof Error
-            ? cause
-            : new Error("Connect once to load this lesson pack.");
-        }
-      };
-      const packResponse = await fetchOrCached(this.packUrl());
-      const lessonResponse = await fetchOrCached(this.lessonUrl());
-      const pack = await packResponse.json();
-      const lesson = await lessonResponse.json();
-      const manifest = { ...lesson, sizeBytes: Number(pack.sizeBytes) || 0, packMetadata: pack };
-      this.manifest = manifest;
-      if (typeof caches !== "undefined") {
-        const cache = await caches.open(this.cacheName());
-        await cache.put(
-          this.packUrl(),
-          new Response(JSON.stringify(pack), { headers: { "Content-Type": "application/json" } }),
-        );
-        await cache.put(
-          this.lessonUrl(),
-          new Response(JSON.stringify(lesson), { headers: { "Content-Type": "application/json" } }),
-        );
-      }
-      this.saved = readOfflinePreferences().savedLessons.includes(this.lessonId);
-      this.error = false;
-      this.status = `${this.text("Pack ready", "ጥቅሉ ዝግጁ ነው")} · ${this.size(manifest.sizeBytes || 0)}`;
-    } catch (cause) {
-      this.error = true;
-      this.status =
-        cause instanceof Error ? cause.message : "Pack information could not be loaded.";
-    }
-  }
-
-  private size(bytes: number): string {
-    return bytes < 1024
-      ? `${bytes} B`
-      : bytes < 1024 * 1024
-        ? `${(bytes / 1024).toFixed(1)} KB`
-        : `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  }
-
-  private async checkAvailableStorage(
-    cache: Cache,
-    urls: string[],
-    declaredBytes: number,
-  ): Promise<void> {
-    if (!navigator.storage?.estimate) return;
-    let alreadyStored = 0;
-    for (const url of urls) {
-      const cached = await cache.match(url);
-      if (cached)
-        alreadyStored +=
-          Number(cached.headers.get("content-length")) ||
-          (await cached.clone().arrayBuffer()).byteLength;
-    }
-    const estimate = await navigator.storage.estimate();
-    if (typeof estimate.quota === "number" && typeof estimate.usage === "number") {
-      const missing = Math.max(0, declaredBytes - alreadyStored);
-      if (estimate.quota - estimate.usage < missing * 1.05) {
-        throw new DOMException(
-          "There may not be enough browser storage for this lesson. Remove an offline copy or free device space and retry.",
-          "QuotaExceededError",
-        );
-      }
-    }
-  }
-
-  private async saveAsset(
-    cache: Cache,
-    assetUrl: string,
-    kind: string,
-    totalBytes: number,
-    completedBytes: number,
-  ): Promise<number> {
-    const integrity = this.manifest ? findPackFileIntegrity(this.manifest, assetUrl) : undefined;
-    const existing = await cache.match(assetUrl);
-    if (existing) {
-      const content = await existing.clone().arrayBuffer();
+      const lessonUrl = this.apiUrl(`/v1/lessons/${encodeURIComponent(this.lessonId)}`);
+      let lesson: LessonManifest;
+      let usedCachedManifest = false;
       try {
-        await verifyPackAssetBytes(content, integrity);
-        const bytes = content.byteLength;
-        this.progress =
-          totalBytes > 0
-            ? Math.min(99, Math.round(((completedBytes + bytes) / totalBytes) * 100))
-            : this.progress;
-        return bytes;
-      } catch {
-        await cache.delete(assetUrl);
-      }
-    }
-
-    this.status = `${this.text("Downloading", "በማውረድ ላይ")}: ${kind}`;
-    let response: Response;
-    try {
-      response = await this.fetchAsset(assetUrl);
-    } catch (cause) {
-      const detail = cause instanceof Error ? cause.message : String(cause);
-      throw new Error(`${kind} ${detail}`);
-    }
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error("This browser cannot stream lesson downloads.");
-
-    const chunks: Uint8Array[] = [];
-    let bytes = 0;
-    while (true) {
-      const part = await reader.read();
-      if (part.done) break;
-      if (!part.value) continue;
-      chunks.push(part.value);
-      bytes += part.value.byteLength;
-      this.progress =
-        totalBytes > 0
-          ? Math.min(99, Math.round(((completedBytes + bytes) / totalBytes) * 100))
-          : this.progress;
-    }
-
-    const blob = new Blob(chunks as BlobPart[], {
-      type: response.headers.get("content-type") || "application/octet-stream",
-    });
-    await verifyPackAssetBytes(await blob.arrayBuffer(), integrity);
-    const headers = new Headers(response.headers);
-    headers.set("Content-Length", String(blob.size));
-    await cache.put(assetUrl, new Response(blob, { status: 200, headers }));
-    return blob.size;
-  }
-
-  /** Retry a missing same-origin /media file from the configured API and cache it under its page URL. */
-  private async fetchAsset(assetUrl: string): Promise<Response> {
-    const candidates = [assetUrl];
-    try {
-      const pageAsset = new URL(assetUrl, location.origin);
-      const api = new URL(this.apiOrigin(), location.origin);
-      if (
-        pageAsset.origin === location.origin &&
-        pageAsset.pathname.startsWith("/media/") &&
-        api.origin !== pageAsset.origin
-      ) {
-        candidates.push(new URL(`${pageAsset.pathname}${pageAsset.search}`, api.origin).href);
-      }
-    } catch {}
-
-    let lastError: Error | undefined;
-    for (const candidate of candidates) {
-      try {
-        const response = await fetch(candidate, {
-          headers: this.headersFor(candidate),
-          signal: this.controller?.signal,
+        const lessonResponse = await fetch(lessonUrl, {
+          headers: this.apiHeaders(lessonUrl),
+          signal: controller.signal,
         });
-        if (response.ok) return response;
-        lastError = new Error(`${response.status}`);
-      } catch (cause) {
-        lastError = cause instanceof Error ? cause : new Error(String(cause));
-        if (lastError.name === "AbortError") throw lastError;
+        if (!lessonResponse.ok)
+          throw new Error(
+            lessonResponse.status === 404
+              ? "This lesson is not available."
+              : `Lesson request failed (${lessonResponse.status}).`,
+          );
+        lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
+      } catch (error) {
+        if (controller.signal.aborted) throw error;
+        const cached = localStorage.getItem(`savanna.cached_manifest.${this.lessonId}`);
+        if (!cached) throw error;
+        try {
+          lesson = parseLessonManifest(JSON.parse(cached), this.lessonId);
+          usedCachedManifest = true;
+        } catch {
+          throw error;
+        }
       }
+      if (!lesson.pack) throw new Error("This lesson does not have an offline pack.");
+
+      const packUrl = new URL(lesson.pack.manifestUrl, this.apiUrl("/")).href;
+      const packResponse = await fetch(packUrl, {
+        headers: this.apiHeaders(packUrl),
+        signal: controller.signal,
+      });
+      if (!packResponse.ok)
+        throw new Error(
+          packResponse.status === 404
+            ? "An offline pack has not been published for this lesson."
+            : `Pack request failed (${packResponse.status}).`,
+        );
+      const pack = this.parsePackForLesson(lesson, await packResponse.json());
+      if (generation !== this.generation) return;
+      this.lessonManifest = lesson;
+      this.manifest = pack;
+      this.refreshSavedState();
+      if (this.saved && typeof caches !== "undefined") {
+        const cache = await caches.open(cacheName(this.lessonId, pack.version));
+        const resources = buildPackResources(lesson, pack, this.api, this.apiKey);
+        const complete = await Promise.all(
+          resources.map(async (resource) => {
+            const response = await cache.match(resource.url);
+            if (!response) return false;
+            try {
+              await this.verifyResource(resource, await response.arrayBuffer());
+              return true;
+            } catch {
+              await cache.delete(resource.url);
+              return false;
+            }
+          }),
+        );
+        if (!complete.every(Boolean)) {
+          const preferences = readOfflinePreferences();
+          preferences.savedLessons = preferences.savedLessons.filter((id) => id !== this.lessonId);
+          writeOfflinePreferences(preferences);
+          this.saved = false;
+        }
+      }
+      this.status = `${usedCachedManifest ? "Offline pack ready" : "Pack ready"} · ${this.formatSize(pack.sizeBytes)}${this.saved ? " · Saved offline" : this.canResume ? " · Download can resume" : ""}`;
+    } catch (error) {
+      if (controller.signal.aborted || generation !== this.generation) return;
+      this.manifest = null;
+      this.status =
+        error instanceof Error ? error.message : "The offline pack could not be loaded.";
+    } finally {
+      if (this.refreshController === controller) this.refreshController = undefined;
     }
-    const status = lastError?.message.match(/^\d+$/)?.[0];
-    throw new Error(`${status ? `download failed (${status})` : "download could not connect"}.`);
+  }
+
+  private formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  private async ensureStorage(requiredBytes: number): Promise<void> {
+    if (!navigator.storage?.estimate) return;
+    const estimate = await navigator.storage.estimate();
+    const remaining = (estimate.quota ?? Number.POSITIVE_INFINITY) - (estimate.usage ?? 0);
+    if (remaining < requiredBytes)
+      throw new Error(
+        "There is not enough device storage for this download. Free space and try again.",
+      );
+  }
+
+  private async verifyResource(
+    resource: { url: string; expectedBytes?: number; expectedSha256: string },
+    bytes: ArrayBuffer,
+  ): Promise<void> {
+    if (resource.expectedBytes !== undefined && bytes.byteLength !== resource.expectedBytes) {
+      throw new Error(
+        `The downloaded file size does not match the offline pack for ${new URL(resource.url).pathname.split("/").pop()}.`,
+      );
+    }
+    if (!globalThis.crypto?.subtle)
+      throw new Error(
+        "This browser cannot verify offline file checksums. Use a current browser over HTTPS or localhost.",
+      );
+    const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+    const actual = Array.from(new Uint8Array(digest), (value) =>
+      value.toString(16).padStart(2, "0"),
+    ).join("");
+    if (actual !== resource.expectedSha256) {
+      throw new Error(
+        `The checksum for ${new URL(resource.url).pathname.split("/").pop()} does not match the offline pack. Its partial download was removed; try again.`,
+      );
+    }
+  }
+
+  private async discardPartial(cache: Cache, index: number, total: number): Promise<void> {
+    for (let offset = 0; offset < total; offset += CHUNK_BYTES) {
+      await cache.delete(chunkRequest(this.lessonId, index, offset));
+    }
+    const preferences = readOfflinePreferences();
+    delete preferences.partials[this.lessonId];
+    writeOfflinePreferences(preferences);
+    this.canResume = false;
   }
 
   private async save(): Promise<void> {
-    if (this.busy || !this.manifest || typeof caches === "undefined") {
-      if (typeof caches === "undefined") {
-        this.error = true;
-        this.status =
-          "Offline storage is unavailable in this browser. Open the site over HTTPS or localhost.";
-      }
+    if (this.busy || !this.manifest) return;
+    if (typeof caches === "undefined") {
+      this.status =
+        "Offline saving is unavailable in this browser. Open the lesson over HTTPS or localhost and enable site storage.";
       return;
     }
-
-    const assets = buildLessonPackAssets(this.manifest, this.apiOrigin(), location.origin);
-    if (!assets.length) {
-      this.error = true;
-      this.status = "This lesson has no downloadable media assets.";
-      return;
-    }
-
+    const lessonUrl = this.apiUrl(`/v1/lessons/${encodeURIComponent(this.lessonId)}`);
     this.busy = true;
-    this.error = false;
     this.progress = 0;
     this.controller = new AbortController();
-    let cache: Cache | undefined;
+    const controller = this.controller;
+    const generation = this.generation;
     try {
-      cache = await caches.open(this.cacheName());
-      const urls = assets.map((asset) => asset.url);
-      await this.checkAvailableStorage(cache, urls, this.manifest.sizeBytes || 0);
-
-      const metadataUrl = new URL(
-        `/savanna-offline/${encodeURIComponent(this.lessonId)}/manifest.json`,
-        location.origin,
-      ).href;
-      const metadata = new Response(JSON.stringify({ ...this.manifest, id: this.lessonId }), {
-        headers: { "Content-Type": "application/json; charset=utf-8" },
+      let lesson = this.lessonManifest;
+      if (!lesson) {
+        const lessonResponse = await fetch(lessonUrl, {
+          headers: this.apiHeaders(lessonUrl),
+          signal: controller.signal,
+        });
+        if (!lessonResponse.ok)
+          throw new Error(`Lesson request failed (${lessonResponse.status}).`);
+        lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
+      }
+      if (!lesson.pack) throw new Error("This lesson does not have an offline pack.");
+      const packUrl = new URL(lesson.pack.manifestUrl, this.apiUrl("/")).href;
+      const packResponse = await fetch(packUrl, {
+        headers: this.apiHeaders(packUrl),
+        signal: controller.signal,
       });
-      await cache.put(metadataUrl, metadata);
-      await cache.put(
-        this.lessonUrl(),
-        new Response(JSON.stringify(this.manifest), {
-          headers: { "Content-Type": "application/json" },
-        }),
+      if (!packResponse.ok) throw new Error(`Pack request failed (${packResponse.status}).`);
+      const pack = this.parsePackForLesson(lesson, await packResponse.json());
+      if (generation !== this.generation) return;
+      const resources = buildPackResources(lesson, pack, this.api, this.apiKey);
+      const cache = await caches.open(cacheName(this.lessonId, pack.version));
+      const preferences = readOfflinePreferences();
+      const resourceEstimate = resources.reduce(
+        (sum, resource) => sum + (resource.expectedBytes ?? 0),
+        0,
       );
-
-      const total = this.manifest.sizeBytes || 0;
-      let completed = 0;
-      for (const asset of assets) {
-        const bytes = await this.saveAsset(cache, asset.url, asset.kind, total, completed);
-        completed += bytes;
+      const totalExpected = Math.max(pack.sizeBytes, resourceEstimate);
+      let savedBefore = 0;
+      for (const resource of resources) {
+        let existing = await cache.match(resource.url);
+        if (existing) {
+          const bytes = await existing.arrayBuffer();
+          try {
+            await this.verifyResource(resource, bytes);
+          } catch {
+            await cache.delete(resource.url);
+            existing = undefined;
+          }
+          if (existing) savedBefore += bytes.byteLength;
+        }
       }
 
-      const prefs = readOfflinePreferences();
-      prefs.savedLessons = [...new Set([...prefs.savedLessons, this.lessonId])];
-      prefs.incompleteLessons = prefs.incompleteLessons.filter((id) => id !== this.lessonId);
-      writeOfflinePreferences(prefs);
+      for (let index = 0; index < resources.length; index++) {
+        const resource = resources[index]!;
+        if (await cache.match(resource.url)) {
+          this.progress = Math.round(Math.min(1, savedBefore / Math.max(1, totalExpected)) * 100);
+          continue;
+        }
+        const knownPartial =
+          preferences.partials[this.lessonId]?.version === pack.version
+            ? await this.readPartial(cache, index)
+            : { offset: 0, total: 0, chunks: [] as Response[] };
+        let offset = knownPartial.offset;
+        let total = knownPartial.total;
+        const chunks = knownPartial.chunks;
+        let savedWholeResponse = false;
+        while (!total || offset < total) {
+          const end = total
+            ? Math.min(offset + CHUNK_BYTES - 1, total - 1)
+            : offset + CHUNK_BYTES - 1;
+          const response = await fetch(resource.url, {
+            headers: { ...resource.headers, Range: `bytes=${offset}-${end}` },
+            signal: controller.signal,
+          });
+          if (response.status !== 206) {
+            if (response.status === 200 && offset === 0) {
+              const responseSize =
+                Number(response.headers.get("Content-Length")) || resource.expectedBytes || 0;
+              if (responseSize > CHUNK_BYTES) {
+                throw new Error(
+                  `The server does not support resumable byte ranges for ${new URL(resource.url).pathname.split("/").pop()}.`,
+                );
+              }
+              const body = await response.arrayBuffer();
+              await this.verifyResource(resource, body);
+              await this.ensureStorage(body.byteLength);
+              await cache.put(
+                resource.url,
+                new Response(body, {
+                  headers: {
+                    "Content-Type":
+                      response.headers.get("Content-Type") || responseContentType(resource.url),
+                    "Content-Length": String(body.byteLength),
+                  },
+                }),
+              );
+              savedBefore += body.byteLength;
+              this.progress = Math.round(
+                Math.min(99, (savedBefore / Math.max(1, totalExpected)) * 100),
+              );
+              savedWholeResponse = true;
+              break;
+            }
+            throw new Error(
+              `Download failed (${response.status}) for ${new URL(resource.url).pathname.split("/").pop()}.`,
+            );
+          }
+          const range = contentRange(response.headers.get("Content-Range"));
+          if (
+            !range ||
+            range.start !== offset ||
+            range.end > end ||
+            (total && range.total !== total) ||
+            (resource.expectedBytes !== undefined && range.total !== resource.expectedBytes)
+          ) {
+            throw new Error(
+              "The server returned an invalid byte range. The download was paused safely.",
+            );
+          }
+          await this.ensureStorage(range.end - range.start + 1);
+          total = range.total;
+          const bytes = await response.arrayBuffer();
+          if (bytes.byteLength !== range.end - range.start + 1)
+            throw new Error(
+              "The downloaded chunk was incomplete. Resume the download to continue.",
+            );
+          await cache.put(
+            chunkRequest(this.lessonId, index, offset),
+            new Response(bytes, {
+              headers: {
+                "Content-Length": String(bytes.byteLength),
+                "X-Savanna-Total": String(total),
+              },
+            }),
+          );
+          chunks.push(new Response(bytes));
+          offset = range.end + 1;
+          preferences.partials[this.lessonId] = {
+            version: pack.version,
+            bytes: savedBefore + offset,
+          };
+          writeOfflinePreferences(preferences);
+          this.canResume = true;
+          this.progress = Math.round(
+            Math.min(99, ((savedBefore + offset) / Math.max(1, totalExpected)) * 100),
+          );
+          this.status = `Saving lesson resources · ${this.progress}%`;
+        }
+        if (savedWholeResponse) continue;
+        const blob = new Blob(await Promise.all(chunks.map((chunk) => chunk.blob())), {
+          type: responseContentType(resource.url),
+        });
+        try {
+          await this.verifyResource(resource, await blob.arrayBuffer());
+        } catch (error) {
+          await this.discardPartial(cache, index, total);
+          throw error;
+        }
+        await this.ensureStorage(blob.size);
+        await cache.put(
+          resource.url,
+          new Response(blob, {
+            headers: { "Content-Type": blob.type, "Content-Length": String(blob.size) },
+          }),
+        );
+        for (let offset = 0; offset < total; offset += CHUNK_BYTES)
+          await cache.delete(chunkRequest(this.lessonId, index, offset));
+        savedBefore += blob.size;
+        this.progress = Math.round(Math.min(99, (savedBefore / Math.max(1, totalExpected)) * 100));
+      }
+
+      preferences.savedLessons = [...new Set([...preferences.savedLessons, this.lessonId])];
+      delete preferences.partials[this.lessonId];
+      writeOfflinePreferences(preferences);
       this.saved = true;
-      this.incomplete = false;
+      this.canResume = false;
       this.progress = 100;
-      this.error = false;
-      this.status = `${this.text("Saved offline", "ከመስመር ውጭ ተቀምጧል")} · ${this.size(completed)}. ${this.text("Refresh this lesson page once while online to activate offline playback.", "ከመስመር ውጭ ለማጫወት ኢንተርኔት እያለ ይህን ገጽ አንድ ጊዜ ያድሱ።")}`;
-    } catch (cause) {
-      const prefs = readOfflinePreferences();
-      prefs.incompleteLessons = [...new Set([...prefs.incompleteLessons, this.lessonId])];
-      try {
-        writeOfflinePreferences(prefs);
-      } catch {}
-      this.incomplete = true;
-      this.saved = false;
-      this.error = true;
-      const error = cause instanceof Error ? cause : new Error(String(cause));
-      if (error.name === "AbortError") {
-        this.status = "Download interrupted. Completed files are kept; retry to continue.";
-      } else if (error.name === "QuotaExceededError" || /quota|storage/i.test(error.message)) {
+      this.status = `Saved offline · ${this.formatSize(savedBefore)}`;
+    } catch (error) {
+      if (controller.signal.aborted) {
         this.status =
-          "Not enough browser storage. Remove an offline copy or free device space, then retry.";
+          "Download paused. Your completed chunks are saved; choose Resume to continue.";
+        this.canResume = true;
       } else {
-        this.status = `${error.message} Completed files are kept so a retry can continue.`;
+        this.status =
+          error instanceof Error ? error.message : "The offline download failed. Try again.";
+        this.canResume = Boolean(readOfflinePreferences().partials[this.lessonId]);
       }
     } finally {
-      this.controller = undefined;
+      if (this.controller === controller) this.controller = undefined;
       this.busy = false;
     }
   }
 
-  private cancel(): void {
+  private async readPartial(
+    cache: Cache,
+    index: number,
+  ): Promise<{ offset: number; total: number; chunks: Response[] }> {
+    const chunks: Response[] = [];
+    let offset = 0;
+    let total = 0;
+    while (true) {
+      const response = await cache.match(chunkRequest(this.lessonId, index, offset));
+      if (!response) break;
+      const bytes = await response.arrayBuffer();
+      if (bytes.byteLength === 0) break;
+      chunks.push(new Response(bytes));
+      offset += bytes.byteLength;
+      if (!total) total = Number(response.headers.get("X-Savanna-Total")) || 0;
+      if (total && offset >= total) break;
+    }
+    // Older chunks may not carry the total header; the next range request will establish it.
+    return { offset, total, chunks };
+  }
+
+  private pause(): void {
     this.controller?.abort();
   }
 
-  private async removeOfflineCopy(): Promise<void> {
+  private async removeSavedCopy(): Promise<void> {
     if (this.busy) return;
-    if (typeof caches !== "undefined") await caches.delete(this.cacheName()).catch(() => false);
-    const prefs = readOfflinePreferences();
-    prefs.savedLessons = prefs.savedLessons.filter((id) => id !== this.lessonId);
-    prefs.incompleteLessons = prefs.incompleteLessons.filter((id) => id !== this.lessonId);
-    try {
-      writeOfflinePreferences(prefs);
-      this.saved = false;
-      this.incomplete = false;
-      this.progress = 0;
-      this.error = false;
-      this.status = this.text(
-        "Offline copy removed from this device.",
-        "ከመስመር ውጭ የተቀመጠው ቅጂ ከዚህ መሣሪያ ተወግዷል።",
-      );
-    } catch (cause) {
-      this.error = true;
-      this.status =
-        cause instanceof Error ? cause.message : "The offline status could not be updated.";
-    }
+    const preferences = readOfflinePreferences();
+    const prefix = `${CACHE_PREFIX}${this.lessonId}-`;
+    for (const key of await caches.keys()) if (key.startsWith(prefix)) await caches.delete(key);
+    preferences.savedLessons = preferences.savedLessons.filter((id) => id !== this.lessonId);
+    delete preferences.partials[this.lessonId];
+    writeOfflinePreferences(preferences);
+    this.saved = false;
+    this.canResume = false;
+    this.progress = 0;
+    this.status = "Offline copy deleted from this device.";
   }
 
-  private renderAssets() {
-    if (!this.manifest) return "";
-    const assetKinds = buildLessonPackAssets(this.manifest, this.apiOrigin(), location.origin).map(
-      (asset) => asset.kind,
-    );
-    return html`<p class="summary" dir="auto">
-      ${this.text("Includes", "የተካተቱ ፋይሎች")}:
-      ${assetKinds.join(", ")}${!this.manifest.audioDescription ? ` · ${this.text("Audio description not supplied", "የድምጽ ማብራሪያ አልቀረበም")}` : ""}${!this.manifest.sign ? ` · ${this.text("Sign video not supplied", "የምልክት ቪዲዮ አልቀረበም")}` : ""}
-      · ${this.size(this.manifest.sizeBytes || 0)}
-    </p>`;
-  }
+  private refreshClick = (): void => {
+    void this.refresh();
+  };
+  private saveClick = (): void => {
+    void this.save();
+  };
+  private removeClick = (): void => {
+    void this.removeSavedCopy();
+  };
 
-  render() {
-    const downloadLabel = this.incomplete
-      ? this.text("Retry offline download", "የከመስመር ውጭ ማውረድን እንደገና ሞክር")
-      : this.text("Download offline pack", "የከመስመር ውጭ ጥቅል አውርድ");
+  protected render() {
+    const size = this.manifest ? this.formatSize(this.manifest.sizeBytes) : "";
     return html`
-      ${this.renderAssets()}
       <div class="row">
         ${
           this.saved
-            ? html`<button
-                type="button"
-                class="secondary"
-                @click=${this.removeOfflineCopy}
-                ?disabled=${this.busy}
-                aria-label=${this.text("Delete offline copy", "ከመስመር ውጭ የተቀመጠውን ሰርዝ")}
-              >
-                ${this.text("Delete offline copy", "ከመስመር ውጭ የተቀመጠውን ሰርዝ")}
+            ? html`<button type="button" @click=${this.removeClick} ?disabled=${this.busy}>
+                Delete offline copy
               </button>`
             : html`<button
                 type="button"
-                @click=${this.save}
+                @click=${this.saveClick}
                 ?disabled=${this.busy || !this.manifest}
-                aria-label=${downloadLabel}
               >
-                ${this.busy ? this.text("Downloading…", "በማውረድ ላይ…") : downloadLabel}
+                ${this.busy ? "Saving…" : this.canResume ? "Resume download" : "Save for offline"}${size ? html` <span class="size">(${size})</span>` : ""}
               </button>`
         }
         ${
           this.busy
-            ? html`<button
-                type="button"
-                class="secondary"
-                @click=${this.cancel}
-                aria-label=${this.text("Cancel download", "ማውረድን አቋርጥ")}
-              >
-                ${this.text("Cancel", "አቋርጥ")}
+            ? html`<button type="button" @click=${this.pause} aria-label="Pause offline download">
+                Pause
               </button>`
             : html`<button
                 type="button"
-                class="secondary"
-                @click=${this.refresh}
+                @click=${this.refreshClick}
+                ?disabled=${!this.api || !this.lessonId}
               >
-                ${this.text("Refresh info", "መረጃ አድስ")}
+                Refresh
               </button>`
         }
       </div>
       ${
-        this.busy
-          ? html`<progress
+        this.busy || this.progress > 0
+          ? html`<div class="progress-container">
+              <progress
                 max="100"
                 .value=${this.progress}
-                aria-label=${this.text(`Download progress ${this.progress} percent`, `የማውረድ ሂደት ${this.progress} በመቶ`)}
+                aria-label=${`Offline download progress ${this.progress}%`}
               ></progress>
-              <p class="progress-text">${this.progress}%</p>`
+              <p class="progress-text">${this.progress}%</p>
+            </div>`
           : ""
       }
-      <p
-        class="status ${this.error ? "error" : this.saved ? "success" : ""}"
-        role="status"
-        aria-live="polite"
-      >
-        ${this.status}
-      </p>
-      <p class="note">
-        ${this.text("Files are kept in this browser’s storage. Open the same lesson page after refreshing once online to use a saved copy without a connection.", "ፋይሎቹ በዚህ አሳሽ ማከማቻ ውስጥ ይቀመጣሉ። ከመስመር ውጭ ለመጠቀም ኢንተርኔት እያለ ገጹን አንድ ጊዜ ካደሱ በኋላ ያንኑ የትምህርት ገጽ ይክፈቱ።")}
-      </p>
+      <p class="status" role="status" aria-live="polite" aria-atomic="true">${this.status}</p>
     `;
   }
+}
+
+function responseContentType(url: string): string {
+  const path = new URL(url).pathname.toLowerCase();
+  if (path.endsWith(".vtt")) return "text/vtt";
+  if (path.endsWith(".opus")) return "audio/ogg";
+  if (path.endsWith(".webm")) return "video/webm";
+  if (path.endsWith(".mp4")) return "video/mp4";
+  if (path.includes("/transcript")) return "application/json";
+  return "application/octet-stream";
 }

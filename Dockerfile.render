@@ -1,0 +1,28 @@
+FROM node:22-alpine
+
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
+COPY . .
+RUN pnpm install --frozen-lockfile
+RUN pnpm build
+RUN pnpm --filter @savanna/sandbox-player build
+
+# Run the static portal and API on one public origin. The hosted player demo is
+# Vite-built so its local TypeScript imports are bundled before deployment.
+RUN mkdir -p /app/deploy-web/demo/sandbox-player \
+  && cp index.html /app/deploy-web/ \
+  && cp -R dist module savanna demo /app/deploy-web/ \
+  && cp dist/media-sw.js /app/deploy-web/media-sw.js \
+  && rm -rf /app/deploy-web/demo/sandbox-player \
+  && cp -R demo/sandbox-player/dist /app/deploy-web/demo/sandbox-player
+
+ENV NODE_ENV=production
+ENV PORT=10000
+ENV STORE=memory
+ENV WEB_ROOT=/app/deploy-web
+ENV MEDIA_ROOT=/app/contracts/fixtures/media
+ENV PACK_ROOT=/app/contracts/fixtures/v1/lessons
+
+EXPOSE 10000
+CMD ["pnpm", "--filter", "@savanna/api", "start"]

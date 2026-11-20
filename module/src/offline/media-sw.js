@@ -1,97 +1,135 @@
-const PREFIX = "savanna-pack-";
-const SHELL_CACHE = "savanna-shell-v1";
-const LESSON_REQUEST = /\/v1\/lessons\/[^/]+(?:\/|$)/;
+const VERSION = "savanna-media-v2";
+const STATIC_CACHE = `${VERSION}-static`;
+const PACK_PREFIX = "savanna-pack-";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(self.skipWaiting());
+  event.waitUntil(
+    (async () => {
+      await caches.open(STATIC_CACHE);
+      await self.skipWaiting();
+    })(),
+  );
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      for (const key of await caches.keys()) {
+        if (key.startsWith("savanna-media-") && key !== STATIC_CACHE) await caches.delete(key);
+      }
+      await self.clients.claim();
+    })(),
+  );
 });
 
-async function findSavedResponse(request) {
-  const names = (await caches.keys()).filter((name) => name.startsWith(PREFIX));
-  for (const name of names) {
-    const response = await (await caches.open(name)).match(request);
+async function findSavedRequest(request) {
+  for (const key of await caches.keys()) {
+    if (!key.startsWith(PACK_PREFIX)) continue;
+    const cache = await caches.open(key);
+    const response = await cache.match(request.url);
     if (response) return response;
   }
   return null;
 }
 
-async function networkFirstAndCache(request) {
-  const shell = await caches.open(SHELL_CACHE);
-  try {
-    const response = await fetch(request);
-    if (response.ok) await shell.put(request, response.clone());
-    return response;
-  } catch {
-    const cached = await shell.match(request);
-    if (cached) return cached;
-    return new Response("This lesson page or its app files are not available offline yet.", {
-      status: 503,
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
-  }
-}
-
-async function rangeResponse(request, response) {
-  const value = request.headers.get("Range");
-  const match = value && /^bytes=(\d*)-(\d*)$/.exec(value);
-  if (!match || response.status !== 200) return response;
-
-  const content = await response.arrayBuffer();
-  const start = match[1] ? Number(match[1]) : 0;
-  const end = match[2]
-    ? Math.min(Number(match[2]), content.byteLength - 1)
-    : content.byteLength - 1;
-  if (start >= content.byteLength || end < start) {
+async function rangedResponse(response, rangeHeader) {
+  const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader || "");
+  if (!match || (!match[1] && !match[2])) return new Response(null, { status: 416 });
+  const body = await response.arrayBuffer();
+  const suffix = match[1] ? 0 : Number(match[2]);
+  const start = match[1] ? Number(match[1]) : Math.max(0, body.byteLength - suffix);
+  const requestedEnd = match[1] && match[2] ? Number(match[2]) : body.byteLength - 1;
+  if (
+    !Number.isSafeInteger(start) ||
+    !Number.isSafeInteger(requestedEnd) ||
+    start >= body.byteLength ||
+    requestedEnd < start
+  ) {
     return new Response(null, {
       status: 416,
-      headers: { "Content-Range": `bytes */${content.byteLength}` },
+      headers: { "Content-Range": `bytes */${body.byteLength}` },
     });
   }
+  const end = Math.min(requestedEnd, body.byteLength - 1);
   const headers = new Headers(response.headers);
   headers.set("Accept-Ranges", "bytes");
-  headers.set("Content-Range", `bytes ${start}-${end}/${content.byteLength}`);
+  headers.set("Content-Range", `bytes ${start}-${end}/${body.byteLength}`);
   headers.set("Content-Length", String(end - start + 1));
-  return new Response(content.slice(start, end + 1), { status: 206, headers });
+  return new Response(body.slice(start, end + 1), { status: 206, headers });
 }
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
+  const url = new URL(request.url);
 
   if (
-    request.mode === "navigate" ||
-    request.destination === "script" ||
-    request.destination === "style" ||
-    request.destination === "font" ||
-    request.destination === "image"
+    url.origin === self.location.origin &&
+    !url.pathname.startsWith("/v1/") &&
+    !url.pathname.startsWith("/api/v1/") &&
+    (request.mode === "navigate" ||
+      request.destination === "font" ||
+      request.destination === "image" ||
+      /\.(html?|m?js|css|woff2?|svg|png|jpe?g)$/i.test(url.pathname))
   ) {
-    event.respondWith(networkFirstAndCache(request));
+    event.respondWith(
+      (async () => {
+        try {
+          const response = await fetch(request);
+          if (response.ok) await (await caches.open(STATIC_CACHE)).put(request, response.clone());
+          return response;
+        } catch {
+          return (
+            (await (await caches.open(STATIC_CACHE)).match(request, { ignoreVary: true })) ||
+            new Response("This lesson page is not available offline yet.", { status: 503 })
+          );
+        }
+      })(),
+    );
     return;
   }
 
-  const url = new URL(request.url);
-  const isLessonAsset =
-    LESSON_REQUEST.test(url.pathname) ||
-    url.pathname.startsWith("/media/") ||
-    url.pathname.startsWith("/savanna-offline/");
-  if (!isLessonAsset) return;
+  if (/\/v1\/lessons\/[^/]+\/pack$/.test(url.pathname)) {
+    event.respondWith(
+      (async () => {
+        try {
+          const response = await fetch(request);
+          if (response.ok) await (await caches.open(STATIC_CACHE)).put(request, response.clone());
+          return response;
+        } catch {
+          return (
+            (await (await caches.open(STATIC_CACHE)).match(request, { ignoreVary: true })) ||
+            new Response(
+              JSON.stringify({
+                title: "Offline pack unavailable",
+                detail: "Connect once to load this pack.",
+              }),
+              {
+                status: 503,
+                headers: { "Content-Type": "application/problem+json" },
+              },
+            )
+          );
+        }
+      })(),
+    );
+    return;
+  }
 
-  event.respondWith(
-    (async () => {
-      const cached = await findSavedResponse(request);
-      if (cached) return rangeResponse(request, cached);
-      try {
-        return await fetch(request);
-      } catch {
-        return new Response("This lesson file is not saved on this device.", {
-          status: 503,
-          headers: { "Content-Type": "text/plain; charset=utf-8" },
-        });
-      }
-    })(),
-  );
+  if (url.pathname.endsWith("/pack.zip") || url.pathname.includes("/media/")) {
+    event.respondWith(
+      (async () => {
+        const saved = await findSavedRequest(request);
+        if (saved)
+          return request.headers.has("Range")
+            ? rangedResponse(saved, request.headers.get("Range"))
+            : saved;
+        try {
+          return await fetch(request);
+        } catch {
+          return new Response("Offline pack is not saved on this device.", { status: 503 });
+        }
+      })(),
+    );
+  }
 });

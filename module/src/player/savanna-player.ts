@@ -5,7 +5,9 @@ import am from "./i18n/am.json";
 import { parseWebVtt, getActiveCueText, type VttCue } from "./vtt-parser.js";
 import type { TranscriptLine, FilteredTranscriptItem } from "./transcript-manager.js";
 import { answerLessonQuestion } from "./lesson-qa.js";
+import { parseLessonManifest, type LessonManifest } from "./lesson-manifest.js";
 import type { UiPreferences, CaptionsPreferences } from "./preferences-manager.js";
+import { getCachedObjectUrl } from "../offline/offline-cache.js";
 import {
   resolveCaptionUrl,
   shouldSendApiKey,
@@ -260,7 +262,10 @@ export class SavannaPlayer extends LitElement {
   private lessonTitle = "";
 
   /** Stored manifest cache */
-  private manifestData: any = null;
+  private manifestData: LessonManifest | null = null;
+  private manifestAbortController?: AbortController;
+  private manifestGeneration = 0;
+  private offlineMediaUrls = new Map<string, string>();
 
   /** Reactive state aliases matching developer/test expectations */
   get isCaptionsOpen(): boolean {
@@ -1945,6 +1950,7 @@ export class SavannaPlayer extends LitElement {
     this.addEventListener("keydown", this.handleKeyDown);
     this.addEventListener("savanna:ad-availability", this.handleAdAvailability);
     window.addEventListener("keydown", this.handleWindowKeyDown);
+    window.addEventListener("offline", this.handleOffline);
     window.addEventListener("savanna:lang-change", this.handleLangChange);
     document.addEventListener("fullscreenchange", this.handleFullscreenChange);
     document.addEventListener("click", this.handleDocumentClick);
@@ -1958,10 +1964,14 @@ export class SavannaPlayer extends LitElement {
     window.removeEventListener("savanna:lang-change", this.handleLangChange);
     document.removeEventListener("fullscreenchange", this.handleFullscreenChange);
     document.removeEventListener("click", this.handleDocumentClick);
+    window.removeEventListener("offline", this.handleOffline);
+    this.manifestAbortController?.abort();
+    this.manifestGeneration += 1;
     if (this.videoElement?.textTracks) {
       this.videoElement.textTracks.removeEventListener("change", this.handleCaptionChange);
     }
     this.revokeCaptionBlobUrls();
+    this.revokeOfflineMediaUrls();
   }
 
   /**
@@ -1974,6 +1984,13 @@ export class SavannaPlayer extends LitElement {
       } catch {}
     }
     this.captionBlobUrls.clear();
+  }
+
+  private revokeOfflineMediaUrls(): void {
+    for (const url of this.offlineMediaUrls.values()) {
+      try { URL.revokeObjectURL(url); } catch {}
+    }
+    this.offlineMediaUrls.clear();
   }
 
   /**
@@ -1994,11 +2011,16 @@ export class SavannaPlayer extends LitElement {
     super.updated(changedProps);
     if (changedProps.has("lesson") || changedProps.has("api")) {
       if (this.lesson && this.api) {
-        this.fetchLessonManifest();
+        void this.fetchLessonManifest();
+      } else {
+        this.manifestAbortController?.abort();
+        this.manifestAbortController = undefined;
+        this.manifestGeneration += 1;
       }
     }
     if (changedProps.has("lang")) {
       this.syncTranscriptLanguage();
+      this.configureAccessibilityChildren();
     }
     this.restoreControlFocusAfterUpdate();
   }
@@ -2092,31 +2114,47 @@ export class SavannaPlayer extends LitElement {
    * Fetches lesson manifest per Contract C1 & C6 and configures media sources.
    */
   private async fetchLessonManifest(): Promise<void> {
-    const endpoint = `${this.api.replace(/\/$/, "")}/v1/lessons/${this.lesson}`;
+    const lessonId = this.lesson.trim();
+    if (!lessonId || !this.api.trim()) return;
+
+    this.manifestAbortController?.abort();
+    const controller = new AbortController();
+    this.manifestAbortController = controller;
+    const generation = ++this.manifestGeneration;
     try {
+      const apiBase = new URL(this.api.trim(), document.baseURI);
+      if (apiBase.protocol !== "http:" && apiBase.protocol !== "https:") {
+        throw new Error("The API URL must use HTTP or HTTPS.");
+      }
+      const endpoint = new URL(`/v1/lessons/${encodeURIComponent(lessonId)}`, apiBase).href;
       const headers: Record<string, string> = {};
       if (this.apiKey) {
         headers["X-Savanna-Key"] = this.apiKey;
       }
-      const res = await fetch(endpoint, { headers });
+      const res = await fetch(endpoint, { headers, signal: controller.signal });
       if (!res.ok) {
-        throw new Error(`Failed to fetch lesson manifest: HTTP ${res.status}`);
+        const detail = res.status === 401 || res.status === 403
+          ? "The lesson API key was rejected."
+          : `The lesson service returned HTTP ${res.status}.`;
+        throw new Error(detail);
       }
-      const manifest = await res.json();
+      const manifest = parseLessonManifest(await res.json(), lessonId);
+      if (generation !== this.manifestGeneration) return;
       // Cache manifest in localStorage for offline fallback (SRS FR-P11, Task 1.7)
       try {
-        localStorage.setItem(`savanna.cached_manifest.${this.lesson}`, JSON.stringify(manifest));
+        localStorage.setItem(`savanna.cached_manifest.${lessonId}`, JSON.stringify(manifest));
       } catch {}
 
       this.manifestLoadError = false;
       await this.applyManifest(manifest);
     } catch {
+      if (controller.signal.aborted || generation !== this.manifestGeneration) return;
       // Offline fallback: check localStorage (SRS FR-P11, Task 1.7)
       let loadedFromCache = false;
       try {
-        const cachedRaw = localStorage.getItem(`savanna.cached_manifest.${this.lesson}`);
+        const cachedRaw = localStorage.getItem(`savanna.cached_manifest.${lessonId}`);
         if (cachedRaw) {
-          const cachedManifest = JSON.parse(cachedRaw);
+          const cachedManifest = parseLessonManifest(JSON.parse(cachedRaw), lessonId);
           this.manifestLoadError = false;
           await this.applyManifest(cachedManifest);
           this.announceStatus(this.t("player.statusOfflineManifest"), "Offline Cache");
@@ -2128,10 +2166,21 @@ export class SavannaPlayer extends LitElement {
         this.manifestLoadError = true;
         this.announceStatus(this.t("player.errorManifestLoad"), "Network Error");
       }
+    } finally {
+      if (generation === this.manifestGeneration) this.manifestAbortController = undefined;
     }
   }
 
-  private async applyManifest(manifest: any): Promise<void> {
+  private async applyManifest(manifest: LessonManifest): Promise<void> {
+    const lessonChanged = this.manifestData?.id !== manifest.id;
+    if (lessonChanged) {
+      this.vttCuesCache.clear();
+      this.transcriptLines = [];
+      this.transcriptSummary = "";
+      this.activeTranscriptIndex = -1;
+      this.revokeCaptionBlobUrls();
+      this.revokeOfflineMediaUrls();
+    }
     const optionalMediaLoads: Promise<unknown>[] = [];
     if (typeof manifest?.sign?.url === "string" && manifest.sign.url) {
       optionalMediaLoads.push(import("../sign-window/sign-window.js"));
@@ -2149,6 +2198,7 @@ export class SavannaPlayer extends LitElement {
     }
     if (manifest?.media?.video) {
       this.src = manifest.media.video;
+      void this.useCachedPlayerMedia(manifest);
     }
     if (Number.isFinite(manifest?.durationSec) && manifest.durationSec > 0) {
       this.duration = manifest.durationSec;
@@ -2165,7 +2215,7 @@ export class SavannaPlayer extends LitElement {
           return c;
         }
       });
-      this.loadVttCues();
+      void this.loadVttCues();
     }
 
     // Step 6: Derive sign and audioDescription track availability from manifest (Contract C1)
@@ -2222,7 +2272,7 @@ export class SavannaPlayer extends LitElement {
 
     this.resolveSummary(manifest);
 
-    // Null tracks stay hidden; the sign control can still open its accessible fallback panel.
+    // Keep missing media hidden; unavailable controls only announce that no track is supplied.
     if (!this.hasAdTrack) {
       const adAudio = this.querySelector(
         "audio[data-ad], audio.ad-track",
@@ -2232,7 +2282,71 @@ export class SavannaPlayer extends LitElement {
         adAudio.pause();
       }
     }
+    this.configureAccessibilityChildren();
   }
+
+  private configureAccessibilityChildren(): void {
+    const sign = this.manifestData?.sign;
+    const signElement = this.querySelector("savanna-sign-window, [data-sign-window]") as
+      (HTMLElement & { src?: string; offsetMs?: number; lang?: string; enabled?: boolean }) | null;
+    if (signElement) {
+      signElement.hidden = !this.hasSignTrack;
+      signElement.src = sign?.url ?? "";
+      if (sign?.url) void this.useCachedChildMedia(sign.url, signElement, this.manifestData?.id);
+      signElement.offsetMs = sign?.offsetMs ?? 0;
+      signElement.lang = this.activeLang;
+      signElement.enabled = this.hasSignTrack && this.showSignWindow;
+    }
+
+    const ad = this.manifestData?.audioDescription;
+    const adElement = this.querySelector("savanna-audio-description") as
+      (HTMLElement & { src?: string; textVtt?: string; offsetMs?: number; lang?: string; api?: string; apiKey?: string }) | null;
+    if (adElement) {
+      adElement.hidden = !this.hasAdTrack;
+      adElement.src = ad?.audioUrl ?? "";
+      if (ad?.audioUrl) void this.useCachedChildMedia(ad.audioUrl, adElement, this.manifestData?.id);
+      adElement.textVtt = ad?.vttUrl ?? "";
+      adElement.offsetMs = ad?.offsetMs ?? 0;
+      adElement.lang = this.activeLang;
+      adElement.api = this.api;
+      adElement.apiKey = this.apiKey;
+    }
+  }
+
+  private async cachedUrl(source: string, lessonId?: string): Promise<string | null> {
+    const existing = this.offlineMediaUrls.get(source);
+    if (existing) return existing;
+    const objectUrl = await getCachedObjectUrl(source);
+    if (!objectUrl) return null;
+    if (lessonId && this.manifestData?.id !== lessonId) {
+      URL.revokeObjectURL(objectUrl);
+      return null;
+    }
+    this.offlineMediaUrls.set(source, objectUrl);
+    return objectUrl;
+  }
+
+  private async useCachedPlayerMedia(manifest: LessonManifest): Promise<void> {
+    const videoUrl = await this.cachedUrl(manifest.media.video, manifest.id);
+    const audioUrl = videoUrl ? null : await this.cachedUrl(manifest.media.audio, manifest.id);
+    const source = videoUrl || audioUrl;
+    if (source && this.manifestData?.id === manifest.id) this.src = source;
+  }
+
+  private async useCachedChildMedia(
+    originalUrl: string,
+    element: HTMLElement & { src?: string },
+    lessonId?: string,
+  ): Promise<void> {
+    const source = await this.cachedUrl(originalUrl, lessonId);
+    if (source && element.isConnected && this.manifestData?.id === lessonId) element.src = source;
+  }
+
+  private handleOffline = (): void => {
+    const manifest = this.manifestData;
+    if (manifest) void this.useCachedPlayerMedia(manifest);
+    this.configureAccessibilityChildren();
+  };
 
   private resolveLessonAssetUrl(urlPath: string): string {
     if (urlPath.startsWith("/media/") && typeof window !== "undefined") {
@@ -2823,17 +2937,23 @@ export class SavannaPlayer extends LitElement {
    * Toggles sign window visibility on any slotted sign window component (Step 6 null-safe).
    */
   public toggleSignWindow(): void {
-    this.showSignWindow = !this.showSignWindow;
     const signElement = this.querySelector("savanna-sign-window, [data-sign-window]") as
       (HTMLElement & { enabled?: boolean; lang?: string }) | null;
+    if (!this.hasSignTrack) {
+      this.showSignWindow = false;
+      if (signElement) {
+        signElement.hidden = true;
+        signElement.enabled = false;
+        signElement.lang = this.activeLang;
+      }
+      this.announceStatus(this.t("player.signUnavailable"), this.t("player.signUnavailable"));
+      return;
+    }
+    this.showSignWindow = !this.showSignWindow;
     if (signElement) {
       signElement.hidden = !this.showSignWindow;
       signElement.enabled = this.showSignWindow;
       signElement.lang = this.activeLang;
-    }
-    if (!this.hasSignTrack) {
-      this.announceStatus(this.t("player.signUnavailable"), this.t("player.signUnavailable"));
-      return;
     }
     this.announceStatus(
       this.showSignWindow ? this.t("player.statusSignOn") : this.t("player.statusSignOff"),
@@ -4115,16 +4235,16 @@ export class SavannaPlayer extends LitElement {
             <!-- Sign Language Window Toggle (Step 6 Null-Safe) -->
             <button
               type="button"
-              class="ctrl-btn btn-sign ${this.showSignWindow ? "active" : ""}"
+              class="ctrl-btn btn-sign ${this.hasSignTrack && this.showSignWindow ? "active" : ""} ${!this.hasSignTrack ? "is-disabled" : ""}"
               @click=${this.toggleSignWindow}
               aria-label=${
                 this.hasSignTrack
                   ? `${this.manifestData?.sign?.languageName || this.t("player.sign")} SIG`
                   : `${this.t("player.sign")} SIG ${this.t("player.notAvailableSuffix")}`.trim()
               }
-              aria-disabled="false"
-              aria-expanded=${this.showSignWindow ? "true" : "false"}
-              aria-pressed=${this.showSignWindow ? "true" : "false"}
+              aria-disabled=${!this.hasSignTrack ? "true" : "false"}
+              aria-expanded=${this.hasSignTrack && this.showSignWindow ? "true" : "false"}
+              aria-pressed=${this.hasSignTrack && this.showSignWindow ? "true" : "false"}
               title="${this.manifestData?.sign?.languageName || this.t("player.sign")} (S)${!this.hasSignTrack ? " " + this.t("player.notAvailableSuffix") : ""}"
             >
               <span

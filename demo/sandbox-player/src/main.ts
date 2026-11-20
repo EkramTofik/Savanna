@@ -177,7 +177,7 @@ if (toggleShortcuts && player) {
     });
 }
 
-// Switching between L-103 (Full Lesson) and L-102 (Minimal Lesson)
+// Switching between the two published sample lesson records.
 const btnLoadL103 = document.getElementById('btn-load-l103');
 const btnLoadL102 = document.getElementById('btn-load-l102');
 const pageLessonTitle = document.getElementById('page-lesson-title');
@@ -197,7 +197,7 @@ if (btnLoadL103 && player) {
         applyHostLanguage(currentHostLang);
         if (mockDataTitle) mockDataTitle.textContent = 'Active Mock Data (contracts/fixtures/v1/lessons/L-103.json)';
         if (mockRawLink) mockRawLink.href = `${apiBase}/v1/lessons/L-103`;
-        appendLog('Switched to L-103 (captions and pack available; sign video and audio description unavailable)');
+        appendLog('Opened L-103 (Amharic transcript demo; sign video and audio description unavailable)');
 
         try {
             const res = await fetch(`${apiBase}/v1/lessons/L-103`, {
@@ -220,7 +220,7 @@ if (btnLoadL102 && player) {
         applyHostLanguage(currentHostLang);
         if (mockDataTitle) mockDataTitle.textContent = 'Active Mock Data (contracts/fixtures/v1/lessons/L-102.json)';
         if (mockRawLink) mockRawLink.href = `${apiBase}/v1/lessons/L-102`;
-        appendLog('Switched to L-102 (Minimal Lesson)');
+        appendLog('Opened L-102 sample lesson');
 
         try {
             const res = await fetch(`${apiBase}/v1/lessons/L-102`, {
@@ -240,20 +240,20 @@ let currentHostLang: 'en' | 'am' = 'en';
 const hostI18n = {
     en: {
         brand: 'Learning Portal',
-        learner: 'Learner: Kidus T.',
+        learner: 'Learner: Demo',
         crumbCourses: 'Courses',
-        crumbTrack: 'VA-1 Foundations',
-        crumbModule: 'Module 2',
+        crumbTrack: 'Savanna Access Kit',
+        crumbModule: 'Sample lessons',
         lessonTitleL103: 'Learning through short videos',
         lessonTitleL102: 'Learning through short videos',
-        badgeL103: 'Demo lesson L-103 (same source recording as L-102)',
-        badgeL102: 'Demo lesson L-102 (same source recording as L-103)',
-        durationL103: 'Duration: <strong>120s (same recording as L-102)</strong>',
-        durationL102: 'Duration: <strong>120s (same recording as L-103)</strong>',
-        btnBefore: 'Previous VA course page unavailable in this export',
-        btnLoadL103: 'Open lesson record L-103',
-        btnLoadL102: 'Open lesson record L-102',
-        btnAfter: 'Next VA course page unavailable in this export',
+        badgeL103: 'L-103 · Amharic transcript demo',
+        badgeL102: 'L-102 · Sample lesson',
+        durationL103: 'Duration: <strong>120 seconds</strong>',
+        durationL102: 'Duration: <strong>120 seconds</strong>',
+        btnBefore: 'Previous lesson is not included in this demo',
+        btnLoadL103: 'Open L-103 transcript demo',
+        btnLoadL102: 'Open L-102 sample lesson',
+        btnAfter: 'Next lesson is not included in this demo',
         summaryHeading: 'Lesson Summary',
         summaryCardL103: 'The speaker reflects on learning from online videos and compares short video segments with long lectures. The 4 minute 12 second figure is presented as the speaker’s premise, not as a verified current statistic.',
         summaryCardL102: 'The speaker reflects on learning from online videos and compares short video segments with long lectures. The 4 minute 12 second figure is presented as the speaker’s premise, not as a verified current statistic.',
@@ -263,47 +263,39 @@ const hostI18n = {
         studyNotesLabel: 'Learner Study Notes:',
         studyNotesPlaceholder: 'Type personal study notes here (player shortcuts are safely disabled while typing)...',
         studyNotesAria: 'Learner study notes',
-        curriculumHeading: 'Module 2 Curriculum',
-        curr0: '2.0 Module Overview',
-        curr1: '2.1 Evolution of Support Roles',
-        curr2: '2.2 The Future of the VA Industry',
-        curr2Status: 'Current',
-        curr3: '2.3 AI Tools & Prompting',
-        curr3Status: 'Next',
-        curr4: '2.4 Case Study & Reflection',
-        curr4Status: 'Upcoming',
-        curr5: '2.5 Knowledge Check',
-        curr5Status: 'Locked',
+        curriculumHeading: 'Available sample lessons',
+        curr0: 'L-102 · Learning through short videos',
+        curr1: 'L-103 · Amharic transcript demo',
         detailsHeading: 'Lesson Details',
-        sideTrack: 'Track: <strong>VA Foundations</strong>',
-        sideAccess: 'Accessibility: <strong>Captions available; sign video and audio description unavailable for these records</strong>',
+        sideTrack: 'Demo: <strong>sample video lessons</strong>',
+        sideAccess: 'Accessibility: <strong>English and Amharic captions; sign video and audio description unavailable</strong>',
         sideHint: 'Press <kbd>?</kbd> anytime on the player for keyboard shortcuts help.',
-        signTitle: 'Sign-language window (recording unavailable)',
-        signHint: '(No approved sign-language video supplied)',
-        alxHeroIntro: 'Every day, artificial intelligence transforms standard administrative routines. In modern distributed workplaces, remote Virtual Assistants pair AI automation with critical human judgment, empathetic communication, and reliable client trust.',
-        objectivesHeading: 'By the end of this lesson, you should be able to:',
-        obj1: 'Explain the evolving role of Virtual Assistants in AI-enabled, remote-first organizations.',
-        obj2: 'Describe how human judgment and empathetic communication complement automated generative tools.',
-        obj3: 'Determine the strategic value of specialized workflows, CRM administration, and project coordination.',
-        obj4: 'Differentiate between raw AI-generated drafts and trustworthy, client-ready deliverables.',
-        obj5: 'Leverage universal accessibility accommodations (captions, sign language, and audio description) for inclusive teamwork.',
+        signTitle: 'Sign-language panel (unavailable for this lesson)',
+        signHint: 'No verified Ethiopian Sign Language recording is supplied.',
+        alxHeroIntro: 'This sample recording reflects on learning from online videos. The speaker compares short video segments with longer lectures; the 4:12 figure is the speaker’s premise, not a verified current statistic.',
+        objectivesHeading: 'This sample lesson helps learners:',
+        obj1: 'Describe the speaker’s reflection on learning from online videos.',
+        obj2: 'Compare the speaker’s view of short video segments with a longer lecture.',
+        obj3: 'Recognize that the 4:12 figure is a personal premise, not a verified current statistic.',
+        obj4: 'Use the English and Amharic captions and transcript controls.',
+        obj5: 'Try keyboard playback controls; sign video and audio description are unavailable for these lesson records.',
     },
     am: {
         brand: 'የትምህርት ፖርታል',
-        learner: 'ተማሪ: ኪዱስ ተ.',
+        learner: 'ተማሪ: ማሳያ',
         crumbCourses: 'ኮርሶች',
-        crumbTrack: 'VA-1 መሠረታዊ',
-        crumbModule: 'ሞጁል 2',
+        crumbTrack: 'ሳቫና አክሰስ ኪት',
+        crumbModule: 'የማሳያ ትምህርቶች',
         lessonTitleL103: 'በአጭር ቪዲዮዎች መማር',
         lessonTitleL102: 'በአጭር ቪዲዮዎች መማር',
-        badgeL103: 'የማሳያ ትምህርት L-103 (ከ L-102 ጋር ተመሳሳይ ቀረጻ)',
-        badgeL102: 'የማሳያ ትምህርት L-102 (ከ L-103 ጋር ተመሳሳይ ቀረጻ)',
-        durationL103: 'የቆይታ ጊዜ: <strong>120 ሰከንድ (ከ L-102 ጋር ተመሳሳይ ቀረጻ)</strong>',
-        durationL102: 'የቆይታ ጊዜ: <strong>120 ሰከንድ (ከ L-103 ጋር ተመሳሳይ ቀረጻ)</strong>',
-        btnBefore: 'የቀድሞው የVA ትምህርት ገጽ በዚህ ኤክስፖርት ውስጥ የለም',
-        btnLoadL103: 'የትምህርት መዝገብ L-103ን ክፈት',
-        btnLoadL102: 'የትምህርት መዝገብ L-102ን ክፈት',
-        btnAfter: 'ቀጣዩ የVA ትምህርት ገጽ በዚህ ኤክስፖርት ውስጥ የለም',
+        badgeL103: 'L-103 · የአማርኛ ግልባጭ ማሳያ',
+        badgeL102: 'L-102 · የማሳያ ትምህርት',
+        durationL103: 'የቆይታ ጊዜ: <strong>120 ሰከንድ</strong>',
+        durationL102: 'የቆይታ ጊዜ: <strong>120 ሰከንድ</strong>',
+        btnBefore: 'ያለፈው ትምህርት በዚህ ማሳያ ውስጥ የለም',
+        btnLoadL103: 'የ L-103 ግልባጭ ማሳያን ክፈት',
+        btnLoadL102: 'የ L-102 ማሳያ ትምህርትን ክፈት',
+        btnAfter: 'ቀጣዩ ትምህርት በዚህ ማሳያ ውስጥ የለም',
         summaryHeading: 'የትምህርት ማጠቃለያ',
         summaryCardL103: 'ተናጋሪው ከመስመር ላይ ቪዲዮዎች ስለመማር ያሰላስላል፤ አጭር የቪዲዮ ክፍሎችን ከረጅም ንግግሮች ጋር ያነጻጽራል። የ4 ደቂቃ ከ12 ሰከንድ ቁጥር የተናጋሪው አስተያየት ነው፤ የዛሬ የተረጋገጠ ስታቲስቲክስ አይደለም።',
         summaryCardL102: 'ተናጋሪው ከመስመር ላይ ቪዲዮዎች ስለመማር ያሰላስላል፤ አጭር የቪዲዮ ክፍሎችን ከረጅም ንግግሮች ጋር ያነጻጽራል። የ4 ደቂቃ ከ12 ሰከንድ ቁጥር የተናጋሪው አስተያየት ነው፤ የዛሬ የተረጋገጠ ስታቲስቲክስ አይደለም።',
@@ -313,30 +305,22 @@ const hostI18n = {
         studyNotesLabel: 'የተማሪው የጥናት ማስታወሻዎች:',
         studyNotesPlaceholder: 'የግል ጥናት ማስታወሻዎችን እዚህ ይጻፉ (በመጻፍ ወቅት የተጫዋች አቋራጮች በደህና ይቦዝናሉ)...',
         studyNotesAria: 'የተማሪው የጥናት ማስታወሻዎች',
-        curriculumHeading: 'የሞጁል 2 ይዘቶች',
-        curr0: '2.0 የሞጁል አጠቃላይ እይታ',
-        curr1: '2.1 የድጋፍ ሚናዎች እድገት',
-        curr2: '2.2 የቨርቹዋል ረዳት ኢንዱስትሪ የወደፊት ዕጣ ፈንታ',
-        curr2Status: 'ወቅታዊ',
-        curr3: '2.3 የ AI መሣሪያዎች እና መጠይቆች',
-        curr3Status: 'ቀጣይ',
-        curr4: '2.4 የጥናት ጉዳይ እና አስተያየት',
-        curr4Status: 'መጪ',
-        curr5: '2.5 የእውቀት ፍተሻ',
-        curr5Status: 'የተቆለፈ',
+        curriculumHeading: 'ያሉ የማሳያ ትምህርቶች',
+        curr0: 'L-102 · በአጭር ቪዲዮዎች መማር',
+        curr1: 'L-103 · የአማርኛ ግልባጭ ማሳያ',
         detailsHeading: 'የትምህርት ዝርዝሮች',
-        sideTrack: 'የትምህርት መስመር: <strong>VA መሠረታዊ</strong>',
-        sideAccess: 'ተደራሽነት: <strong>የግርጌ ጽሑፍ አለ፤ ለእነዚህ መዝገቦች የምልክት ቪዲዮና የድምጽ ማብራሪያ አልቀረቡም</strong>',
+        sideTrack: 'ማሳያ: <strong>የቪዲዮ ትምህርቶች</strong>',
+        sideAccess: 'ተደራሽነት: <strong>የእንግሊዝኛና የአማርኛ ግርጌ ጽሑፎች አሉ፤ የምልክት ቪዲዮና የድምፅ መግለጫ የሉም</strong>',
         sideHint: 'የቁልፍ ሰሌዳ አቋራጮች እገዛ ለማግኘት በማጫወቻው ላይ በማንኛውም ጊዜ <kbd>?</kbd>ን ይጫኑ።',
-        signTitle: 'የምልክት ቋንቋ መስኮት (ቪዲዮ አልቀረበም)',
-        signHint: '(የተፈቀደ የምልክት ቪዲዮ አልቀረበም)',
-        alxHeroIntro: 'በየቀኑ፣ አርቴፊሻል ኢንተለጀንስ መደበኛ የአስተዳደር ሥራዎችን ይለውጣል። በዘመናዊ የርቀት የሥራ ቦታዎች፣ የቨርቹዋል ረዳቶች የ AI አውቶሜሽንን ከሰው ልጅ ሂሳዊ ፍርድ፣ የርኅራኄ ተግባቦት እና አስተማማኝ የደንበኛ እምነት ጋር ያጣምራሉ።',
-        objectivesHeading: 'በዚህ ትምህርት መጨረሻ ላይ የሚከተሉትን ማከናወን ይችላሉ፡',
-        obj1: 'በ AI በተደገፉ የርቀት ድርጅቶች ውስጥ የቨርቹዋል ረዳቶችን እያደገ የመጣ ሚና ማስረዳት።',
-        obj2: 'የሰው ልጅ ውሳኔ እና የርኅራኄ ተግባቦት አውቶሜትድ የሆኑ የፈጠራ መሣሪያዎችን እንዴት እንደሚያሟሉ መግለጽ።',
-        obj3: 'የተለዩ የሥራ ፍሰቶች፣ የ CRM አስተዳደር እና የፕሮጀክት ቅንጅት ስልታዊ ጠቀሜታን መወሰን።',
-        obj4: 'በ AI ከተዘጋጁ ያልተጣሩ ረቂቆች እና ለደንበኛ ዝግጁ ከሆኑ አስተማማኝ ውጤቶች መካከል ያለውን ልዩነት መለየት።',
-        obj5: 'ሁሉን አቀፍ የቡድን ሥራን ለማሳካት ዓለም አቀፍ የተደራሽነት ማመቻቸቶችን (የግርጌ ጽሑፍ፣ የምልክት ቋንቋ እና የድምጽ ማብራሪያ) መጠቀም።',
+        signTitle: 'የምልክት ቋንቋ መስኮት (ለዚህ ትምህርት የለም)',
+        signHint: 'የተረጋገጠ የኢትዮጵያ ምልክት ቋንቋ ቀረጻ አልቀረበም።',
+        alxHeroIntro: 'ይህ የማሳያ ቀረጻ ከመስመር ላይ ቪዲዮዎች ስለመማር የሚያሰላስል ንግግር ያቀርባል። ተናጋሪው አጭር የቪዲዮ ክፍሎችን ከረጅም ንግግር ጋር ያነጻጽራል፤ የ4:12 ቁጥር የግል አስተያየቱ ነው፣ ዛሬ የተረጋገጠ ስታቲስቲክስ አይደለም።',
+        objectivesHeading: 'ይህ የማሳያ ትምህርት ተማሪዎችን የሚያግዘው፦',
+        obj1: 'ተናጋሪው ከመስመር ላይ ቪዲዮዎች ስለመማር ያቀረበውን አስተያየት መግለጽ።',
+        obj2: 'ተናጋሪው አጭር ቪዲዮዎችን ከረጅም ንግግር ጋር እንዴት እንዳነጻጸረ መለየት።',
+        obj3: 'የ4:12 ቁጥር የግል አስተያየት እንጂ የተረጋገጠ የዛሬ ስታቲስቲክስ እንዳልሆነ መረዳት።',
+        obj4: 'የእንግሊዝኛና የአማርኛ ግርጌ ጽሑፎችን እና የግልባጭ መቆጣጠሪያዎችን መጠቀም።',
+        obj5: 'የቁልፍ ሰሌዳ መቆጣጠሪያዎችን መሞከር፤ የምልክት ቪዲዮና የድምፅ መግለጫ በእነዚህ መዝገቦች ውስጥ የሉም።',
     }
 };
 
@@ -400,10 +384,6 @@ function applyHostLanguage(lang: 'en' | 'am'): void {
     };
     setCurrItem('curr-0', t.curr0);
     setCurrItem('curr-1', t.curr1);
-    setCurrItem('curr-2', t.curr2, t.curr2Status);
-    setCurrItem('curr-3', t.curr3, t.curr3Status);
-    setCurrItem('curr-4', t.curr4, t.curr4Status);
-    setCurrItem('curr-5', t.curr5, t.curr5Status);
 
     setText('sidebar-details-heading', t.detailsHeading);
     setHtml('side-track', t.sideTrack);

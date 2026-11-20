@@ -114,6 +114,7 @@ describe("Swagger UI", () => {
     expect(page.status).toBe(200);
     expect(page.text).toContain("swagger-ui");
     expect(page.headers["content-security-policy"]).toContain("script-src 'self'");
+    expect(page.headers["content-security-policy"]).toContain("media-src 'self' blob:");
     expect((await request(app).get("/docs/assets/swagger-ui-bundle.js")).status).toBe(200);
     expect((await request(app).get("/docs/init.js")).text).toContain("/v1/openapi.json");
   });

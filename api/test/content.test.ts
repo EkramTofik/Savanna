@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import request from "supertest";
+import type { Response as SupertestResponse } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import { loadConfig } from "../src/config";
@@ -46,6 +47,7 @@ describe("contract C1: fixtures and API agree", () => {
   }
   it("transcript fixtures satisfy the transcript schema", () => {
     expect(TranscriptSchema.safeParse(readJson("L-102/transcript.json")).success).toBe(true);
+    expect(TranscriptSchema.safeParse(readJson("L-103/transcript-am.json")).success).toBe(true);
   });
 });
 
@@ -63,6 +65,22 @@ describe("lessons routes", () => {
       .set(KEY);
     expect(res.status).toBe(404);
     expect(res.headers["content-type"]).toContain("application/problem+json");
+  });
+  it("serves the complete offline pack index with verified file sizes and SHA-256 hashes", async () => {
+    const res = await request(await app()).get("/v1/lessons/L-103/pack").set(KEY);
+    expect(res.status).toBe(200);
+    expect(res.body.sizeBytes).toBe(res.body.files.reduce((sum: number, file: { sizeBytes: number }) => sum + file.sizeBytes, 0));
+    expect(res.body.files).toHaveLength(3);
+    expect(res.body.files.some((file: { path: string }) => /^(?:ad\.(?:opus|vtt)|esl-placeholder\.mp4)$/.test(file.path))).toBe(false);
+    expect(res.body.files.every((file: { sha256: string }) => /^[a-f0-9]{64}$/.test(file.sha256))).toBe(true);
+  });
+  it("uses PACK_ROOT when a deployment configures an offline pack directory", async () => {
+    const a = await createApp({
+      config: loadConfig({ PACK_ROOT: FIXTURES_DIR }),
+    });
+    const res = await request(a).get("/v1/lessons/L-102/pack").set(KEY);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(readJson("L-102/pack.json"));
   });
   it("needs an API key", async () => {
     expect((await request(await app()).get("/v1/lessons")).status).toBe(401);
@@ -97,7 +115,13 @@ describe("lessons routes", () => {
     expect(res.status).toBe(200);
     expect(res.body.lang).toBe("en");
     expect(res.body.lines.length).toBeGreaterThan(0);
-    expect(res.text).toBe(fs.readFileSync(path.join(FIXTURES_DIR, "L-102/transcript.json"), "utf8"));
+    expect(res.body).toEqual(readJson("L-102/transcript.json"));
+  });
+  it("serves the Amharic L-103 transcript for the integrated language switch", async () => {
+    const res = await request(await app()).get("/v1/lessons/L-103/transcript?lang=am").set(KEY);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: "L-103", lang: "am" });
+    expect(res.body.lines.length).toBeGreaterThan(0);
   });
   it("404s a missing transcript language and 400s a bad one", async () => {
     const a = await app();
@@ -107,6 +131,42 @@ describe("lessons routes", () => {
     expect((await request(a).get("/v1/lessons/L-102/transcript?lang=xx").set(KEY)).status).toBe(
       400,
     );
+  });
+});
+
+describe("public media and resumable pack responses", () => {
+  const parseBinary = (res: SupertestResponse, callback: (error: Error | null, body?: Buffer) => void) => {
+    const chunks: Buffer[] = [];
+    res.on("data", (chunk: Buffer | string) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+    res.on("end", () => callback(null, Buffer.concat(chunks)));
+  };
+
+  it("serves fixture media without an API key and supports byte ranges", async () => {
+    const res = await request(await app()).get("/media/en.vtt").set("Range", "bytes=0-4");
+    expect(res.status).toBe(206);
+    expect(res.headers["content-range"]).toMatch(/^bytes 0-4\//);
+    expect(res.text.length).toBe(5);
+  });
+
+  it("returns valid partial and suffix ranges for offline packs", async () => {
+    const a = await app();
+    const first = await request(a).get("/v1/lessons/L-102/pack.zip").set(KEY).set("Range", "bytes=0-9").buffer(true).parse(parseBinary);
+    expect(first.status).toBe(206);
+    expect(first.headers["content-range"]).toMatch(/^bytes 0-9\//);
+    expect(first.body.length).toBe(10);
+
+    const suffix = await request(a).get("/v1/lessons/L-102/pack.zip").set(KEY).set("Range", "bytes=-4").buffer(true).parse(parseBinary);
+    expect(suffix.status).toBe(206);
+    const total = Number(suffix.headers["content-range"]!.split("/")[1]!);
+    expect(suffix.headers["content-range"]).toBe(`bytes ${total - 4}-${total - 1}/${total}`);
+    expect(suffix.body.length).toBe(4);
+  });
+
+  it("rejects an unsatisfiable pack range with the resource size", async () => {
+    const res = await request(await app()).get("/v1/lessons/L-102/pack.zip").set(KEY).set("Range", "bytes=999999999-");
+    expect(res.status).toBe(416);
+    expect(res.headers["content-range"]).toMatch(/^bytes \*\//);
+    expect(res.headers["content-type"]).toContain("application/problem+json");
   });
 });
 

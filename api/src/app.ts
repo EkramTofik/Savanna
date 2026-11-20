@@ -31,6 +31,8 @@ export async function createApp(opts: AppOptions = {}) {
     store: (opts.ctx?.store ?? created?.store)!,
     config,
     packRoot: opts.ctx?.packRoot ?? config.packRoot,
+    publicBaseUrl: opts.ctx?.publicBaseUrl ?? config.publicBaseUrl ?? `http://localhost:${config.port}`,
+    issuerPrivateJwk: opts.ctx?.issuerPrivateJwk ?? config.issuerPrivateJwk,
     ...opts.ctx,
   };
 
@@ -39,31 +41,30 @@ export async function createApp(opts: AppOptions = {}) {
   if (config.production) app.set("trust proxy", 1);
 
   const allOrigins = config.partners.flatMap((p) => p.origins);
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      contentSecurityPolicy: {
+        directives: {
+          mediaSrc: ["'self'", "blob:"],
+        },
+      },
+    }),
+  );
   app.use(
     cors({
-      origin: (origin, cb) =>
-        cb(null, !origin || originAllowed(origin, allOrigins, config.production)),
-      allowedHeaders: ["Content-Type", "X-Savanna-Key", "X-Savanna-User"],
+      origin: (origin, cb) => cb(null, !origin || originAllowed(origin, allOrigins, config.production)),
+      allowedHeaders: ["Content-Type", "Range", "X-Savanna-Key", "X-Savanna-User"],
+      exposedHeaders: ["Accept-Ranges", "Content-Range", "Content-Length", "Content-Disposition", "ETag"],
       maxAge: 600,
     }),
   );
   app.use(limiter(config));
   app.use(express.json({ limit: "100kb" }));
-
-  // The development player uses the same-origin /media path so its service worker can cache video.
-  if (!config.production) {
-    app.use(
-      "/media",
-      (_req, res, next) => {
-        // A static host without a /media mount can use the loopback API as a
-        // development fallback. CORS above still limits requests to allowed
-        // local origins; production media remains page-origin.
-        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-        next();
-      },
-      express.static(path.resolve(here, "../../contracts/fixtures/media"), { fallthrough: true }),
-    );
+  if (config.mediaRoot) {
+    // Fixture media is public and supports HTTP byte ranges through express.static.
+    // Production deployments can point MEDIA_ROOT at a mounted asset directory.
+    app.use("/media", express.static(config.mediaRoot, { fallthrough: true, index: false }));
   }
 
   const modules = await loadRouteModules(opts.routesDir ?? path.join(here, "routes"), {
@@ -75,32 +76,20 @@ export async function createApp(opts: AppOptions = {}) {
   app.locals.openapi = spec;
   app.get(["/v1/openapi.json", "/api/v1/openapi.json"], (_req, res) => {
     res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
-    res.type("application/json; charset=utf-8").json(spec);
+    res.json(spec);
   });
-  const swaggerDist = createRequire(import.meta.url)(
-    "swagger-ui-dist",
-  ).getAbsoluteFSPath() as string;
+  const swaggerDist = createRequire(import.meta.url)("swagger-ui-dist").getAbsoluteFSPath() as string;
   app.use("/docs/assets", express.static(swaggerDist, { index: false }));
-  app.get(
-    "/docs/init.js",
-    (_req, res) =>
-      void res
-        .type("application/javascript")
-        .send(
-          'window.ui = SwaggerUIBundle({ url: "/v1/openapi.json", dom_id: "#swagger-ui", persistAuthorization: true });',
-        ),
+  app.get("/docs/init.js", (_req, res) =>
+    void res.type("application/javascript").send('window.ui = SwaggerUIBundle({ url: "/v1/openapi.json", dom_id: "#swagger-ui", persistAuthorization: true });'),
   );
-  app.get(
-    "/docs",
-    (_req, res) =>
-      void res
-        .type("html")
-        .send(
-          '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
-            "<title>Savanna Access Kit API</title>" +
-            '<link rel="stylesheet" href="/docs/assets/swagger-ui.css"></head><body><div id="swagger-ui"></div>' +
-            '<script src="/docs/assets/swagger-ui-bundle.js"></script><script src="/docs/init.js"></script></body></html>',
-        ),
+  app.get("/docs", (_req, res) =>
+    void res.type("html").send(
+      '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+        "<title>Savanna Access Kit API</title>" +
+        '<link rel="stylesheet" href="/docs/assets/swagger-ui.css"></head><body><div id="swagger-ui"></div>' +
+        '<script src="/docs/assets/swagger-ui-bundle.js"></script><script src="/docs/init.js"></script></body></html>',
+    ),
   );
 
   // Public modules first (full paths, no auth), then key-protected modules under /v1 and /api/v1 (FR-N3).
@@ -115,6 +104,10 @@ export async function createApp(opts: AppOptions = {}) {
   }
   app.use("/v1", authenticate(config), v1);
   app.use("/api/v1", authenticate(config), v1);
+
+  if (config.webRoot) {
+    app.use(express.static(config.webRoot, { index: "index.html", fallthrough: true }));
+  }
 
   app.use(notFound);
   app.use(errorHandler);

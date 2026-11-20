@@ -10,17 +10,17 @@
   },
   "durationSec": 120,
   "media": {
-    "video": "/media/lesson.mp4",
-    "audio": "/media/lesson.opus"
+    "video": "http://localhost:4010/media/lesson.mp4",
+    "audio": "http://localhost:4010/media/lesson.opus"
   },
   "captions": [
     {
       "lang": "en",
-      "url": "/media/en.vtt"
+      "url": "http://localhost:4010/media/en.vtt"
     },
     {
       "lang": "am",
-      "url": "/media/am.vtt"
+      "url": "http://localhost:4010/media/am.vtt"
     }
   ],
   "sign": null,
@@ -30,6 +30,6 @@
   },
   "pack": {
     "manifestUrl": "/v1/lessons/L-102/pack",
-    "sizeBytes": 2128323
+    "sizeBytes": 29657
   }
 }

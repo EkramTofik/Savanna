@@ -4,14 +4,14 @@ Express 5 + TypeScript + Zod. Owner: Member 4 (`src/app.ts`, `src/middleware`, `
 
 ```bash
 pnpm install
-pnpm dev:api        # http://localhost:4000  (watch mode)
+pnpm dev:api        # http://localhost:4010  (watch mode)
 pnpm --filter @savanna/api test
 ```
 
 Try it:
 ```bash
-curl http://localhost:4000/v1/health
-curl -H "X-Savanna-Key: pk_dev_local" http://localhost:4000/v1/whoami
+curl http://localhost:4010/v1/health
+curl -H "X-Savanna-Key: pk_dev_local" http://localhost:4010/v1/whoami
 ```
 
 ## Adding a route (no edits to the skeleton)
@@ -38,10 +38,12 @@ Errors: `throw new HttpError(404, "Not Found", "No such job")`.
 | `GET /lessons/:id` | the lesson manifest (contract C1) |
 | `GET /lessons/:id/captions/en.vtt` or `am.vtt` | 302 redirect to the caption file |
 | `GET /lessons/:id/transcript?lang=en\|am` | `{ id, lang, lines: [{ start, end, text }] }` |
+| `GET /lessons/:id/pack` | Offline pack index with resource byte sizes and SHA-256 hashes |
+| `GET /lessons/:id/pack.zip` | Pack ZIP; supports normal, open-ended, and suffix byte ranges |
 | `GET /preferences`, `PUT /preferences` | the preferences object (contract C3). Needs header `X-Savanna-User`: an opaque 16+ character id issued by the host platform. Only its SHA-256 hash is stored |
 
 ## Data store
-`STORE=memory` (default in dev): lessons come from `contracts/fixtures`, nothing to install; preferences are lost on restart.
+`STORE=memory` (default in dev): lessons come from `contracts/fixtures`, and fixture media is served from `/media`; preferences are lost on restart.
 `STORE=prisma` (default in production): PostgreSQL. Not needed to develop other parts.
 ```powershell
 docker compose up -d db
@@ -55,7 +57,7 @@ Schema files live in `prisma/schema/` (`base.prisma`, `content.prisma`; Member 3
 The API output and the fixtures are both checked against one Zod schema (`src/schemas/lesson.ts`), so the real API cannot drift from the mock.
 
 ## API docs and SDK (task 4.4)
-- Swagger UI: http://localhost:4000/docs (click **Authorize**, enter `pk_dev_local`). Spec: `/v1/openapi.json` (OpenAPI 3.1, public).
+- Swagger UI: http://localhost:4010/docs (click **Authorize**, enter `pk_dev_local`). Spec: `/v1/openapi.json` (OpenAPI 3.1, public).
 - **Every route file exports `openapi: OperationDoc[]`** next to `register()`. Describe each operation once with Zod
   (`params`, `query`, `headers`, `body`, `responses`). See `src/routes/lessons.ts` for a full example. Common errors
   (400, 401, 403, 429) are added automatically. Tests fail if a file has no docs or documents a route that does not exist.
@@ -68,10 +70,10 @@ The API output and the fixtures are both checked against one Zod schema (`src/sc
 |---|---|---|
 | `PARTNERS` | JSON array of `{name, key, origins[]}` publishable keys | key `pk_dev_local`, localhost origins |
 | `SECRET_KEY` | admin key (server to server) | `sk_dev_local_only_not_secure` |
-| `PUBLIC_BASE_URL` | issuer/API origin used in absolute credential links and did:web | `http://localhost:4000` (production requires HTTPS origin) |
+| `PUBLIC_BASE_URL` | issuer/API origin used in absolute credential links and did:web | `http://localhost:4010` (production requires HTTPS origin; Render provides `RENDER_EXTERNAL_URL`) |
 | `ISSUER_PRIVATE_JWK` | server-only Ed25519 signing key as JWK JSON | unset; credentials are not signed until configured in production |
 | `STORE` | `memory` or `prisma` | `memory` (`prisma` in production) |
 | `RATE_LIMIT_PER_MIN` | per key (or IP) | 120 |
-| `NODE_ENV=production` | requires `SECRET_KEY`, `PARTNERS`, HTTPS `PUBLIC_BASE_URL`, and `ISSUER_PRIVATE_JWK`; exact origins only | |
+| `NODE_ENV=production` | requires `SECRET_KEY`, `ISSUER_PRIVATE_JWK`, and either `PARTNERS` or `PUBLIC_API_KEY` with an HTTPS `PUBLIC_BASE_URL`; browser origins must match exactly | |
 
 Never put the secret key in browser code.

@@ -12,7 +12,7 @@ test("sign-window has accessible focus and pointer interaction support", async (
   assert.match(src, /role="group"/, "Semantic role for screen readers");
   assert.match(src, /aria-label/, "Descriptive aria-label for context");
   assert.match(src, /PointerEvent/, "Pointer events support mouse and touch dragging");
-  assert.match(src, /touch-action:\s*none/, "Touch dragging must not scroll the page");
+  assert.match(src, /touch-action\s*:\s*none/, "Touch dragging must not scroll the page");
 });
 
 test("sign-window syncs with player timeupdate events", async () => {
@@ -30,12 +30,12 @@ test("sign-window syncs with player timeupdate events", async () => {
   );
   assert.match(
     src,
-    /player\?\.addEventListener\(["']savanna:timeupdate["']/,
+    /player\?\s*\.addEventListener\(\s*["']savanna:timeupdate/,
     "Must subscribe on the player because player events do not bubble to children",
   );
   assert.match(
     src,
-    /player\?\.removeEventListener\(["']savanna:timeupdate["']/,
+    /player\?\s*\.removeEventListener\(\s*["']savanna:timeupdate/,
     "Must remove the player listener when disconnected",
   );
   assert.match(src, /playbackRate\s*!==\s*rate/, "Must apply speed changes only when needed");
@@ -44,22 +44,7 @@ test("sign-window syncs with player timeupdate events", async () => {
     /mainWaiting|mainReady/,
     "Must pause for buffering and resync when media is ready",
   );
-  assert.match(
-    src,
-    /@loadedmetadata\s*=\s*\$\{this\.signReady\}/,
-    "Must synchronize once the sign video can seek",
-  );
-});
-
-test("sign-window binds the main media after the player finishes its first render", async () => {
-  const src = await import("node:fs/promises").then((fs) =>
-    fs.readFile(new URL("./sign-window.ts", import.meta.url), "utf8"),
-  );
-
-  assert.match(src, /private bindMainMedia\(\)/);
-  assert.match(src, /player as any\)\?\.updateComplete[\s\S]*?bindMainMedia\(\)/);
-  assert.match(src, /this\.main\.addEventListener\("seeked", this\.mainReady\)/);
-  assert.match(src, /this\.main\.removeEventListener\("seeked", this\.mainReady\)/);
+  assert.match(src, /@loadedmetadata=.*signReady/, "Must synchronize once the sign video can seek");
 });
 
 test("sign-window has four visible, touch-friendly resize handles", async () => {
@@ -69,19 +54,19 @@ test("sign-window has four visible, touch-friendly resize handles", async () => 
 
   assert.match(
     src,
-    /\[\s*["']nw["']\s*,\s*["']ne["']\s*,\s*["']sw["']\s*,\s*["']se["']\s*\]/,
+    /\[\s*["']nw["']\s*,\s*["']ne["']\s*,\s*["']se["']\s*,\s*["']sw["']\s*\]/,
     "Must render handles at all four corners",
   );
   assert.match(src, /Resize sign window from/, "Resize handles need accessible labels");
   assert.match(
     src,
-    /aspect-ratio:\s*16\s*\/\s*9/,
+    /aspect-ratio\s*:\s*16\/9/,
     "Sign video must maintain an understandable aspect ratio",
   );
   assert.match(src, /MIN_WIDTH\s*=\s*180/, "Panel must have a minimum usable size");
 });
 
-test("sign-window uses the C2 overlay slot and remains constrained to the visible viewport", async () => {
+test("sign-window uses the C2 overlay slot and clamps within the player container", async () => {
   const src = await import("node:fs/promises").then((fs) =>
     fs.readFile(new URL("./sign-window.ts", import.meta.url), "utf8"),
   );
@@ -93,8 +78,8 @@ test("sign-window uses the C2 overlay slot and remains constrained to the visibl
   );
   assert.match(
     src,
-    /visualViewport/,
-    "Must account for the browser viewport during drag and resize",
+    /this\.main\?\.getBoundingClientRect\(\)[\s\S]*const width = rect\?\.width[\s\S]*const height = rect\?\.height/,
+    "Must clamp in the player container coordinate space during drag and resize",
   );
   assert.match(src, /CONTROL_CLEARANCE/, "Must preserve space for player controls and captions");
   assert.match(src, /savanna:sign-toggle/, "Toggle action must notify the embedding player");
@@ -110,7 +95,11 @@ test("sign-window supplies an accessible overlay toggle that preserves main play
     /@property\(\{\s*type:\s*Boolean,\s*reflect:\s*true\s*\}\) enabled\s*=\s*storedEnabled\(\)\s*\?\?\s*true/,
     "Toggle state must be reflected and safely restored",
   );
-  assert.match(src, /<button\s+class="toggle"\s+type="button"/, "Toggle must be a native button");
+  assert.match(
+    src,
+    /<button\s+class="toggle"[\s\S]*?type="button"/,
+    "Toggle must be a native button",
+  );
   assert.match(
     src,
     /aria-pressed=\$\{String\(this\.enabled\)\}/,
@@ -118,12 +107,12 @@ test("sign-window supplies an accessible overlay toggle that preserves main play
   );
   assert.match(
     src,
-    /Sign language\s*\$\{this\.enabled\s*\?\s*["']enabled["']\s*:\s*["']disabled["']\s*\}/,
+    /Sign language \$\{this\.enabled\s*\?\s*["']enabled["']\s*:\s*["']disabled["']\}/,
     "State changes need an accessible announcement",
   );
   assert.match(
     src,
-    /if\s*\(\s*!this\.enabled\s*\)\s*this\.video\?\.pause\(\)/,
+    /if\s*\(!this\.enabled\)\s*this\.video\?\.pause\(\)/,
     "Turning off sign must not pause the main lesson",
   );
   assert.match(
@@ -133,12 +122,12 @@ test("sign-window supplies an accessible overlay toggle that preserves main play
   );
   assert.match(
     src,
-    /if\s*\(\s*!this\.enabled\s*\|\|\s*!this\.video/,
+    /if\s*\(!this\.enabled\s*\|\|\s*!this\.video/,
     "A disabled overlay must not reactivate its detached interpreter video",
   );
   assert.match(
     src,
-    /changed\.has\(["']enabled["']\)[\s\S]*?renderRoot\.querySelector\(["']video["']\)/,
+    /changed\.has\(["']enabled["']\)[\s\S]*renderRoot\.querySelector\(["']video["']\)/,
     "Re-enabling must bind the newly rendered interpreter video before synchronization",
   );
 });
@@ -162,7 +151,7 @@ test("sign-window announces keyboard changes and persists only safe sign prefere
   assert.match(src, /storedEnabled/, "The saved visibility preference must be restored safely");
   assert.match(
     src,
-    /save\(this\.position\s*,\s*this\.enabled\)/,
+    /save\(this\.position,\s*this\.enabled\)/,
     "Toggling visibility must persist only within the sign namespace",
   );
 });
@@ -188,7 +177,7 @@ test("sign-window has fallback when sign video is null", async () => {
   );
   assert.match(
     src,
-    /addEventListener\(["']ended["']\s*,\s*this\.syncFromMain\)/,
+    /addEventListener\(\s*["']ended["']\s*,\s*this\.syncFromMain\)/,
     "The interpreter must stop with the main lesson",
   );
 });

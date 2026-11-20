@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: savanna-access-kit
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: STORE
+        value: memory
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ISSUER_PRIVATE_JWK
+        sync: false
+      - key: PUBLIC_API_KEY
+        value: pk_demo_public
+      - key: WEB_ROOT
+        value: /app/deploy-web
+      - key: MEDIA_ROOT
+        value: /app/contracts/fixtures/media
+      - key: PACK_ROOT
+        value: /app/contracts/fixtures/v1/lessons
