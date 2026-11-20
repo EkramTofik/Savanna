@@ -26,7 +26,13 @@ export interface AppOptions {
 export async function createApp(opts: AppOptions = {}) {
   const config = opts.config ?? loadConfig();
   const created = opts.ctx?.store ? undefined : await createStore(config);
-  const ctx: Ctx = { prisma: created?.prisma, store: (opts.ctx?.store ?? created?.store)!, config, ...opts.ctx };
+  const ctx: Ctx = {
+    prisma: created?.prisma,
+    store: (opts.ctx?.store ?? created?.store)!,
+    config,
+    packRoot: opts.ctx?.packRoot ?? config.packRoot,
+    ...opts.ctx,
+  };
 
   const app = express();
   app.disable("x-powered-by");
@@ -36,13 +42,29 @@ export async function createApp(opts: AppOptions = {}) {
   app.use(helmet());
   app.use(
     cors({
-      origin: (origin, cb) => cb(null, !origin || originAllowed(origin, allOrigins, config.production)),
+      origin: (origin, cb) =>
+        cb(null, !origin || originAllowed(origin, allOrigins, config.production)),
       allowedHeaders: ["Content-Type", "X-Savanna-Key", "X-Savanna-User"],
       maxAge: 600,
     }),
   );
   app.use(limiter(config));
   app.use(express.json({ limit: "100kb" }));
+
+  // The development player uses the same-origin /media path so its service worker can cache video.
+  if (!config.production) {
+    app.use(
+      "/media",
+      (_req, res, next) => {
+        // A static host without a /media mount can use the loopback API as a
+        // development fallback. CORS above still limits requests to allowed
+        // local origins; production media remains page-origin.
+        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+        next();
+      },
+      express.static(path.resolve(here, "../../contracts/fixtures/media"), { fallthrough: true }),
+    );
+  }
 
   const modules = await loadRouteModules(opts.routesDir ?? path.join(here, "routes"), {
     excludeFiles: CAREER_HARNESS_FILES,
@@ -51,19 +73,34 @@ export async function createApp(opts: AppOptions = {}) {
   // OpenAPI 3.1 spec (assembled from every route file) and Swagger UI. Both are public.
   const spec = buildOpenApi(modules);
   app.locals.openapi = spec;
-  app.get(["/v1/openapi.json", "/api/v1/openapi.json"], (_req, res) => void res.json(spec));
-  const swaggerDist = createRequire(import.meta.url)("swagger-ui-dist").getAbsoluteFSPath() as string;
+  app.get(["/v1/openapi.json", "/api/v1/openapi.json"], (_req, res) => {
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
+    res.type("application/json; charset=utf-8").json(spec);
+  });
+  const swaggerDist = createRequire(import.meta.url)(
+    "swagger-ui-dist",
+  ).getAbsoluteFSPath() as string;
   app.use("/docs/assets", express.static(swaggerDist, { index: false }));
-  app.get("/docs/init.js", (_req, res) =>
-    void res.type("application/javascript").send('window.ui = SwaggerUIBundle({ url: "/v1/openapi.json", dom_id: "#swagger-ui", persistAuthorization: true });'),
+  app.get(
+    "/docs/init.js",
+    (_req, res) =>
+      void res
+        .type("application/javascript")
+        .send(
+          'window.ui = SwaggerUIBundle({ url: "/v1/openapi.json", dom_id: "#swagger-ui", persistAuthorization: true });',
+        ),
   );
-  app.get("/docs", (_req, res) =>
-    void res.type("html").send(
-      '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
-        "<title>Savanna Access Kit API</title>" +
-        '<link rel="stylesheet" href="/docs/assets/swagger-ui.css"></head><body><div id="swagger-ui"></div>' +
-        '<script src="/docs/assets/swagger-ui-bundle.js"></script><script src="/docs/init.js"></script></body></html>',
-    ),
+  app.get(
+    "/docs",
+    (_req, res) =>
+      void res
+        .type("html")
+        .send(
+          '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+            "<title>Savanna Access Kit API</title>" +
+            '<link rel="stylesheet" href="/docs/assets/swagger-ui.css"></head><body><div id="swagger-ui"></div>' +
+            '<script src="/docs/assets/swagger-ui-bundle.js"></script><script src="/docs/init.js"></script></body></html>',
+        ),
   );
 
   // Public modules first (full paths, no auth), then key-protected modules under /v1 and /api/v1 (FR-N3).

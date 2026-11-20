@@ -205,6 +205,22 @@
                       ],
                       "additionalProperties": false
                     },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "am": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "en",
+                        "am"
+                      ],
+                      "additionalProperties": false
+                    },
                     "durationSec": {
                       "type": "integer",
                       "minimum": 0,
@@ -214,12 +230,30 @@
                       "type": "object",
                       "properties": {
                         "video": {
-                          "type": "string",
-                          "format": "uri"
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            {
+                              "type": "string",
+                              "format": "starts_with",
+                              "pattern": "^\\/media\\/.*"
+                            }
+                          ]
                         },
                         "audio": {
-                          "type": "string",
-                          "format": "uri"
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            {
+                              "type": "string",
+                              "format": "starts_with",
+                              "pattern": "^\\/media\\/.*"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -241,8 +275,17 @@
                             ]
                           },
                           "url": {
-                            "type": "string",
-                            "format": "uri"
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uri"
+                              },
+                              {
+                                "type": "string",
+                                "format": "starts_with",
+                                "pattern": "^\\/media\\/.*"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -258,13 +301,26 @@
                           "type": "object",
                           "properties": {
                             "url": {
-                              "type": "string",
-                              "format": "uri"
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "uri"
+                                },
+                                {
+                                  "type": "string",
+                                  "format": "starts_with",
+                                  "pattern": "^\\/media\\/.*"
+                                }
+                              ]
                             },
                             "offsetMs": {
                               "type": "integer",
-                              "minimum": -9007199254740991,
+                              "minimum": 0,
                               "maximum": 9007199254740991
+                            },
+                            "languageName": {
+                              "type": "string",
+                              "minLength": 1
                             }
                           },
                           "required": [
@@ -284,15 +340,38 @@
                           "type": "object",
                           "properties": {
                             "audioUrl": {
-                              "type": "string",
-                              "format": "uri"
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "uri"
+                                },
+                                {
+                                  "type": "string",
+                                  "format": "starts_with",
+                                  "pattern": "^\\/media\\/.*"
+                                }
+                              ]
                             },
                             "vttUrl": {
-                              "type": "string",
-                              "format": "uri"
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "uri"
+                                },
+                                {
+                                  "type": "string",
+                                  "format": "starts_with",
+                                  "pattern": "^\\/media\\/.*"
+                                }
+                              ]
                             },
                             "extended": {
                               "type": "boolean"
+                            },
+                            "offsetMs": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
                             }
                           },
                           "required": [

@@ -4,6 +4,7 @@ services:
     ports: ["8080:80"]
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./media-sw.js:/usr/share/nginx/html/media-sw.js:ro
       - ./savanna:/usr/share/nginx/html/savanna:ro
       - ./dist:/usr/share/nginx/html/dist:ro
       - ./module:/usr/share/nginx/html/module:ro

@@ -200,7 +200,7 @@ export function createMember3CareerContext(ctx: Ctx): CareerCtx {
     },
   };
 
-  const publicBaseUrl = process.env.PUBLIC_BASE_URL ?? `http://localhost:${ctx.config.port}`;
+  const publicBaseUrl = ctx.config.publicBaseUrl ?? `http://localhost:${ctx.config.port}`;
   const issuerDid = `did:web:${encodeURIComponent(new URL(publicBaseUrl).host)}`;
 
   return {
@@ -211,9 +211,10 @@ export function createMember3CareerContext(ctx: Ctx): CareerCtx {
     issuerName: amharicContent.issuerName,
     issuerNameEn: amharicContent.issuerNameEn ?? "Savanna Access Kit",
     issuerDid,
+    issuerPrivateJwk: ctx.config.issuerPrivateJwk,
     signCredential(payload) {
       return {
-        ...signPayload(payload),
+        ...signPayload(payload, ctx.config.issuerPrivateJwk),
         verificationMethod: `${issuerDid}#key-1`,
       };
     },

@@ -67,9 +67,11 @@ The API output and the fixtures are both checked against one Zod schema (`src/sc
 | Variable | Meaning | Dev default |
 |---|---|---|
 | `PARTNERS` | JSON array of `{name, key, origins[]}` publishable keys | key `pk_dev_local`, localhost origins |
-| `SECRET_KEY` | admin key (server to server) | `sk_dev_local_change_me_please` |
+| `SECRET_KEY` | admin key (server to server) | `sk_dev_local_only_not_secure` |
+| `PUBLIC_BASE_URL` | issuer/API origin used in absolute credential links and did:web | `http://localhost:4000` (production requires HTTPS origin) |
+| `ISSUER_PRIVATE_JWK` | server-only Ed25519 signing key as JWK JSON | unset; credentials are not signed until configured in production |
 | `STORE` | `memory` or `prisma` | `memory` (`prisma` in production) |
 | `RATE_LIMIT_PER_MIN` | per key (or IP) | 120 |
-| `NODE_ENV=production` | requires `SECRET_KEY` and `PARTNERS`, strict origins | |
+| `NODE_ENV=production` | requires `SECRET_KEY`, `PARTNERS`, HTTPS `PUBLIC_BASE_URL`, and `ISSUER_PRIVATE_JWK`; exact origins only | |
 
 Never put the secret key in browser code.

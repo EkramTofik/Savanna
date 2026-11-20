@@ -44,7 +44,9 @@ export function register(router: Router, ctx: Ctx) {
     const { lang } = LangQuery.parse(req.query);
     const t = await ctx.store.getTranscript(req.params.id, lang);
     if (!t) throw new HttpError(404, "Not Found", `No ${lang} transcript for lesson "${req.params.id}".`);
-    res.json(t);
+    // Offline pack checksums cover transcript.json bytes. Use a stable wire
+    // representation so the browser can verify those same bytes after fetch.
+    res.type("application/json; charset=utf-8").send(JSON.stringify(t, null, 2));
   });
 
   // POST /v1/lessons/:id/captions (FR-A2 caption upload and review gate)

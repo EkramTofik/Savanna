@@ -65,6 +65,7 @@ export type CareerCtx = {
   issuerName: string;
   issuerNameEn?: string;
   issuerDid: string;
+  issuerPrivateJwk?: string;
   signCredential: (payload: Json) => Json | null;
 };
 

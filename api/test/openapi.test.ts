@@ -13,20 +13,26 @@ import { createSavannaClient } from "../../sdk/src";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const routesDir = path.join(here, "../src/routes");
 const KEY = { "X-Savanna-Key": "pk_dev_local" };
-const SECRET = { "X-Savanna-Key": "sk_dev_local_change_me_please" };
+const SECRET = { "X-Savanna-Key": "sk_dev_local_only_not_secure" };
 const makeApp = () => createApp({ config: loadConfig({}) });
 
 describe("OpenAPI spec", () => {
   it("is valid OpenAPI 3.1", async () => {
     const res = await request(await makeApp()).get("/v1/openapi.json");
     expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/application\/json/i);
+    expect(res.headers["cache-control"]).toContain("max-age=300");
     expect(res.body.openapi).toBe("3.1.0");
     const result = await new Validator().validate(res.body);
     expect(result.valid).toBe(true);
   });
 
   it("the validator really rejects a broken spec", async () => {
-    const result = await new Validator().validate({ openapi: "3.1.0", info: { title: "x" }, paths: { "/a": { get: {} } } });
+    const result = await new Validator().validate({
+      openapi: "3.1.0",
+      info: { title: "x" },
+      paths: { "/a": { get: {} } },
+    });
     expect(result.valid).toBe(false);
   });
 
@@ -43,7 +49,10 @@ describe("OpenAPI spec", () => {
   it("every route file documents its operations", async () => {
     const modules = await loadRouteModules(routesDir, { excludeFiles: CAREER_HARNESS_FILES });
     for (const { file, mod } of modules) {
-      expect(Array.isArray(mod.openapi) && mod.openapi.length > 0, `${file} must export openapi`).toBe(true);
+      expect(
+        Array.isArray(mod.openapi) && mod.openapi.length > 0,
+        `${file} must export openapi`,
+      ).toBe(true);
     }
   });
 
@@ -54,19 +63,46 @@ describe("OpenAPI spec", () => {
       for (const method of Object.keys(ops)) {
         const url = p.replace(/\{(\w+)\}/g, (_m, name) => (name === "file" ? "en.vtt" : "L-102"));
         const res = await (request(app) as any)[method](url).set(SECRET);
-        const routeMissing = res.status === 404 && String(res.body?.detail ?? "").startsWith("No route for");
-        expect(routeMissing, `${method.toUpperCase()} ${p} is documented but not registered`).toBe(false);
+        const routeMissing =
+          res.status === 404 && String(res.body?.detail ?? "").startsWith("No route for");
+        expect(routeMissing, `${method.toUpperCase()} ${p} is documented but not registered`).toBe(
+          false,
+        );
       }
     }
   });
 
   it("rejects docs whose path names do not match the params schema", () => {
-    const bad = { register: () => {}, openapi: [{ method: "get" as const, path: "/x/{id}", summary: "x", responses: { 200: { description: "ok" } } }] };
+    const bad = {
+      register: () => {},
+      openapi: [
+        {
+          method: "get" as const,
+          path: "/x/{id}",
+          summary: "x",
+          responses: { 200: { description: "ok" } },
+        },
+      ],
+    };
     expect(() => buildOpenApi([{ file: "bad.ts", mod: bad }])).toThrow(/mismatch/);
-    const dup = { register: () => {}, openapi: [
-      { method: "get" as const, path: "/a", summary: "a", params: z.object({}), responses: { 200: { description: "ok" } } },
-      { method: "get" as const, path: "/a", summary: "a again", responses: { 200: { description: "ok" } } },
-    ] };
+    const dup = {
+      register: () => {},
+      openapi: [
+        {
+          method: "get" as const,
+          path: "/a",
+          summary: "a",
+          params: z.object({}),
+          responses: { 200: { description: "ok" } },
+        },
+        {
+          method: "get" as const,
+          path: "/a",
+          summary: "a again",
+          responses: { 200: { description: "ok" } },
+        },
+      ],
+    };
     expect(() => buildOpenApi([{ file: "dup.ts", mod: dup }])).toThrow(/duplicate/);
   });
 });
@@ -89,13 +125,17 @@ describe("TypeScript SDK (generated from the spec)", () => {
     const server = app.listen(0);
     try {
       const { port } = server.address() as { port: number };
-      const api = createSavannaClient({ baseUrl: `http://127.0.0.1:${port}`, apiKey: "pk_dev_local" });
+      const api = createSavannaClient({
+        baseUrl: `http://127.0.0.1:${port}`,
+        apiKey: "pk_dev_local",
+      });
 
       const list = await api.GET("/v1/lessons");
       expect(list.data?.lessons.map((l) => l.id)).toEqual(["L-102", "L-103"]);
 
       const lesson = await api.GET("/v1/lessons/{id}", { params: { path: { id: "L-103" } } });
-      expect(lesson.data?.sign?.url).toContain("esl-placeholder.mp4");
+      expect(lesson.data?.sign).toBeNull();
+      expect(lesson.data?.audioDescription).toBeNull();
       expect(lesson.data?.captions.map((c) => c.lang)).toEqual(["en", "am"]);
 
       const missing = await api.GET("/v1/lessons/{id}", { params: { path: { id: "L-999" } } });

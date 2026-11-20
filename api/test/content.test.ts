@@ -9,7 +9,7 @@ import { fromManifest, toManifest } from "../src/lib/manifest";
 import { LessonManifestSchema, TranscriptSchema } from "../src/schemas/lesson";
 
 const KEY = { "X-Savanna-Key": "pk_dev_local" };
-const ADMIN_KEY = { "X-Savanna-Key": "sk_dev_local_change_me_please" };
+const ADMIN_KEY = { "X-Savanna-Key": "sk_dev_local_only_not_secure" };
 const USER_A = { "X-Savanna-User": "user-token-aaaaaaaaaaaa" };
 const USER_B = { "X-Savanna-User": "user-token-bbbbbbbbbbbb" };
 const readJson = (f: string) => JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, f), "utf8"));
@@ -21,7 +21,7 @@ beforeAll(() => {
     // Valid minimal ZIP archive containing manifest.json
     const minimalZip = Buffer.from(
       "504b03040a0000000000000021000000000000000000000000000d0000006d616e69666573742e6a736f6e7b226964223a224c2d313032227d504b010214030a0000000000000021000000000000000000000000000d00000000000000000000008001000000006d616e69666573742e6a736f6e504b050600000000010001003b0000002b0000000000",
-      "hex"
+      "hex",
     );
     fs.writeFileSync(packZipPath, minimalZip);
   }
@@ -37,7 +37,9 @@ describe("contract C1: fixtures and API agree", () => {
       expect(toManifest(fromManifest(fixture))).toEqual(fixture);
     });
     it(`GET /v1/lessons/${id} returns exactly the fixture`, async () => {
-      const res = await request(await app()).get(`/v1/lessons/${id}`).set(KEY);
+      const res = await request(await app())
+        .get(`/v1/lessons/${id}`)
+        .set(KEY);
       expect(res.status).toBe(200);
       expect(res.body).toEqual(readJson(`${id}.json`));
     });
@@ -49,12 +51,16 @@ describe("contract C1: fixtures and API agree", () => {
 
 describe("lessons routes", () => {
   it("lists lessons", async () => {
-    const res = await request(await app()).get("/v1/lessons").set(KEY);
+    const res = await request(await app())
+      .get("/v1/lessons")
+      .set(KEY);
     expect(res.status).toBe(200);
     expect(res.body.lessons.map((l: { id: string }) => l.id)).toEqual(["L-102", "L-103"]);
   });
   it("404s an unknown lesson as problem+json", async () => {
-    const res = await request(await app()).get("/v1/lessons/L-999").set(KEY);
+    const res = await request(await app())
+      .get("/v1/lessons/L-999")
+      .set(KEY);
     expect(res.status).toBe(404);
     expect(res.headers["content-type"]).toContain("application/problem+json");
   });
@@ -62,9 +68,22 @@ describe("lessons routes", () => {
     expect((await request(await app()).get("/v1/lessons")).status).toBe(401);
   });
   it("redirects to the caption file", async () => {
-    const res = await request(await app()).get("/v1/lessons/L-102/captions/am.vtt").set(KEY).redirects(0);
+    const res = await request(await app())
+      .get("/v1/lessons/L-102/captions/am.vtt")
+      .set(KEY)
+      .redirects(0);
     expect(res.status).toBe(302);
-    expect(res.headers.location).toBe("http://localhost:4010/media/am.vtt");
+    expect(res.headers.location).toBe("/media/am.vtt");
+  });
+  it("serves development media files from the same origin", async () => {
+    const res = await request(await app())
+      .get("/media/lesson.mp4")
+      .set("Origin", "http://localhost:3000");
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("video/mp4");
+    expect(res.headers["access-control-allow-origin"]).toBe("http://localhost:3000");
+    expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
+    expect(Number(res.headers["content-length"])).toBeGreaterThan(2_000_000);
   });
   it("404s unsupported caption names", async () => {
     const a = await app();
@@ -72,15 +91,22 @@ describe("lessons routes", () => {
     expect((await request(a).get("/v1/lessons/L-999/captions/en.vtt").set(KEY)).status).toBe(404);
   });
   it("serves the transcript (English by default)", async () => {
-    const res = await request(await app()).get("/v1/lessons/L-102/transcript").set(KEY);
+    const res = await request(await app())
+      .get("/v1/lessons/L-102/transcript")
+      .set(KEY);
     expect(res.status).toBe(200);
     expect(res.body.lang).toBe("en");
     expect(res.body.lines.length).toBeGreaterThan(0);
+    expect(res.text).toBe(fs.readFileSync(path.join(FIXTURES_DIR, "L-102/transcript.json"), "utf8"));
   });
   it("404s a missing transcript language and 400s a bad one", async () => {
     const a = await app();
-    expect((await request(a).get("/v1/lessons/L-102/transcript?lang=am").set(KEY)).status).toBe(404);
-    expect((await request(a).get("/v1/lessons/L-102/transcript?lang=xx").set(KEY)).status).toBe(400);
+    expect((await request(a).get("/v1/lessons/L-102/transcript?lang=am").set(KEY)).status).toBe(
+      404,
+    );
+    expect((await request(a).get("/v1/lessons/L-102/transcript?lang=xx").set(KEY)).status).toBe(
+      400,
+    );
   });
 });
 
@@ -88,28 +114,42 @@ describe("preferences routes", () => {
   it("needs a user token", async () => {
     const a = await app();
     expect((await request(a).get("/v1/preferences").set(KEY)).status).toBe(400);
-    expect((await request(a).get("/v1/preferences").set(KEY).set("X-Savanna-User", "short")).status).toBe(400);
+    expect(
+      (await request(a).get("/v1/preferences").set(KEY).set("X-Savanna-User", "short")).status,
+    ).toBe(400);
   });
   it("returns {} before anything is saved", async () => {
-    const res = await request(await app()).get("/v1/preferences").set(KEY).set(USER_A);
+    const res = await request(await app())
+      .get("/v1/preferences")
+      .set(KEY)
+      .set(USER_A);
     expect(res.body).toEqual({});
   });
   it("saves and reads back, per user", async () => {
     const a = await app();
     const prefs = { captions: { size: 150, color: "yellow" }, sign: { corner: "top-right" } };
-    expect((await request(a).put("/v1/preferences").set(KEY).set(USER_A).send(prefs)).status).toBe(200);
+    expect((await request(a).put("/v1/preferences").set(KEY).set(USER_A).send(prefs)).status).toBe(
+      200,
+    );
     expect((await request(a).get("/v1/preferences").set(KEY).set(USER_A)).body).toEqual(prefs);
     expect((await request(a).get("/v1/preferences").set(KEY).set(USER_B)).body).toEqual({});
   });
   it("rejects unknown namespaces and oversized data", async () => {
     const a = await app();
-    expect((await request(a).put("/v1/preferences").set(KEY).set(USER_A).send({ hacker: {} })).status).toBe(400);
+    expect(
+      (await request(a).put("/v1/preferences").set(KEY).set(USER_A).send({ hacker: {} })).status,
+    ).toBe(400);
     const big = { ui: { blob: "x".repeat(25_000) } };
-    expect((await request(a).put("/v1/preferences").set(KEY).set(USER_A).send(big)).status).toBe(400);
+    expect((await request(a).put("/v1/preferences").set(KEY).set(USER_A).send(big)).status).toBe(
+      400,
+    );
   });
   it("allows the user header in CORS preflight", async () => {
-    const res = await request(await app()).options("/v1/preferences").set("Origin", "http://localhost:5173")
-      .set("Access-Control-Request-Method", "PUT").set("Access-Control-Request-Headers", "x-savanna-key,x-savanna-user");
+    const res = await request(await app())
+      .options("/v1/preferences")
+      .set("Origin", "http://localhost:5173")
+      .set("Access-Control-Request-Method", "PUT")
+      .set("Access-Control-Request-Headers", "x-savanna-key,x-savanna-user");
     expect(res.headers["access-control-allow-headers"]).toContain("X-Savanna-User");
   });
   it("exports stored preferences (FR-A4 / NFR-S3)", async () => {

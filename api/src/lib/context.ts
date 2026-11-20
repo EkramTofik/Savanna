@@ -23,6 +23,12 @@ export interface AppConfig {
   rateLimitPerMin: number;
   /** "memory" (default in dev, no database needed) or "prisma" (PostgreSQL). */
   store: "memory" | "prisma";
+  /** Optional persistent root containing <lesson-id>/pack.json and optional pack.zip files. */
+  packRoot?: string;
+  /** Public HTTPS API origin used for did:web and credential links in production. */
+  publicBaseUrl?: string;
+  /** Server-only Ed25519 JWK JSON. Never expose this value to browser clients. */
+  issuerPrivateJwk?: string;
 }
 
 // Replace `unknown` with the generated PrismaClient type once Prisma is set up (task 4.3).
@@ -31,6 +37,8 @@ export interface Ctx {
   /** Content store (lessons, transcripts, preferences). Added in task 4.3. */
   store: Store;
   config: AppConfig;
+  /** Optional persistent lesson pack directory; defaults to repository fixtures. */
+  packRoot?: string;
 }
 
 export type RegisterRoutes = (router: Router, ctx: Ctx) => void;

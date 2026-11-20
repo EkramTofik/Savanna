@@ -17,23 +17,42 @@ app.get("/v1/lessons/:id/pack.zip", (req, res) => {
   const id = req.params.id;
   // Validate id to prevent path traversal
   if (!/^[\w-]{1,80}$/.test(id)) {
-    return res.status(400).type("application/problem+json").json({ title: "Bad request", status: 400 });
+    return res
+      .status(400)
+      .type("application/problem+json")
+      .json({ title: "Bad request", status: 400 });
   }
   const packJson = path.resolve(root, "v1/lessons", id, "pack.json");
   if (!packJson.startsWith(root) || !fs.existsSync(packJson)) {
-    return res.status(404).type("application/problem+json").json({ title: "Not found", status: 404 });
+    return res
+      .status(404)
+      .type("application/problem+json")
+      .json({ title: "Not found", status: 404 });
   }
   res.setHeader("Content-Type", "application/zip");
   res.setHeader("Content-Disposition", `attachment; filename="${id}-pack.zip"`);
   res.setHeader("Accept-Ranges", "bytes");
   const archive = archiver("zip", { zlib: { level: 1 } });
-  archive.on("error", (err) => { if (!res.headersSent) res.status(500).end(); console.error(err); });
+  archive.on("error", (err) => {
+    if (!res.headersSent) res.status(500).end();
+    console.error(err);
+  });
   archive.pipe(res);
-  // Bundle the media fixtures as the lesson content
+  // Bundle only files declared by this pack; placeholder description/sign assets are excluded.
   const mediaDir = path.join(root, "media");
-  for (const name of ["lesson.opus", "en.vtt", "am.vtt", "ad.opus", "ad.vtt"]) {
-    const f = path.join(mediaDir, name);
-    if (fs.existsSync(f)) archive.file(f, { name });
+  const pack = JSON.parse(fs.readFileSync(packJson, "utf8"));
+  for (const entry of pack.files || []) {
+    if (
+      typeof entry.path !== "string" ||
+      path.isAbsolute(entry.path) ||
+      entry.path.split(/[\\/]/).includes("..")
+    )
+      continue;
+    const base = entry.path === "transcript.json" ? path.join(root, "v1", "lessons", id) : mediaDir;
+    const f = path.resolve(base, entry.path);
+    if (f.startsWith(base + path.sep) && fs.existsSync(f) && fs.statSync(f).isFile()) {
+      archive.file(f, { name: entry.path.replaceAll("\\", "/") });
+    }
   }
   // Include manifest
   archive.file(packJson, { name: "manifest.json" });

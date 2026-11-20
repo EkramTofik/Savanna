@@ -5,7 +5,7 @@ import { loadConfig } from "../src/config";
 import { verifyDemoProof } from "../src/routes/open-badges";
 
 const PUBLISHABLE = { "X-Savanna-Key": "pk_dev_local" };
-const SECRET = { "X-Savanna-Key": "sk_dev_local_change_me_please" };
+const SECRET = { "X-Savanna-Key": "sk_dev_local_only_not_secure" };
 const app = () => createApp({ config: loadConfig({ STORE: "memory" }) });
 
 describe("Member 3 CareerGateway routes", () => {

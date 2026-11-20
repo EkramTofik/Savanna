@@ -1,17 +1,31 @@
-import { createHash, createPrivateKey, createPublicKey, sign, verify } from "node:crypto";
+import { createHash, createPrivateKey, createPublicKey, generateKeyPairSync, sign, verify } from "node:crypto";
 import type { CareerCtx, CredentialRecord, Json } from "./career-types.js";
 import { effectiveStatus } from "./career-lib.js";
 
-/** Demo issuer key. Replace with a KMS-backed key before any production issue. */
-export const DEMO_PRIVATE_JWK = {
-  kty: "OKP",
-  crv: "Ed25519",
-  d: "nWGxne/9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",
-  x: "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
-} as const;
+type Ed25519PrivateJwk = { kty: "OKP"; crv: "Ed25519"; d: string; x: string };
+let developmentPrivateJwk: Ed25519PrivateJwk | undefined;
 
-export function publicJwk() {
-  return { kty: "OKP" as const, crv: "Ed25519", x: DEMO_PRIVATE_JWK.x };
+function issuerPrivateJwk(serialized?: string): Ed25519PrivateJwk {
+  if (serialized) {
+    const value = JSON.parse(serialized) as Partial<Ed25519PrivateJwk>;
+    if (value.kty !== "OKP" || value.crv !== "Ed25519" || !value.d || !value.x) {
+      throw new Error("ISSUER_PRIVATE_JWK must contain an Ed25519 private JWK.");
+    }
+    return value as Ed25519PrivateJwk;
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Credential signing is disabled until ISSUER_PRIVATE_JWK is configured.");
+  }
+  if (!developmentPrivateJwk) {
+    const pair = generateKeyPairSync("ed25519");
+    developmentPrivateJwk = pair.privateKey.export({ format: "jwk" }) as Ed25519PrivateJwk;
+  }
+  return developmentPrivateJwk;
+}
+
+export function publicJwk(serializedPrivateJwk?: string) {
+  const privateJwk = issuerPrivateJwk(serializedPrivateJwk);
+  return { kty: "OKP" as const, crv: "Ed25519" as const, x: privateJwk.x };
 }
 
 export function didDocument(ctx: CareerCtx): Json {
@@ -25,7 +39,7 @@ export function didDocument(ctx: CareerCtx): Json {
         id: `${did}#key-1`,
         type: "Multikey",
         controller: did,
-        publicKeyJwk: publicJwk(),
+        publicKeyJwk: publicJwk(ctx.issuerPrivateJwk),
       },
     ],
     assertionMethod: [`${did}#key-1`],
@@ -43,27 +57,32 @@ function canonicalJson(value: unknown): string {
   return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalJson(obj[key])}`).join(",")}}`;
 }
 
-export function signPayload(payload: Json): Json {
-  const key = createPrivateKey({ key: { ...DEMO_PRIVATE_JWK }, format: "jwk" });
+export function signPayload(payload: Json, serializedPrivateJwk?: string): Json {
+  const privateJwk = issuerPrivateJwk(serializedPrivateJwk);
+  const key = createPrivateKey({ key: privateJwk, format: "jwk" });
   const bytes = Buffer.from(canonicalJson(payload));
   const signature = sign(null, bytes, key);
+  const issuerId = (payload.issuer as Json | undefined)?.id;
+  if (typeof issuerId !== "string" || !issuerId) {
+    throw new Error("Credential payload must contain the issuer DID before signing.");
+  }
   return {
     type: "DataIntegrityProof",
     cryptosuite: "eddsa-rdfc-2022",
     created: new Date().toISOString(),
     proofPurpose: "assertionMethod",
-    verificationMethod: "did:web:localhost%3A4020#key-1",
+    verificationMethod: `${issuerId}#key-1`,
     proofValue: `z${signature.toString("base64url")}`,
     warning:
       "የሃካቶን ማረጋገጫ፦ ኤድ25519 በተደራጀ JSON ላይ ተመስርቷል፤ ሙሉ RDFC-1.0 አይደለም። በአገልጋይ ላይ ማረጋገጥ የሚደገፈው መንገድ ነው።",
   };
 }
 
-export function verifyDemoProof(payload: Json, proof: Json): boolean {
+export function verifyDemoProof(payload: Json, proof: Json, serializedPrivateJwk?: string): boolean {
   try {
     const { proof: _ignored, ...rest } = payload as Json & { proof?: unknown };
     void _ignored;
-    const pub = createPublicKey({ key: publicJwk(), format: "jwk" });
+    const pub = createPublicKey({ key: publicJwk(serializedPrivateJwk), format: "jwk" });
     const value = String(proof.proofValue ?? "").replace(/^z/, "");
     const sig = Buffer.from(value, "base64url");
     return verify(null, Buffer.from(canonicalJson(rest)), pub, sig);
