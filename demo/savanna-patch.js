@@ -1,88 +1,108 @@
 /**
- * Savanna Starter Accessibility Patch (FR-I5b).
- * Non-invasive fix for legacy Savanna template defects:
- * - div hamburger & missing button roles
- * - invalid aria-expanded on non-button containers
- * - aria-hidden containers and anchor links holding focus
- * - unlabelled progressbar
- * - unlabelled logo link
- * - invalid hr elements direct in ul
+ * Savanna accessibility and lesson-player integration patch.
+ *
+ * Keeps the legacy course template's small accessibility corrections and
+ * connects the visible language button to the actual Savanna player API.
  */
+(() => {
+  "use strict";
 
-function patchSavannaDefects() {
-  // 1. Invalid aria-expanded on non-button div
-  document.querySelectorAll('div.flex-shrink-0[aria-expanded]').forEach((el) => {
-    el.removeAttribute('aria-expanded');
-  });
-
-  // 2. Unlabelled logo link
-  document.querySelectorAll('a.logo-container').forEach((el) => {
-    if (!el.getAttribute('aria-label') && !el.textContent.trim()) {
-      el.setAttribute('aria-label', 'Savanna Learning Platform Home');
-    }
-  });
-
-  // 3. Progress bar missing label
-  document.querySelectorAll('.progress-bar').forEach((el) => {
-    if (!el.getAttribute('aria-label')) {
-      el.setAttribute('aria-label', 'Curriculum Progress');
-    }
-  });
-
-  // 4. Anchors with aria-hidden="true" must have tabindex="-1" to not be focusable
-  document.querySelectorAll('a[aria-hidden="true"], [aria-hidden="true"] a').forEach((a) => {
-    a.setAttribute('tabindex', '-1');
-  });
-
-  // 5. Invalid direct hr in ul: wrap in standard li
-  document.querySelectorAll('ul > hr').forEach((hr) => {
-    const li = document.createElement('li');
-    li.style.listStyle = 'none';
-    hr.parentNode.insertBefore(li, hr);
-    li.appendChild(hr);
-  });
-
-  wireLessonPlayerLanguage();
-}
-
-function wireLessonPlayerLanguage() {
-  const button = document.querySelector('[data-savanna-language-toggle]');
-  const player = document.querySelector('#lesson-player');
-  if (!button || !player || button.dataset.languageBound === 'true') return;
-  button.dataset.languageBound = 'true';
-
-  const syncButton = (activeLanguage) => {
-    if (activeLanguage !== 'en' && activeLanguage !== 'am') return;
-    const nextLanguage = activeLanguage === 'am' ? 'en' : 'am';
-    button.textContent = nextLanguage === 'am' ? 'አማርኛ / Amharic' : 'English';
-  };
-
-  button.disabled = true;
-  window.addEventListener('savanna:lang-change', (event) => {
-    const language = event.detail?.lang;
-    if (language === 'en' || language === 'am') {
-      syncButton(language);
-      // The surrounding Savanna lesson content remains English; only the player changes language.
-      document.documentElement.lang = 'en';
-    }
-  });
-
-  void customElements.whenDefined('savanna-player').then(async () => {
-    if (typeof player.setLanguage !== 'function') return;
-    await Promise.resolve(player.updateComplete);
-    syncButton(player.lang);
-    button.disabled = false;
-    button.addEventListener('click', () => {
-      const nextLanguage = player.lang === 'am' ? 'en' : 'am';
-      player.setLanguage(nextLanguage);
-      syncButton(nextLanguage);
-      document.documentElement.lang = 'en';
+  function patchSavannaDefects() {
+    document.querySelectorAll("div.flex-shrink-0[aria-expanded]").forEach((element) => {
+      element.removeAttribute("aria-expanded");
     });
-  });
-}
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', patchSavannaDefects);
-} else {
-  patchSavannaDefects();
-}
+    document.querySelectorAll("a.logo-container").forEach((element) => {
+      if (!element.getAttribute("aria-label") && !element.textContent.trim()) {
+        element.setAttribute("aria-label", "Savanna Learning Platform Home");
+      }
+    });
+
+    document.querySelectorAll(".progress-bar").forEach((element) => {
+      if (!element.getAttribute("aria-label")) {
+        element.setAttribute("aria-label", "Curriculum Progress");
+      }
+    });
+
+    document
+      .querySelectorAll('a[aria-hidden="true"], [aria-hidden="true"] a')
+      .forEach((element) => element.setAttribute("tabindex", "-1"));
+
+    document.querySelectorAll("ul > hr").forEach((hr) => {
+      const listItem = document.createElement("li");
+      listItem.style.listStyle = "none";
+      hr.parentNode.insertBefore(listItem, hr);
+      listItem.appendChild(hr);
+    });
+
+    wireLessonPlayerLanguage();
+  }
+
+  function wireLessonPlayerLanguage() {
+    const button = document.querySelector("[data-savanna-language-toggle]");
+    const player = document.getElementById("lesson-player");
+    const status = document.getElementById("player-status");
+
+    if (!button || !player || button.dataset.languageBound === "true") return;
+    button.dataset.languageBound = "true";
+    button.disabled = true;
+
+    function updateButton(activeLanguage) {
+      if (activeLanguage === "am") {
+        button.textContent = "English";
+        button.setAttribute("aria-label", "Switch player language to English");
+      } else {
+        button.textContent = "አማርኛ / Amharic";
+        button.setAttribute("aria-label", "Switch player language to Amharic");
+      }
+    }
+
+    window.addEventListener("savanna:lang-change", (event) => {
+      const language = event.detail && event.detail.lang;
+      if (language !== "en" && language !== "am") return;
+
+      updateButton(language);
+      if (status) {
+        status.textContent =
+          language === "am"
+            ? "የተጫነው ቋንቋ አማርኛ ነው።"
+            : "English player language selected.";
+      }
+    });
+
+    customElements
+      .whenDefined("savanna-player")
+      .then(async () => {
+        if (player.updateComplete) await player.updateComplete;
+
+        if (typeof player.toggleLearningLanguage !== "function") {
+          console.error("Savanna player does not expose toggleLearningLanguage().");
+          button.textContent = "Language switching unavailable";
+          if (status) status.textContent = "The player language control is unavailable.";
+          return;
+        }
+
+        updateButton(player.activeLang || player.lang || "en");
+        button.disabled = false;
+
+        button.addEventListener("click", () => {
+          player.toggleLearningLanguage();
+        });
+
+        if (status) {
+          status.textContent = "Player controls are ready. Press Play to load the lesson.";
+        }
+      })
+      .catch((error) => {
+        console.error("Could not initialize Savanna language controls:", error);
+        button.textContent = "Language controls unavailable";
+        if (status) status.textContent = "The player controls could not be initialized.";
+      });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", patchSavannaDefects, { once: true });
+  } else {
+    patchSavannaDefects();
+  }
+})();
