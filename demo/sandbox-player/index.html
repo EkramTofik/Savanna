@@ -707,11 +707,11 @@
     <div class="container">
         <!-- Breadcrumb Navigation -->
         <nav class="breadcrumb" aria-label="Breadcrumb">
-            <a href="#" id="crumb-courses">Courses</a>
+            <a id="crumb-courses" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local demo">Courses</a>
             <span class="breadcrumb-sep">›</span>
-            <a href="#" id="crumb-track">VA-1 Foundations</a>
+            <a id="crumb-track" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local demo">VA-1 Foundations</a>
             <span class="breadcrumb-sep">›</span>
-            <a href="#" id="crumb-module">Module 2</a>
+            <a id="crumb-module" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local demo">Module 2</a>
             <span class="breadcrumb-sep">›</span>
             <span id="breadcrumb-lesson" style="color: #0f172a; font-weight: 600;">The Future of the VA Industry</span>
         </nav>
@@ -826,12 +826,8 @@
                             <a href="http://localhost:4010/media/am.vtt" class="noscript-link" download>
                                 📝 <strong>Amharic Captions:</strong> am.vtt (የአማርኛ የግርጌ ጽሑፍ)
                             </a>
-                            <a href="http://localhost:4010/media/esl-placeholder.mp4" class="noscript-link" download>
-                                🤟 <strong>Sign Language (ESL):</strong> esl-placeholder.mp4
-                            </a>
-                            <a href="http://localhost:4010/media/ad.opus" class="noscript-link" download>
-                                🎙️ <strong>Audio Description:</strong> ad.opus
-                            </a>
+                            <p class="noscript-link">Sign-language video unavailable: no approved recording is supplied.</p>
+                            <p class="noscript-link">Audio description unavailable: no approved recording and valid timed cues are supplied.</p>
                             <a href="http://localhost:4010/v1/lessons/L-103/transcript" class="noscript-link"
                                 target="_blank" rel="noopener">
                                 📄 <strong>Full Transcript:</strong> Plain-Language JSON / Text
@@ -846,23 +842,16 @@
                     </div>
                 </noscript>
 
-                <savanna-player id="lesson-player" lesson="L-103" api="http://localhost:4010" lang="en">
-                    <!-- Slotted ESL Sign Window Stub with actual ESL video from L-103 -->
-                    <div slot="overlay" data-sign-window id="mock-sign-window" class="mock-sign-overlay">
-                        <div id="mock-sign-title" style="font-weight: 700; margin-bottom: 3px;">ESL Sign Window</div>
-                        <video src="http://localhost:4010/media/esl-placeholder.mp4" loop muted playsinline
-                            style="width: 120px; height: 80px; object-fit: cover; border-radius: 4px; display: block;"></video>
-                        <div id="mock-sign-hint" style="font-size: 0.68rem; opacity: 0.9; margin-top: 2px;">(Press S to
-                            toggle)</div>
-                    </div>
-                    <!-- Slotted Audio Description from L-103 -->
-                    <audio data-ad id="mock-ad-track" src="http://localhost:4010/media/ad.opus" preload="none"></audio>
+                <savanna-player id="lesson-player" lesson="L-103" api="" api-key="pk_dev_local" lang="en">
+                    <savanna-sign-window slot="overlay"></savanna-sign-window>
+                    <savanna-audio-description></savanna-audio-description>
+                    <savanna-offline api="" api-key="pk_dev_local" lesson-id="L-103"></savanna-offline>
                 </savanna-player>
             </div>
 
             <!-- Modern Bottom Lesson Navigation & Switcher -->
             <div class="lesson-nav-bar">
-                <button type="button" id="btn-before" class="btn-nav-pill">
+                <button type="button" id="btn-before" class="btn-nav-pill" disabled>
                     ← Previous Concept
                 </button>
                 <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
@@ -873,7 +862,7 @@
                         Minimal Lesson (L-102)
                     </button>
                 </div>
-                <button type="button" id="btn-after" class="btn-nav-pill">
+                <button type="button" id="btn-after" class="btn-nav-pill" disabled>
                     Next Concept →
                 </button>
             </div>
@@ -942,7 +931,7 @@
         <input type="checkbox" id="toggle-shortcuts" />
         <div id="checklist-score"></div>
         <div id="mock-data-title"></div>
-        <a id="mock-raw-link" href="#"></a>
+        <a id="mock-raw-link" hidden></a>
         <div id="mock-json-display"></div>
         <div class="checklist-item" data-key="K"><span class="check-status"></span></div>
         <div class="checklist-item" data-key="Space"><span class="check-status"></span></div>

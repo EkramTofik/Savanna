@@ -12,21 +12,22 @@
  */
 
 export interface UiPreferences {
-  lang: 'en' | 'am';
+  lang: "en" | "am";
   speed: number;
-  theme: 'dark' | 'light' | 'high-contrast';
+  theme: "dark" | "light" | "high-contrast";
   shortcuts: boolean;
+  lowData: boolean;
 }
 
 export interface CaptionsPreferences {
   enabled: boolean;
-  lang: 'en' | 'am' | 'off';
+  lang: "en" | "am" | "off";
   fontSize: number; // 100, 150, 200, 300
-  preset: 'white-black' | 'yellow-black' | 'black-white' | 'custom';
+  preset: "white-black" | "yellow-black" | "black-white" | "custom";
   textColor: string;
   bgColor: string;
   bgOpacity: number; // 0, 50, 75, 100
-  position: 'bottom' | 'top';
+  position: "bottom" | "top";
 }
 
 export interface PlayerPreferences {
@@ -34,27 +35,41 @@ export interface PlayerPreferences {
   captions: CaptionsPreferences;
 }
 
-export const PREFS_STORAGE_KEY = 'savanna.prefs.v1';
+export const PREFS_STORAGE_KEY = "savanna.prefs.v1";
+
+/** Returns a saved UI language when one was explicitly chosen; null keeps the host's lang attribute. */
+export function loadStoredPlayerLanguagePreference(): "en" | "am" | null {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(PREFS_STORAGE_KEY);
+    if (!raw) return null;
+    const lang = JSON.parse(raw)?.ui?.lang;
+    return lang === "en" || lang === "am" ? lang : null;
+  } catch {
+    return null;
+  }
+}
 
 export function getDefaultUiPreferences(): UiPreferences {
   return {
-    lang: 'en',
+    lang: "en",
     speed: 1,
-    theme: 'dark',
+    theme: "dark",
     shortcuts: true,
+    lowData: true,
   };
 }
 
 export function getDefaultCaptionsPreferences(): CaptionsPreferences {
   return {
     enabled: false,
-    lang: 'en',
+    lang: "en",
     fontSize: 100,
-    preset: 'white-black',
-    textColor: '#ffffff',
-    bgColor: '#000000',
+    preset: "white-black",
+    textColor: "#ffffff",
+    bgColor: "#000000",
     bgOpacity: 80,
-    position: 'bottom',
+    position: "bottom",
   };
 }
 
@@ -68,55 +83,58 @@ export function loadPlayerPreferences(): PlayerPreferences {
   };
 
   try {
-    if (typeof localStorage === 'undefined') return defaults;
+    if (typeof localStorage === "undefined") return defaults;
     const raw = localStorage.getItem(PREFS_STORAGE_KEY);
     if (!raw) return defaults;
 
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return defaults;
+    if (!parsed || typeof parsed !== "object") return defaults;
 
     // 1. Resolve 'ui' namespace
-    if (parsed.ui && typeof parsed.ui === 'object') {
+    if (parsed.ui && typeof parsed.ui === "object") {
       const u = parsed.ui;
-      if (u.lang === 'en' || u.lang === 'am') {
+      if (u.lang === "en" || u.lang === "am") {
         defaults.ui.lang = u.lang;
       }
-      if (typeof u.speed === 'number' && u.speed >= 0.5 && u.speed <= 2.5) {
+      if (typeof u.speed === "number" && u.speed >= 0.5 && u.speed <= 2.5) {
         defaults.ui.speed = u.speed;
       }
-      if (u.theme === 'dark' || u.theme === 'light' || u.theme === 'high-contrast') {
+      if (u.theme === "dark" || u.theme === "light" || u.theme === "high-contrast") {
         defaults.ui.theme = u.theme;
       }
-      if (typeof u.shortcuts === 'boolean') {
+      if (typeof u.shortcuts === "boolean") {
         defaults.ui.shortcuts = u.shortcuts;
+      }
+      if (typeof u.lowData === "boolean") {
+        defaults.ui.lowData = u.lowData;
       }
     }
 
     // 2. Resolve 'captions' namespace
-    if (parsed.captions && typeof parsed.captions === 'object') {
+    if (parsed.captions && typeof parsed.captions === "object") {
       const c = parsed.captions;
-      if (typeof c.enabled === 'boolean') {
+      if (typeof c.enabled === "boolean") {
         defaults.captions.enabled = c.enabled;
       }
-      if (c.lang === 'en' || c.lang === 'am' || c.lang === 'off') {
+      if (c.lang === "en" || c.lang === "am" || c.lang === "off") {
         defaults.captions.lang = c.lang;
       }
-      if (typeof c.fontSize === 'number' && [100, 150, 200, 300].includes(c.fontSize)) {
+      if (typeof c.fontSize === "number" && [100, 150, 200, 300].includes(c.fontSize)) {
         defaults.captions.fontSize = c.fontSize;
       }
-      if (['white-black', 'yellow-black', 'black-white', 'custom'].includes(c.preset)) {
+      if (["white-black", "yellow-black", "black-white", "custom"].includes(c.preset)) {
         defaults.captions.preset = c.preset;
       }
-      if (typeof c.textColor === 'string' && c.textColor.length > 0) {
+      if (typeof c.textColor === "string" && c.textColor.length > 0) {
         defaults.captions.textColor = c.textColor;
       }
-      if (typeof c.bgColor === 'string' && c.bgColor.length > 0) {
+      if (typeof c.bgColor === "string" && c.bgColor.length > 0) {
         defaults.captions.bgColor = c.bgColor;
       }
-      if (typeof c.bgOpacity === 'number') {
+      if (typeof c.bgOpacity === "number") {
         defaults.captions.bgOpacity = Math.max(0, Math.min(100, c.bgOpacity));
       }
-      if (c.position === 'bottom' || c.position === 'top') {
+      if (c.position === "bottom" || c.position === "top") {
         defaults.captions.position = c.position;
       }
     }
@@ -132,19 +150,16 @@ export function loadPlayerPreferences(): PlayerPreferences {
  * CRITICAL (Contract C3): Reads the existing object and updates ONLY 'ui' and 'captions'.
  * Any peer keys ('sign', 'ad', 'offline', 'jobs') are preserved exactly as they are!
  */
-export function savePlayerPreferences(
-  ui: UiPreferences,
-  captions: CaptionsPreferences
-): void {
+export function savePlayerPreferences(ui: UiPreferences, captions: CaptionsPreferences): void {
   try {
-    if (typeof localStorage === 'undefined') return;
+    if (typeof localStorage === "undefined") return;
     const raw = localStorage.getItem(PREFS_STORAGE_KEY);
     let root: Record<string, unknown> = {};
 
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') {
+        if (parsed && typeof parsed === "object") {
           root = parsed;
         }
       } catch {
@@ -153,14 +168,15 @@ export function savePlayerPreferences(
     }
 
     // Modify ONLY Member 1's namespaces
-    root['ui'] = {
+    root["ui"] = {
       lang: ui.lang,
       speed: ui.speed,
       theme: ui.theme,
       shortcuts: ui.shortcuts,
+      lowData: ui.lowData,
     };
 
-    root['captions'] = {
+    root["captions"] = {
       enabled: captions.enabled,
       lang: captions.lang,
       fontSize: captions.fontSize,

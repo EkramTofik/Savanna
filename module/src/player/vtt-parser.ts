@@ -14,19 +14,29 @@ export interface VttCue {
  * Converts a WebVTT timestamp (MM:SS.mmm or HH:MM:SS.mmm) to floating-point seconds.
  */
 export function parseTimestamp(ts: string): number {
-  const parts = ts.trim().split(':');
-  if (parts.length === 2 && parts[0] !== undefined && parts[1] !== undefined) {
-    const min = parseFloat(parts[0]);
-    const sec = parseFloat(parts[1]);
-    return min * 60 + sec;
+  const [whole, milliseconds, ...extra] = ts.trim().split(".");
+  if (!whole || !milliseconds || extra.length || !/^\d{3}$/.test(milliseconds)) return Number.NaN;
+  const parts = whole.split(":");
+  if (parts.some((part) => !/^\d+$/.test(part))) return Number.NaN;
+  const values = parts.map(Number);
+  if (values.length === 2) {
+    const [minutes, seconds] = values;
+    if (minutes === undefined || seconds === undefined || seconds > 59) return Number.NaN;
+    return minutes * 60 + seconds + Number(`0.${milliseconds}`);
   }
-  if (parts.length === 3 && parts[0] !== undefined && parts[1] !== undefined && parts[2] !== undefined) {
-    const hr = parseFloat(parts[0]);
-    const min = parseFloat(parts[1]);
-    const sec = parseFloat(parts[2]);
-    return hr * 3600 + min * 60 + sec;
+  if (values.length === 3) {
+    const [hours, minutes, seconds] = values;
+    if (
+      hours === undefined ||
+      minutes === undefined ||
+      seconds === undefined ||
+      minutes > 59 ||
+      seconds > 59
+    )
+      return Number.NaN;
+    return hours * 3600 + minutes * 60 + seconds + Number(`0.${milliseconds}`);
   }
-  return 0;
+  return Number.NaN;
 }
 
 /**

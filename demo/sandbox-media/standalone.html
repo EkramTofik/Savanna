@@ -191,7 +191,7 @@
     <main>
       <h1>🎬 Savanna Media Access Sandbox <span class="badge success">Member 2</span></h1>
       <p class="subtitle">
-        Standalone demo - All components work without TypeScript compilation
+        Component interaction harness. It uses a fake C2 event source; sign and audio-description recordings are not supplied.
         <span class="badge">CDN Lit</span>
       </p>
 
@@ -200,9 +200,9 @@
           <h2>▶️ Main Lesson Video (Fake C2 Player)</h2>
 
           <div class="info-box">
-            <strong>✓ Real Media:</strong> lesson.mp4 (161 KB)<br />
+            <strong>Test lesson media:</strong> fixture video only; not an access-track recording<br />
             <strong>✓ Fake Player:</strong> Emits <code>savanna:timeupdate</code> events<br />
-            <strong>✓ Components:</strong> All three loaded and functional
+            <strong>Test scope:</strong> sign-window fallback and offline component loading; AD media is unavailable
           </div>
 
           <div id="fakePlayer" class="player-container">
@@ -252,12 +252,12 @@
 
       <div class="container">
         <div class="card">
-          <h2>🔊 Audio Description</h2>
+          <h2>🔊 Audio Description UI Simulation</h2>
           <div class="info-box">
             <strong>Component:</strong> &lt;savanna-audio-description&gt;<br />
-            <strong>Shortcut:</strong> Press <kbd>D</kbd> key anywhere
+            Test/demo controls only. No approved lesson recording or timed cues are loaded, and this page cannot play audio description.
           </div>
-          <div id="adContainer"></div>
+          <p id="adContainer" role="status">Audio description is unavailable. The control below changes sample UI state only; no description track is loaded.</p>
         </div>
 
         <div class="card">
@@ -281,7 +281,7 @@
         >
           <div class="status-box success">✓ Fake Player: Working</div>
           <div class="status-box success" id="componentStatus">⏳ Components: Loading...</div>
-          <div class="status-box success">✓ Media Files: Found</div>
+          <div class="status-box">Test lesson fixture only; no approved sign or AD track is supplied.</div>
           <div class="status-box success" id="eventStatus">⏳ Events: Waiting...</div>
         </div>
       </div>
@@ -554,7 +554,7 @@
           this.src = "";
           this.textVtt = "";
           this.enabled = false;
-          this.status = "Audio description is off";
+          this.status = "Demo only: no audio-description recording or timed cues are loaded.";
 
           // D key shortcut
           document.addEventListener("keydown", (e) => {
@@ -570,7 +570,9 @@
 
         toggle() {
           this.enabled = !this.enabled;
-          this.status = this.enabled ? "▶️ Audio description enabled" : "⏹️ Audio description off";
+          this.status = this.enabled
+            ? "Simulation only: control state changed; no audio-description recording is playing."
+            : "Simulation only: control state reset; no audio-description recording is loaded.";
           this.requestUpdate();
         }
 
@@ -578,11 +580,11 @@
           return html`
             <div class="controls">
               <button @click=${() => this.toggle()}>
-                ${this.enabled ? "Stop" : "Play"} Description
+                ${this.enabled ? "Reset demo state" : "Simulate state change"}
               </button>
               <label>
                 <input type="checkbox" />
-                Extended AD (pause lesson)
+                Simulate extended AD option (no playback or pause)
               </label>
             </div>
             <p role="status" aria-live="polite">${this.status}</p>
@@ -673,17 +675,10 @@
         // Sign window
         const signContainer = document.getElementById("signContainer");
         const signWindow = document.createElement("savanna-sign-window");
-        signWindow.setAttribute("src", "../../contracts/fixtures/media/lesson.mp4");
         signWindow.setAttribute("lang", "en");
         signContainer.appendChild(signWindow);
-        document.getElementById("signStatus").textContent = "✓ Sign window active - Drag to move";
-
-        // Audio description
-        const adContainer = document.getElementById("adContainer");
-        const audioDesc = document.createElement("savanna-audio-description");
-        audioDesc.setAttribute("src", "../../contracts/fixtures/media/ad.opus");
-        audioDesc.setAttribute("text-vtt", "../../contracts/fixtures/media/ad.vtt");
-        adContainer.appendChild(audioDesc);
+        document.getElementById("signStatus").textContent =
+          "Sign-language video unavailable; use the window fallback and controls only.";
 
         // Offline
         const offlineContainer = document.getElementById("offlineContainer");
@@ -694,9 +689,9 @@
 
         console.log("✓ All components initialized");
         console.log("");
-        console.log("Press D key to toggle audio description");
+        console.log("Audio description is unavailable until approved media and cues are supplied.");
         console.log("Tab to sign window, drag to move");
-        console.log("All 40 automated tests passing ✓");
+        console.log("This page is a UI/demo harness; it does not execute the repository's automated tests.");
       }, 100);
     </script>
 

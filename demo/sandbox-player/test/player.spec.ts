@@ -258,4 +258,445 @@ test.describe("Savanna Player - Member 1 Accessibility & Functional Suite", () =
     // Turn captions back off
     await player.locator(".btn-captions").click();
   });
+
+  test("1.12 Development media URLs return real WebVTT and captions switch without reload", async ({
+    page,
+    request,
+  }) => {
+    await page.goto("/");
+    const player = page.locator("savanna-player");
+    await expect(player).toBeVisible();
+    await expect
+      .poll(() => player.evaluate((element: any) => element.manifestData?.id ?? ""))
+      .toBe("L-103");
+
+    for (const [file, expectedText] of [
+      ["en.vtt", "For the last 10 years"],
+      ["am.vtt", "ላለፉት 10 ዓመታት"],
+    ]) {
+      const response = await request.get(new URL(`/media/${file}`, page.url()).href);
+      expect(response.status(), `${file} should load through the page origin`).toBe(200);
+      expect(response.headers()["content-type"]).toMatch(/text\/vtt/i);
+      const body = await response.text();
+      expect(body.startsWith("WEBVTT")).toBe(true);
+      expect(body).toContain("00:00.000 --> 00:07.500");
+      expect(body).toContain(expectedText);
+    }
+
+    await expect
+      .poll(() => player.evaluate((element: any) => element.vttCuesCache?.get("en")?.length ?? 0))
+      .toBeGreaterThan(0);
+    await expect
+      .poll(() => player.evaluate((element: any) => element.vttCuesCache?.get("am")?.length ?? 0))
+      .toBeGreaterThan(0);
+
+    const video = player.locator("video");
+    if ((await player.locator(".btn-low-data").getAttribute("aria-pressed")) === "true") {
+      await player.locator(".btn-low-data").click();
+    }
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState))
+      .toBeGreaterThanOrEqual(2);
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.duration))
+      .toBeCloseTo(120, 1);
+
+    const rangeResponse = await request.get(new URL("/media/lesson.mp4", page.url()).href, {
+      headers: { Range: "bytes=0-1023" },
+    });
+    expect(rangeResponse.status()).toBe(206);
+    expect(rangeResponse.headers()["content-range"]).toBe("bytes 0-1023/2096006");
+    expect((await rangeResponse.body()).byteLength).toBe(1024);
+    await video.evaluate(async (element: HTMLVideoElement) => {
+      element.playbackRate = 0.5;
+      element.currentTime = 2;
+      await element.play();
+    });
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
+      .toBeGreaterThan(2);
+    if ((await player.locator(".btn-captions").getAttribute("aria-pressed")) !== "true") {
+      await player.locator(".btn-captions").click();
+    }
+    await expect(player.locator(".caption-overlay")).toBeVisible();
+    await expect(player.locator(".caption-overlay .caption-cue")).toContainText(
+      "For the last 10 years",
+    );
+
+    await player.locator(".btn-speed").click();
+    await player.getByRole("menuitemradio", { name: "1.5x" }).click();
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.playbackRate))
+      .toBe(1.5);
+    await player.locator(".btn-speed").click();
+    await player.getByRole("menuitemradio", { name: /1\.0x/ }).click();
+
+    await player.locator(".btn-captions").click();
+    await expect(player.locator(".caption-overlay")).toHaveAttribute("hidden", "");
+    await player.locator(".btn-captions").click();
+    await expect(player.locator(".caption-overlay")).not.toHaveAttribute("hidden", "");
+
+    await video.evaluate((element: HTMLVideoElement) => element.pause());
+    await player.locator(".btn-language").click();
+    await expect(player).toHaveAttribute("lang", "am");
+    await expect(player.locator(".caption-overlay .caption-cue")).toContainText("ላለፉት 10 ዓመታት");
+  });
+
+  test("1.13 Required viewport sizes keep controls, menus, and unavailable sign state operable", async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 1366, height: 768 },
+      { width: 768, height: 1024 },
+      { width: 390, height: 844 },
+      { width: 360, height: 740 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto("/");
+      const player = page.locator("savanna-player");
+      await expect(player).toBeVisible();
+      await expect
+        .poll(() => player.evaluate((element: any) => element.manifestData?.id ?? ""))
+        .toBe("L-103");
+
+      const pageWidth = await page.evaluate(() => ({
+        inner: window.innerWidth,
+        document: document.documentElement.scrollWidth,
+      }));
+      expect(pageWidth.document, `${viewport.width}px viewport has no horizontal page overflow`).toBeLessThanOrEqual(
+        pageWidth.inner + 1,
+      );
+      await expect(player.locator(".player-controls")).toBeVisible();
+      for (const selector of [".btn-low-data", ".btn-language", ".btn-captions", ".btn-preferences", ".btn-sign"]) {
+        await expect(player.locator(selector), `${selector} visible at ${viewport.width}px`).toBeVisible();
+      }
+
+      const settingsButton = player.locator(".btn-preferences");
+      await settingsButton.focus();
+      await settingsButton.press("Enter");
+      const dialog = player.locator("dialog.captions-dialog");
+      await expect(dialog).toBeVisible();
+      const dialogBox = await dialog.boundingBox();
+      expect(dialogBox).toBeTruthy();
+      expect(dialogBox!.x).toBeGreaterThanOrEqual(0);
+      expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(viewport.width + 1);
+      await page.keyboard.press("Escape");
+      await expect(dialog).not.toBeVisible();
+
+      const speed = player.locator(".btn-speed");
+      await speed.click();
+      const popover = player.locator(".speed-popover");
+      await expect(popover).toBeVisible();
+      const menuBox = await popover.boundingBox();
+      expect(menuBox).toBeTruthy();
+      expect(menuBox!.x).toBeGreaterThanOrEqual(0);
+      expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(viewport.width + 1);
+      await page.keyboard.press("Escape");
+      await expect(popover).not.toBeVisible();
+
+      await player.locator(".btn-sign").click();
+      const sign = page.locator("savanna-sign-window");
+      await expect(sign).toBeVisible();
+      await expect(sign.locator(".fallback")).toContainText(
+        "Sign language interpretation is not available for this lesson",
+      );
+      const signToggle = sign.locator("button.toggle");
+      await expect(signToggle).toBeVisible();
+      await signToggle.focus();
+      await signToggle.press("Space");
+      await expect(signToggle).toHaveText("Off");
+      await expect(signToggle).toBeVisible();
+      await signToggle.focus();
+      await signToggle.press("Space");
+      await expect(sign.locator(".fallback")).toBeVisible();
+
+      if (viewport.width === 1440) {
+        const beforeResize = await sign.boundingBox();
+        expect(beforeResize).toBeTruthy();
+        await sign.locator("header").focus();
+        await sign.locator("header").press("Alt+ArrowRight");
+        await expect
+          .poll(async () => (await sign.boundingBox())?.width ?? 0)
+          .toBeGreaterThan(beforeResize!.width);
+      }
+    }
+
+    const browser = page.context().browser();
+    expect(browser).toBeTruthy();
+    const touchContext = await browser!.newContext({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      const touchPage = await touchContext.newPage();
+      await touchPage.goto("/");
+      const touchPlayer = touchPage.locator("savanna-player");
+      await expect
+        .poll(() => touchPlayer.evaluate((element: any) => element.manifestData?.id ?? ""))
+        .toBe("L-103");
+      const lowData = touchPlayer.locator(".btn-low-data");
+      const lowDataBefore = await lowData.getAttribute("aria-pressed");
+      await lowData.tap();
+      await expect(lowData).toHaveAttribute("aria-pressed", lowDataBefore === "true" ? "false" : "true");
+      await touchPlayer.locator(".btn-sign").tap();
+      const touchSign = touchPage.locator("savanna-sign-window");
+      await expect(touchSign).toBeVisible();
+      await expect(touchSign.locator(".fallback")).toBeVisible();
+      const toggleBounds = await touchSign.locator("button.toggle").boundingBox();
+      const touchSignBounds = await touchSign.boundingBox();
+      expect(toggleBounds).toBeTruthy();
+      expect(touchSignBounds?.width).toBeGreaterThan(100);
+      expect(toggleBounds!.x).toBeGreaterThanOrEqual(touchSignBounds!.x);
+      expect(toggleBounds!.x + toggleBounds!.width).toBeLessThanOrEqual(
+        touchSignBounds!.x + touchSignBounds!.width + 1,
+      );
+      await touchSign.locator("button.toggle").tap();
+      await expect(touchSign.locator("button.toggle")).toHaveText("Off");
+    } finally {
+      await touchContext.close();
+    }
+  });
+
+  test("1.14 Separate loopback API fallback recovers captions and video when page media paths 404", async ({
+    page,
+  }) => {
+    const browser = page.context().browser();
+    expect(browser).toBeTruthy();
+    const fallbackContext = await browser!.newContext({ serviceWorkers: "block" });
+    const fallbackPage = await fallbackContext.newPage();
+    const pageOrigin = new URL(page.url()).origin;
+    const apiOrigin = process.env.SAVANNA_API_PROXY_TARGET || "http://localhost:4010";
+    const mediaResponses: Array<{ url: string; status: number }> = [];
+    const failedRequests: Array<{ url: string; error: string | null }> = [];
+    let player: any;
+    try {
+      await fallbackPage.route(`${pageOrigin}/media/**`, (route) =>
+        route.fulfill({ status: 404, contentType: "text/plain", body: "No page-origin media mount" }),
+      );
+      fallbackPage.on("response", (response) => {
+      if (response.url().includes("/media/"))
+        mediaResponses.push({ url: response.url(), status: response.status() });
+      });
+      fallbackPage.on("requestfailed", (request) =>
+        failedRequests.push({ url: request.url(), error: request.failure()?.errorText ?? null }),
+      );
+
+      await fallbackPage.goto(`${pageOrigin}/`);
+      player = fallbackPage.locator("savanna-player");
+      await expect
+        .poll(() => player.evaluate((element: any) => element.manifestData?.id ?? ""))
+        .toBe("L-103");
+      await player.evaluate(async (element: any, api: string) => {
+        element.api = api;
+        await element.updateComplete;
+        await element.fetchLessonManifest();
+      }, apiOrigin);
+      try {
+        await expect
+          .poll(
+            () => player.evaluate((element: any) => element.vttCuesCache?.get("en")?.length ?? 0),
+            { timeout: 15_000 },
+          )
+          .toBeGreaterThan(0);
+      } catch (error) {
+        console.log(
+          `Fallback diagnostics: ${JSON.stringify({
+            player: await player.evaluate((element: any) => ({
+              api: element.api,
+              manifestId: element.manifestData?.id,
+              manifestError: element.manifestLoadError,
+              captions: element.manifestCaptions,
+              englishCueCount: element.vttCuesCache?.get("en")?.length ?? 0,
+              mediaRequested: element.mediaRequested,
+            })),
+            mediaResponses,
+            failedRequests,
+          })}`,
+        );
+        throw error;
+      }
+      await expect
+        .poll(
+          () => player.evaluate((element: any) => element.vttCuesCache?.get("am")?.length ?? 0),
+          { timeout: 15_000 },
+        )
+        .toBeGreaterThan(0);
+
+      if ((await player.locator(".btn-low-data").getAttribute("aria-pressed")) === "true") {
+        await player.locator(".btn-low-data").click();
+      }
+      const video = player.locator("video");
+      await fallbackPage.waitForTimeout(1000);
+      await expect
+        .poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState))
+        .toBeGreaterThanOrEqual(2);
+
+      for (const language of ["en", "am"]) {
+        expect(
+          mediaResponses.some(
+            (response) => response.url === `${apiOrigin}/media/${language}.vtt` && response.status === 200,
+          ),
+          `${language}.vtt should be recovered from the API origin; responses=${JSON.stringify(mediaResponses)}; failed=${JSON.stringify(failedRequests)}`,
+        ).toBe(true);
+      }
+      expect(
+        mediaResponses.some(
+          (response) =>
+            response.url === `${apiOrigin}/media/lesson.mp4` &&
+            (response.status === 200 || response.status === 206),
+        ),
+        `lesson video should be recovered from the API origin; responses=${JSON.stringify(mediaResponses)}`,
+      ).toBe(true);
+    } finally {
+      await fallbackContext.close();
+    }
+  });
+
+  test("1.15 Video failure presents a retry action and playback resumes when media returns", async ({
+    page,
+  }) => {
+    const browser = page.context().browser();
+    expect(browser).toBeTruthy();
+    const retryContext = await browser!.newContext({ serviceWorkers: "block" });
+    const retryPage = await retryContext.newPage();
+    const pageOrigin = new URL(page.url()).origin;
+    let mediaAvailable = false;
+    try {
+      await retryPage.route(`${pageOrigin}/media/lesson.mp4`, (route) =>
+        mediaAvailable
+          ? route.continue()
+          : route.fulfill({ status: 404, contentType: "text/plain", body: "Media temporarily unavailable" }),
+      );
+      await retryPage.goto(`${pageOrigin}/`);
+      const player = retryPage.locator("savanna-player");
+      await expect
+        .poll(() => player.evaluate((element: any) => element.manifestData?.id ?? ""))
+        .toBe("L-103");
+      await player.locator(".btn-play").click();
+      const error = player.locator(".media-error");
+      await expect(error).toBeVisible();
+      const retry = error.getByRole("button", { name: "Retry" });
+      await expect(retry).toBeVisible();
+
+      mediaAvailable = true;
+      await retry.click();
+      const video = player.locator("video");
+      await expect
+        .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime), {
+          timeout: 15_000,
+        })
+        .toBeGreaterThan(0.2);
+      await expect(player.locator(".media-error")).toHaveCount(0);
+    } finally {
+      await retryContext.close();
+    }
+  });
+
+  test("1.16 Offline pack verifies files and retries only the failed file", async ({ page }) => {
+    const browser = page.context().browser();
+    expect(browser).toBeTruthy();
+    const retryContext = await browser!.newContext({ serviceWorkers: "block" });
+    const retryPage = await retryContext.newPage();
+    const origin = new URL(page.url()).origin;
+    const downloadedAssetRequests = new Map<string, number>();
+    try {
+      await retryPage.route(`${origin}/media/**`, async (route) => {
+        const pathname = new URL(route.request().url()).pathname;
+        downloadedAssetRequests.set(pathname, (downloadedAssetRequests.get(pathname) ?? 0) + 1);
+        if (pathname === "/media/am.vtt" && downloadedAssetRequests.get(pathname) === 1) {
+          await route.fulfill({ status: 503, contentType: "text/plain", body: "Retry test interruption" });
+        } else {
+          await route.continue();
+        }
+      });
+      await retryPage.goto(`${origin}/`);
+      const player = retryPage.locator("savanna-player");
+      await expect
+        .poll(() => player.evaluate((element: any) => element.manifestData?.id ?? ""))
+        .toBe("L-103");
+      const offline = player.locator("savanna-offline");
+      await expect(offline.locator(".status")).toContainText("Pack ready");
+      await expect
+        .poll(() => player.evaluate((element: any) => element.vttCuesCache?.get("en")?.length ?? 0))
+        .toBeGreaterThan(0);
+      await expect
+        .poll(() => player.evaluate((element: any) => element.vttCuesCache?.get("am")?.length ?? 0))
+        .toBeGreaterThan(0);
+      downloadedAssetRequests.clear();
+
+      await offline.getByRole("button", { name: "Download offline pack" }).click();
+      await expect(offline.locator(".status")).toContainText("captions-am", { timeout: 30_000 });
+      const cachedVideoBeforeRetry = await retryPage.evaluate(async () => {
+        const cache = await caches.open("savanna-pack-L-103");
+        return Boolean(await cache.match(new URL("/media/lesson.mp4", location.origin).href));
+      });
+      expect(cachedVideoBeforeRetry, "the verified video should be retained after the partial failure").toBe(true);
+      expect(downloadedAssetRequests.get("/media/lesson.mp4")).toBe(1);
+
+      await offline.getByRole("button", { name: "Retry offline download" }).click();
+      await expect(offline.locator(".status")).toContainText("Saved offline", { timeout: 30_000 });
+      expect(downloadedAssetRequests.get("/media/lesson.mp4"), "retry should reuse the completed video").toBe(1);
+      expect(downloadedAssetRequests.get("/media/am.vtt")).toBe(2);
+      expect(downloadedAssetRequests.get("/media/lesson.opus")).toBe(1);
+    } finally {
+      await retryContext.close();
+    }
+  });
+
+  test("1.17 A verified lesson opens and plays with captions after the browser goes offline", async ({
+    page,
+    context,
+  }) => {
+    await page.goto("/");
+    const player = page.locator("savanna-player");
+    await expect
+      .poll(() => player.evaluate((element: any) => element.manifestData?.id ?? ""))
+      .toBe("L-103");
+    const offline = player.locator("savanna-offline");
+    await expect(offline.locator(".status")).toContainText("Pack ready");
+    await offline.getByRole("button", { name: "Download offline pack" }).click();
+    await expect(offline.locator(".status")).toContainText("Saved offline", { timeout: 30_000 });
+
+    await page.reload();
+    await expect
+      .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
+      .toBe(true);
+    await expect
+      .poll(() => player.evaluate((element: any) => element.manifestData?.id ?? ""))
+      .toBe("L-103");
+    if ((await player.locator(".btn-captions").getAttribute("aria-pressed")) !== "true") {
+      await player.locator(".btn-captions").click();
+    }
+
+    try {
+      await context.setOffline(true);
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect
+        .poll(() => player.evaluate((element: any) => element.manifestData?.id ?? ""), {
+          timeout: 15_000,
+        })
+        .toBe("L-103");
+      const cachedRange = await page.evaluate(async () => {
+        const response = await fetch("/media/lesson.mp4", { headers: { Range: "bytes=0-1023" } });
+        return { status: response.status, range: response.headers.get("content-range") };
+      });
+      expect(cachedRange.status).toBe(206);
+      expect(cachedRange.range).toBe("bytes 0-1023/2096006");
+
+      await player.locator(".btn-play").click();
+      const video = player.locator("video");
+      await expect
+        .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime), {
+          timeout: 15_000,
+        })
+        .toBeGreaterThan(0.2);
+      await expect(player.locator(".caption-overlay .caption-cue")).toContainText(
+        "For the last 10 years",
+      );
+    } finally {
+      await context.setOffline(false);
+    }
+  });
 });

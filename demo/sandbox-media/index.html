@@ -157,19 +157,19 @@
       <!-- AUDIO DESCRIPTION: directly below the video controls -->
       <section class="ad-section" aria-labelledby="ad-heading">
         <div class="ad-heading">
-          <h3 id="ad-heading">🔊 Audio Description</h3>
-          <span class="ad-context">Recorded: <code>ad.opus</code> · Text: <code>ad.vtt</code></span>
+          <h3 id="ad-heading">🔊 Audio Description — unavailable</h3>
+          <span class="ad-context">No approved recording or valid timed cue file is supplied with this lesson.</span>
         </div>
-        <div id="ad-host"></div>
+        <div id="ad-host">
+          <p role="status">Audio description is unavailable until a genuine recording and reviewed timing cues are supplied.</p>
+        </div>
         <p class="ad-shortcut">
-          Keyboard shortcut: <kbd>D</kbd> toggles Audio Description while focus is
-          inside this lesson. It is ignored while typing in form fields, and you can
-          turn it off with the checkbox above.
+          The D-key control remains unavailable until the recording and timed cues pass review.
         </p>
 
         <details class="ad-transcript">
           <summary>Audio description transcript (text)</summary>
-          <div class="tr-body" id="adTranscriptBody"><p>Loading transcript…</p></div>
+          <div class="tr-body" id="adTranscriptBody"><p>No reviewed audio-description transcript is supplied.</p></div>
         </details>
       </section>
 
@@ -200,9 +200,9 @@
     </section>
   </div>
 
-  <!-- ═══════════════ TEST CHECKLIST ═══════════════ -->
+  <!-- ═══════════════ DEMO CHECKLIST ═══════════════ -->
   <section class="card">
-    <h2>✅ Interactive Test Checklist</h2>
+    <h2>Demo checklist (items to inspect; not recorded test results or production-media approval)</h2>
     <div style="columns:3;gap:24px;font-size:13px">
       <div>
         <strong>Sign window</strong>
@@ -215,27 +215,21 @@
           <li>↗ ↘ snap corners (inside video)</li>
           <li>Position persists on reload</li>
           <li>Fallback "No sign video yet"</li>
-          <li>Loading → Ready states</li>
+          <li>Missing-track fallback is shown without media</li>
         </ul>
       </div>
       <div>
         <strong>Audio description</strong>
         <ul style="padding-left:18px;margin:6px 0">
-          <li>D key toggles (only inside lesson)</li>
-          <li>D ignored on dropdown / checkbox</li>
-          <li>Shortcut checkbox turns D off</li>
-          <li>Play / Stop buttons</li>
-          <li>Text mode shows timed cues</li>
-          <li>Audio mode plays ad.opus</li>
-          <li>Extended pauses video</li>
-          <li>Status live-region (only one)</li>
-          <li>Transcript lists all cues</li>
+          <li>Playback stays unavailable without an approved recording</li>
+          <li>Timed cues must be reviewed against the locked lesson</li>
+          <li>Enable the D-key control only after the media gate passes</li>
         </ul>
       </div>
       <div>
         <strong>Offline</strong>
         <ul style="padding-left:18px;margin:6px 0">
-          <li>Shows pack size (1.72 MB)</li>
+          <li>Shows the pack size returned by the configured manifest</li>
           <li>Progress bar fills</li>
           <li>Save → Delete cycle</li>
           <li>Error when API absent</li>
@@ -245,8 +239,8 @@
         <ul style="padding-left:18px;margin:6px 0">
           <li>timeupdate fires on play</li>
           <li>play / pause / seeked shown</li>
-          <li>Sign cue updates</li>
-          <li>AD cue updates</li>
+          <li>Sign remains unavailable without an approved recording</li>
+          <li>No AD cue appears until reviewed media and cues are supplied</li>
           <li>No console errors</li>
         </ul>
       </div>
@@ -1171,8 +1165,7 @@ setTimeout(() => {
   const signHost = document.getElementById('sign-host');
   signHost.innerHTML = '';
   const sw = document.createElement('savanna-sign-window');
-  // Use the ESL placeholder (small file) as sign video so metadata loads fast
-  sw.setAttribute('src',  '../../contracts/fixtures/media/esl-placeholder.mp4');
+  // Keep the sign window on its honest no-recording fallback.
   sw.setAttribute('lang', 'en');
   signHost.appendChild(sw);
   requestAnimationFrame(() => {
@@ -1185,12 +1178,6 @@ setTimeout(() => {
     sw._clamp();
   });
 
-  // ── audio description (inside the lesson card, under the video controls) ──
-  const ad = document.createElement('savanna-audio-description');
-  ad.setAttribute('src',      '../../contracts/fixtures/media/ad.opus');
-  ad.setAttribute('text-vtt', '../../contracts/fixtures/media/ad.vtt');
-  document.getElementById('ad-host').appendChild(ad);
-
   // ── offline ──
   const ol = document.createElement('savanna-offline');
   ol.setAttribute('api',       'http://localhost:4010');
@@ -1198,7 +1185,7 @@ setTimeout(() => {
   document.getElementById('ol-host').appendChild(ol);
 
   console.log('%c✓ Member 2 Sandbox Ready', 'color:#4caf50;font-weight:bold;font-size:15px');
-  console.log('  Press D to toggle audio description (while focus is inside the lesson card)');
+  console.log('  Audio description remains unavailable until approved media and cues are supplied');
   console.log('  Tab → sign-window header → Arrow keys to move');
 
 }, 0);

@@ -17,7 +17,7 @@ import fs from "node:fs/promises";
 
 test("sign-window: focus ring visible on header", async () => {
   const src = await fs.readFile(new URL("./sign-window/sign-window.ts", import.meta.url), "utf8");
-  assert.match(src, /focus-visible.*outline/, "Must define focus-visible style");
+  assert.match(src, /focus-visible[\s\S]*?outline/, "Must define focus-visible style");
   assert.match(src, /outline.*3px/, "Focus ring must be visible (3px+)");
 });
 
@@ -25,14 +25,18 @@ test("sign-window: keyboard shortcuts work without mouse", async () => {
   const src = await fs.readFile(new URL("./sign-window/sign-window.ts", import.meta.url), "utf8");
 
   // Arrow keys move
-  assert.match(src, /@keydown.*Arrow/, "Must handle arrow key events");
-  assert.match(src, /ArrowRight.*right|ArrowLeft.*left/, "Arrow keys must map to directions");
+  assert.match(src, /@keydown[\s\S]*?Arrow/, "Must handle arrow key events");
+  assert.match(
+    src,
+    /ArrowRight[\s\S]*?right|ArrowLeft[\s\S]*?left/,
+    "Arrow keys must map to directions",
+  );
 
   // Shift = big step
   assert.match(src, /e\.shiftKey.*100/, "Shift + arrow should move 100px (larger step)");
 
   // Alt = resize
-  assert.match(src, /e\.altKey.*Alt.*arrow/, "Alt + arrow must resize");
+  assert.match(src, /e\.altKey[\s\S]*?Alt.*arrow/, "Alt + arrow must resize");
 });
 
 test("sign-window: semantic HTML for screen readers", async () => {
@@ -46,8 +50,52 @@ test("sign-window: semantic HTML for screen readers", async () => {
 test("sign-window: screen reader announces position changes", async () => {
   const src = await fs.readFile(new URL("./sign-window/sign-window.ts", import.meta.url), "utf8");
 
-  assert.match(src, /dispatchEvent.*savanna:sign-position/, "Must dispatch position event");
-  assert.match(src, /bubbles:true.*composed:true/, "Event must bubble (for screen readers)");
+  assert.match(src, /dispatchEvent[\s\S]*?savanna:sign-position/, "Must dispatch position event");
+  assert.match(
+    src,
+    /bubbles:\s*true[\s\S]*?composed:\s*true/,
+    "Event must bubble (for screen readers)",
+  );
+});
+
+test("player: keyboard focus returns to a control after playback updates", async () => {
+  const src = await fs.readFile(new URL("./player/savanna-player.ts", import.meta.url), "utf8");
+
+  assert.match(
+    src,
+    /private restoreControlFocusAfterUpdate\(/,
+    "Must restore focus if a render removes the focused control",
+  );
+  assert.match(
+    src,
+    /this\.restoreControlFocusAfterUpdate\(\)/,
+    "Focus restoration must run after reactive updates",
+  );
+  assert.match(src, /lastFocusedControlSelector/, "Must target the matching replacement control");
+  assert.match(
+    src,
+    /private handlePlayerSurfaceClick\s*=/,
+    "Player surface focus must use a targeted click handler",
+  );
+  assert.match(
+    src,
+    /target\.closest\(["']button, a, input, select, textarea, \[role='button'\]["']\)/,
+    "Interactive controls must keep focus when their clicks bubble",
+  );
+});
+
+test("player: play and pause controls have English and Amharic labels", async () => {
+  const english = JSON.parse(
+    await fs.readFile(new URL("./player/i18n/en.json", import.meta.url), "utf8"),
+  );
+  const amharic = JSON.parse(
+    await fs.readFile(new URL("./player/i18n/am.json", import.meta.url), "utf8"),
+  );
+
+  assert.equal(english["player.play"], "Play");
+  assert.equal(english["player.pause"], "Pause");
+  assert.equal(amharic["player.play"], "አጫውት");
+  assert.equal(amharic["player.pause"], "አቁም");
 });
 
 // Test: Audio Description Accessibility
@@ -93,7 +141,7 @@ test("audio-description: extended mode clearly marked", async () => {
     "utf8",
   );
 
-  assert.match(src, /<input type="checkbox"/, "Checkbox for extended mode");
+  assert.match(src, /<input\s+type="checkbox"/, "Checkbox for extended mode");
   assert.match(src, /Extended AD|extended AD/, "Label must explain feature");
   assert.match(src, /pause/, "Label must explain it pauses main video");
 });
@@ -130,16 +178,23 @@ test("media-sw: service worker caches pack manifests", async () => {
   const src = await fs.readFile(new URL("./offline/media-sw.js", import.meta.url), "utf8");
 
   assert.match(src, /caches\.open/, "Opens cache storage");
-  assert.match(src, /pack\.zip/, "Handles pack.zip requests");
-  assert.match(src, /v1.*lessons.*pack/, "Caches manifest requests");
+  assert.match(src, /savanna-pack-/, "Searches lesson-specific caches");
+  assert.match(src, /\/v1\/lessons|\/media\//, "Handles lesson manifests and media requests");
+});
+
+test("media-sw: service worker caches host fonts and images for offline shell rendering", async () => {
+  const src = await fs.readFile(new URL("./offline/media-sw.js", import.meta.url), "utf8");
+
+  assert.match(src, /request\.destination === "font"/, "Caches locally served fonts");
+  assert.match(src, /request\.destination === "image"/, "Caches locally served images");
 });
 
 test("media-sw: service worker handles offline gracefully", async () => {
   const src = await fs.readFile(new URL("./offline/media-sw.js", import.meta.url), "utf8");
 
-  assert.match(src, /fetch.*catch/, "Falls back to cache on fetch failure");
+  assert.match(src, /catch\s*\{/, "Falls back to a saved response on fetch failure");
   assert.match(src, /503/, "Returns 503 (Service Unavailable) when offline");
-  assert.match(src, /Offline pack is not saved/, "Clear offline message");
+  assert.match(src, /not saved on this device/, "Clear offline message");
 });
 
 // Test: Content Pipeline
@@ -267,6 +322,7 @@ test("C4: components listen to savanna:lang-change", async () => {
 
 console.log(`
 ✓ Member 2 Accessibility Tests Complete
+  - Player keyboard focus and labels: 2 tests
   - Sign Window: 4 tests
   - Audio Description: 4 tests
   - Offline: 3 tests
@@ -275,5 +331,5 @@ console.log(`
   - Performance: 2 tests
   - Contracts: 4 tests
   ---
-  Total: 23 tests (all pass if no assertions fail)
+  Total: 25 tests (all pass if no assertions fail)
 `);

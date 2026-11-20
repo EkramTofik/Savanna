@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Member 2 - Simple Test</title>
+    <title>Member 2 - Simple UI Mock Test</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -60,20 +60,20 @@
 </head>
 <body>
     <main>
-        <h1>✓ Member 2 - Media Access Test Page</h1>
-        <p>Simplified test without TypeScript compilation issues</p>
+        <h1>Member 2 - Simple UI Mock</h1>
+        <p>This page simulates control status only. Its empty sign window and AD buttons are not connected to recordings, timed cues, or the lesson player.</p>
 
         <div class="card">
             <h2>Video Player</h2>
             <video id="video" controls playsinline>
-                <source src="./media/lesson.mp4" type="video/mp4">
+                <source src="../../../contracts/fixtures/media/lesson.mp4" type="video/mp4">
                 Your browser doesn't support HTML5 video.
             </video>
-            <p>✓ Video player loaded</p>
+            <p>Sample lesson video element; no optional access tracks are connected.</p>
         </div>
 
         <div class="card">
-            <div class="section-title">Sign Window (Test)</div>
+            <div class="section-title">Sign Window (empty UI mock; no sign recording)</div>
             <div id="signWindow" style="
                 position: absolute;
                 right: 20px;
@@ -91,28 +91,27 @@
                 <video style="width: 100%; height: 150px; background: #111;" playsinline muted></video>
                 <p style="font-size: 12px; margin: 5px 0;">Draggable sign window (simulated)</p>
             </div>
-            <p>✓ Sign window visible (try dragging the header)</p>
+            <p>Visual mock only; it is not an Ethiopian Sign Language recording.</p>
         </div>
 
         <div class="card">
-            <div class="section-title">Audio Description Controls</div>
+            <div class="section-title">Audio Description Controls (simulated; no recording)</div>
             <div>
                 <label>Mode:
                     <select id="adMode">
-                        <option>Recorded audio</option>
-                        <option>Text descriptions</option>
+                <option>Simulated audio mode</option>
+                <option>Simulated text mode</option>
                     </select>
                 </label>
             </div>
             <div>
-                <button onclick="toggleAD()">Play description</button>
-                <button onclick="stopAD()">Stop</button>
+                <button onclick="toggleAD()">Simulate AD status</button>
+                <button onclick="stopAD()">Reset simulated status</button>
             </div>
             <label>
-                <input type="checkbox"> Extended AD (pause lesson)
+                <input type="checkbox"> Simulated extended AD option (no playback or pause)
             </label>
-            <div class="status" id="adStatus">Audio description is off.</div>
-            <p>✓ Audio description controls loaded</p>
+            <div class="status" id="adStatus" role="status">No audio-description media is loaded. Buttons below only change this message.</div>
         </div>
 
         <div class="card">
@@ -133,9 +132,9 @@
         </div>
 
         <div class="card">
-            <h2>✓ Test Results</h2>
-            <p>All components are loaded and working!</p>
-            <p>You can now:</p>
+            <h2>Static UI mock</h2>
+            <p>This page is a simulation, not evidence of media synchronization, assistive-technology behavior, or an installed component build.</p>
+            <p>You can try the simulated controls:</p>
             <ul>
                 <li>Play the video (if media file exists)</li>
                 <li>Drag the sign window header</li>
@@ -174,17 +173,17 @@
         function toggleAD() {
             const status = document.getElementById('adStatus');
             if (status.textContent.includes('off')) {
-                status.textContent = 'Audio description playing.';
+                status.textContent = 'Simulation only: audio-description status changed; no recording is playing.';
                 status.style.background = '#e6f7ff';
             } else {
-                status.textContent = 'Audio description is off.';
+                status.textContent = 'Simulation only: audio-description status is off; no recording is loaded.';
                 status.style.background = '#f0e6f8';
             }
         }
 
         function stopAD() {
             const status = document.getElementById('adStatus');
-            status.textContent = 'Audio description stopped.';
+            status.textContent = 'Simulation only: audio-description status stopped; no recording was playing.';
             status.style.background = '#f0e6f8';
         }
 

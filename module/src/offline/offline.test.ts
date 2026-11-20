@@ -28,8 +28,12 @@ test("offline component uses service worker caching", async () => {
   );
 
   assert.match(src, /caches\.open/, "Must use Cache API");
-  assert.match(src, /cache\.put/, "Must cache downloaded ZIP");
-  assert.match(src, /PREFIX.*lesson/, "Must use lesson-specific cache names");
+  assert.match(src, /cache\.put/, "Must cache downloaded lesson files");
+  assert.match(
+    src,
+    /CACHE_PREFIX\s*=\s*['"]savanna-pack-/i,
+    "Must use lesson-specific cache names",
+  );
 });
 
 test("offline component persists saved lessons in localStorage", async () => {
@@ -37,21 +41,16 @@ test("offline component persists saved lessons in localStorage", async () => {
     fs.readFile(new URL("./offline.ts", import.meta.url), "utf8"),
   );
 
-  assert.match(src, /localStorage\.getItem\(KEY\)/, "Must read preferences");
+  assert.match(src, /localStorage\.getItem\(PREFS_KEY\)/, "Must read preferences");
   assert.match(src, /savedLessons/, "Must track which lessons are saved");
   assert.match(src, /localStorage\.setItem/, "Must persist to localStorage");
 });
 
-test("offline service worker supports resumable downloads", async () => {
-  const sw = await import("node:fs/promises").then((fs) =>
-    fs.readFile(new URL("./media-sw.js", import.meta.url), "utf8"),
-  );
-
-  // The app requests bytes and the service worker should allow resumption
-  // The offline.ts component handles range requests with byte-range headers
+test("offline download retries keep completed files", async () => {
   const src = await import("node:fs/promises").then((fs) =>
     fs.readFile(new URL("./offline.ts", import.meta.url), "utf8"),
   );
   assert.match(src, /content-length/, "Must read Content-Length header");
-  assert.match(src, /getReader/, "Must stream in chunks (allows resume)");
+  assert.match(src, /getReader/, "Must stream files to report progress");
+  assert.match(src, /cache\.match\(assetUrl\)/, "Must skip completed files when retrying");
 });

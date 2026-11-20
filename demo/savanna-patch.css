@@ -21,3 +21,31 @@ a[aria-current="true"] > div > span,
 #sidebar a:hover {
   color: #0c4a6e !important;
 }
+
+.unavailable-demo-link,
+.unavailable-demo-link:hover {
+  color: #64748b !important;
+  cursor: default;
+  text-decoration: none;
+}
+
+/* Keep the mobile course-menu trigger clear of the fixed application headers when it receives focus. */
+#curriculum_navigation_toggle {
+  scroll-margin-top: 9rem;
+}
+
+#curriculum_navigation_toggle button {
+  scroll-margin-top: 9rem;
+}
+
+@media (max-width: 767.98px) {
+  /* The captured mobile shell expands its placeholder sidebar over the lesson page. */
+  #sidebar {
+    display: none;
+  }
+
+  /* Reserve space below the fixed app header and curriculum bar. */
+  #layout-bars {
+    padding-top: 137px !important;
+  }
+}

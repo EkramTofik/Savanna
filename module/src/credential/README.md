@@ -4,7 +4,7 @@
 <savanna-credential
   id="C-7"
   api="http://localhost:4020"
-  api-key="pk_live_demo"
+  api-key="pk_demo_local"
   lang="am"
 ></savanna-credential>
 ```
