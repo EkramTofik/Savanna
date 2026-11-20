@@ -128,7 +128,7 @@ export async function createApp(opts: AppOptions = {}) {
     // Swagger UI uses inline scripts, so we need to relax CSP for this route only
     res.setHeader(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self' blob:",
     );
     res
       .type("html")
