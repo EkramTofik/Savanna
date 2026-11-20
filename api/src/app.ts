@@ -44,7 +44,7 @@ export async function createApp(opts: AppOptions = {}) {
   
   // Content Security Policy for production security
   // Different routes may need different policies (e.g., /docs for Swagger UI)
-  const cspDirectives = {
+  const cspDirectives: Record<string, string[]> = {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'"],
     styleSrc: ["'self'", "'unsafe-inline'"], // Lit uses constructable stylesheets; Swagger UI needs inline styles
@@ -57,8 +57,11 @@ export async function createApp(opts: AppOptions = {}) {
     baseUri: ["'self'"],
     formAction: ["'self'"],
     frameAncestors: ["'self'"], // Prevent clickjacking; adjust if embedding is needed
-    upgradeInsecureRequests: config.production ? [] : undefined,
   };
+  
+  if (config.production) {
+    cspDirectives.upgradeInsecureRequests = [];
+  }
 
   app.use(
     helmet({
