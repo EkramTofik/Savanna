@@ -25,13 +25,14 @@ export interface AppOptions {
 
 export async function createApp(opts: AppOptions = {}) {
   const config = opts.config ?? loadConfig();
+  const publicBaseUrl = opts.ctx?.publicBaseUrl ?? config.publicBaseUrl ?? `http://localhost:${config.port}`;
   const created = opts.ctx?.store ? undefined : await createStore(config);
   const ctx: Ctx = {
     prisma: created?.prisma,
     store: (opts.ctx?.store ?? created?.store)!,
     config,
     packRoot: opts.ctx?.packRoot ?? config.packRoot,
-    publicBaseUrl: opts.ctx?.publicBaseUrl ?? config.publicBaseUrl ?? `http://localhost:${config.port}`,
+    publicBaseUrl,
     issuerPrivateJwk: opts.ctx?.issuerPrivateJwk ?? config.issuerPrivateJwk,
     ...opts.ctx,
   };
@@ -48,7 +49,7 @@ export async function createApp(opts: AppOptions = {}) {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'"],
     styleSrc: ["'self'", "'unsafe-inline'"], // Lit uses constructable stylesheets; Swagger UI needs inline styles
-    connectSrc: ["'self'", ...(config.production ? [config.publicBaseUrl] : [])],
+    connectSrc: ["'self'", ...(config.production ? [publicBaseUrl] : [])],
     mediaSrc: ["'self'", "blob:"], // blob: needed for offline playback with Blob URLs
     imgSrc: ["'self'", "data:"], // data: needed for QR codes
     fontSrc: ["'self'"], // Self-hosted Noto Sans Ethiopic subset
