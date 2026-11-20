@@ -129,10 +129,10 @@ test("Amharic job dates use the Ethiopian calendar", async ({ page }) => {
   expect(displayedDate?.trim()).toBe(calendar.expectedDate);
 
   const j9 = await page.request.get("http://localhost:4020/v1/jobs/J-9", {
-    headers: { "X-Savanna-Key": "pk_live_demo" },
+    headers: { "X-Savanna-Key": "pk_demo_local" },
   });
   const j10 = await page.request.get("http://localhost:4020/v1/jobs/J-10", {
-    headers: { "X-Savanna-Key": "pk_live_demo" },
+    headers: { "X-Savanna-Key": "pk_demo_local" },
   });
   expect((await j9.json()).audioSummary.am.transcript).toContain("ታኅሣሥ 22 ቀን 2019");
   expect((await j10.json()).audioSummary.am.transcript).toContain("ጥር 7 ቀን 2019");
@@ -248,13 +248,13 @@ test("bilingual job audio assets stay within the 20 to 30 second target", async 
   const outOfRange: string[] = [];
   for (const id of ["J-9", "J-10"]) {
     const response = await page.request.get(`http://localhost:4020/v1/jobs/${id}`, {
-      headers: { "X-Savanna-Key": "pk_live_demo" },
+      headers: { "X-Savanna-Key": "pk_demo_local" },
     });
     const job = await response.json();
     for (const lang of ["en", "am"]) {
       const url = `http://localhost:4020${job.audioSummary[lang].url}`;
       const duration = await page.evaluate(async (audioUrl) => {
-        const response = await fetch(audioUrl, { headers: { "X-Savanna-Key": "pk_live_demo" } });
+        const response = await fetch(audioUrl, { headers: { "X-Savanna-Key": "pk_demo_local" } });
         const data = await response.arrayBuffer();
         const context = new AudioContext();
         try {

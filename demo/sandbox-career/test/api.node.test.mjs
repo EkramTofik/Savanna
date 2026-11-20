@@ -31,7 +31,7 @@ after(() => child?.kill());
 
 test("JobPosting JSON-LD", async () => {
   const res = await fetch(`${BASE}/v1/jobs/J-9.jsonld`, {
-    headers: { "X-Savanna-Key": "pk_live_demo" },
+    headers: { "X-Savanna-Key": "pk_demo_local" },
   });
   const body = await res.json();
   assert.equal(res.status, 200);
@@ -43,7 +43,7 @@ test("JobPosting JSON-LD", async () => {
 test("issue fetch revoke", async () => {
   const issued = await fetch(`${BASE}/v1/credentials`, {
     method: "POST",
-    headers: { "X-Savanna-Key": "sk_live_demo", "Content-Type": "application/json" },
+    headers: { "X-Savanna-Key": "sk_demo_local", "Content-Type": "application/json" },
     body: JSON.stringify({
       recipientRef: "urn:savanna:learner:test-revoke",
       achievement: "የሙከራ ሽልማት",
@@ -54,11 +54,11 @@ test("issue fetch revoke", async () => {
   const id = String(badge.id).split("/").pop();
   const revoked = await fetch(`${BASE}/v1/credentials/${id}/revoke`, {
     method: "POST",
-    headers: { "X-Savanna-Key": "sk_live_demo" },
+    headers: { "X-Savanna-Key": "sk_demo_local" },
   });
   assert.equal((await revoked.json()).status, "revoked");
   const again = await fetch(`${BASE}/v1/credentials/${id}`, {
-    headers: { "X-Savanna-Key": "pk_live_demo", Accept: "application/ld+json" },
+    headers: { "X-Savanna-Key": "pk_demo_local", Accept: "application/ld+json" },
   });
   assert.equal((await again.json()).credentialStatus.status, "revoked");
 });
@@ -73,7 +73,7 @@ test("verify page has QR alt text", async () => {
 
 test("credential endpoint returns a tagged PDF", async () => {
   const res = await fetch(`${BASE}/v1/credentials/C-7/pdf`, {
-    headers: { "X-Savanna-Key": "pk_live_demo" },
+    headers: { "X-Savanna-Key": "pk_demo_local" },
   });
   const pdf = Buffer.from(await res.arrayBuffer()).toString("latin1");
   assert.equal(res.status, 200);
