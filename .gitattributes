@@ -1,0 +1,23 @@
+# Normalize line endings to LF on all platforms
+* text=auto eol=lf
+
+# Explicitly mark binary files
+*.mp4 binary
+*.webm binary
+*.opus binary
+*.ogg binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.woff binary
+*.woff2 binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.mp3 binary
+*.wav binary
+*.ttf binary
+*.riv binary
