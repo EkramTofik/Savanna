@@ -29,11 +29,18 @@ test("Savanna course navigation links only to published lesson fixtures", async 
 
 test("course lesson routes update the player and selected state while preserving native links", async () => {
   const page = await readFile(file("savanna/pages/concept-with-navigation.html"), "utf8");
-  assert.match(page, /player\.setAttribute\("lesson", lessonId\)/);
-  assert.match(page, /offline\.setAttribute\("lesson-id", lessonId\)/);
-  assert.match(page, /link\.setAttribute\("aria-current", "page"\)/);
-  assert.match(page, /link\.classList\.toggle\("active", selected\)/);
-  assert.match(page, /addEventListener\("popstate", applyLessonRoute\)/);
-  assert.match(page, /is not available in this local export\. Showing L-102\./);
-  assert.doesNotMatch(page, /preventDefault\(\)/, "lesson anchors retain browser navigation behavior");
+  
+  // Check that inline script has been replaced with external script (CSP compliance)
+  assert.match(page, /<script\s+src="\.\.\/assets\/js\/lesson-routing\.js"\s+defer><\/script>/);
+  assert.doesNotMatch(page, /\(\(\) => \{[\s\S]*availableLessons/);  // No inline script
+  
+  // Check that the external script file exists and contains the expected logic
+  const script = await readFile(file("savanna/assets/js/lesson-routing.js"), "utf8");
+  assert.match(script, /player\.setAttribute\("lesson", lessonId\)/);
+  assert.match(script, /offline\.setAttribute\("lesson-id", lessonId\)/);
+  assert.match(script, /link\.setAttribute\("aria-current", "page"\)/);
+  assert.match(script, /link\.classList\.toggle\("active", selected\)/);
+  assert.match(script, /addEventListener\("popstate", applyLessonRoute\)/);
+  assert.match(script, /is not available in this local export\. Showing L-102\./);
+  assert.doesNotMatch(script, /preventDefault\(\)/, "lesson anchors retain browser navigation behavior");
 });
