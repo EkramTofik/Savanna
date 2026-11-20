@@ -14,7 +14,8 @@ jobs:
       - run: pnpm --filter sandbox-career exec playwright install --with-deps chromium
       - run: pnpm --filter @savanna/sandbox-player exec playwright install --with-deps chromium
       - run: pnpm openapi:check
-      - run: pnpm build
+      - run: pnpm size
+      - run: pnpm amharic:check
       - name: Start fixture API for smoke test
         shell: bash
         run: |
@@ -31,4 +32,5 @@ jobs:
           SAVANNA_SMOKE_CREDENTIAL_ID: C-7
           SAVANNA_SMOKE_ORIGIN: http://localhost:5174
         run: pnpm smoke --base http://localhost:4010 --media-base http://localhost:4010
+      - run: pnpm test
       - run: pnpm -r --if-present test

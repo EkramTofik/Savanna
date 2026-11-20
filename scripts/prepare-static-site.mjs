@@ -53,7 +53,20 @@ fs.mkdirSync(site, { recursive: true });
 fs.mkdirSync(path.dirname(marker), { recursive: true });
 fs.writeFileSync(marker, "enkopa-pitch-static-site\n");
 copy("savanna/assets", "savanna/assets");
-copy("savanna/module/savanna-access.v1.js", "savanna/module/savanna-access.v1.js");
+const bundleAssetsFile = path.join(root, "savanna", "module", "savanna-access.v1.assets.json");
+if (!fs.existsSync(bundleAssetsFile)) {
+  throw new Error("Player bundle asset manifest is missing; run the component build first.");
+}
+const bundleAssets = JSON.parse(fs.readFileSync(bundleAssetsFile, "utf8"));
+if (bundleAssets.entry !== "savanna-access.v1.js" || !Array.isArray(bundleAssets.files)) {
+  throw new Error("Player bundle asset manifest is invalid.");
+}
+for (const file of bundleAssets.files) {
+  if (typeof file !== "string" || path.isAbsolute(file) || file.split(/[\\/]/).includes("..")) {
+    throw new Error(`Unsafe player bundle asset path: ${String(file)}`);
+  }
+  copy(path.join("savanna", "module", file), path.join("savanna", "module", file));
+}
 copy("demo/savanna-patch.css", "demo/savanna-patch.css");
 copy("demo/savanna-patch.js", "demo/savanna-patch.js");
 copy("media-sw.js", "media-sw.js");

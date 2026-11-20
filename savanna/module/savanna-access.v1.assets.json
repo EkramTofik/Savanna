@@ -1,0 +1,29 @@
+{
+  "entry": "savanna-access.v1.js",
+  "files": [
+    "chunks/credential-B5DQ75YK.js",
+    "chunks/credential-B5DQ75YK.js.map",
+    "savanna-access.v1.js",
+    "savanna-access.v1.js.map",
+    "chunks/preferences-manager-VSNRGBZA.js",
+    "chunks/preferences-manager-VSNRGBZA.js.map",
+    "chunks/sign-window-SS7H55D3.js",
+    "chunks/sign-window-SS7H55D3.js.map",
+    "chunks/audio-description-JK7NTCSP.js",
+    "chunks/audio-description-JK7NTCSP.js.map",
+    "chunks/chunk-UFQ6XX3Z.js",
+    "chunks/chunk-UFQ6XX3Z.js.map",
+    "chunks/transcript-manager-6WDW5Y57.js",
+    "chunks/transcript-manager-6WDW5Y57.js.map",
+    "chunks/braille-formatter-UJB54GCH.js",
+    "chunks/braille-formatter-UJB54GCH.js.map",
+    "chunks/offline-VGHNYGJB.js",
+    "chunks/offline-VGHNYGJB.js.map",
+    "chunks/job-card-ZJIM3THD.js",
+    "chunks/job-card-ZJIM3THD.js.map",
+    "chunks/chunk-2MOXT47L.js",
+    "chunks/chunk-2MOXT47L.js.map",
+    "chunks/chunk-INEEODZZ.js",
+    "chunks/chunk-INEEODZZ.js.map"
+  ]
+}

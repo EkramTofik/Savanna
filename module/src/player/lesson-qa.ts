@@ -12,7 +12,7 @@ const answers = {
     comparison:
       "The speaker says ideas in a long lecture can still arrive in short sections, while a less structured lecture may stay on one point for much longer. The contrast is about how clearly ideas are divided, not simply the total video length.",
     unsupported:
-      "I can answer questions about the lesson's main idea, the 4 minutes 12 seconds figure, and its comparison between short video segments and lectures. I do not have enough lesson information to answer that question.",
+      "I can't find that in this lesson. I can answer questions about the main idea, the 4 minutes 12 seconds figure, and the comparison between short video segments and lectures.",
   },
   am: {
     main: "ተናጋሪው ከአጭር የመስመር ላይ ቪዲዮዎች ስለመማር ያሰላስላል፤ እነዚህን ክፍሎች ከረጅም ንግግሮች ጋር ያነጻጽራል። ይህ የተናጋሪው ተሞክሮ ነው፤ ሁሉም ተማሪዎች መከተል ያለባቸው ሕግ አይደለም።",

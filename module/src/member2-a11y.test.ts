@@ -260,7 +260,7 @@ test("pack-builder: uses Opus codec for low bandwidth", async () => {
   );
 
   assert.match(src, /libopus/, "Audio uses Opus codec");
-  assert.match(src, /20k/, "Opus bitrate is 20 kbps (low-end friendly)");
+  assert.match(src, /16k/, "Opus bitrate is about 16 kbps for the low-data pack");
 });
 
 test("render-ad: audio description at low bitrate", async () => {

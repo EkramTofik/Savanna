@@ -21,25 +21,49 @@ if (!esbuild) {
   throw new Error("Could not find esbuild.");
 }
 
-// 1. Build unified bundle dist/savanna-access.v1.js
-await esbuild.build({
-  entryPoints: ["module/src/index.ts"],
+// 1. Build a small player entry point and separate optional feature chunks.
+const unifiedBuild = await esbuild.build({
+  entryPoints: { "savanna-access.v1": "module/src/index.ts" },
   bundle: true,
+  splitting: true,
   format: "esm",
-  outfile: "dist/savanna-access.v1.js",
+  outdir: "dist",
+  entryNames: "[name]",
+  chunkNames: "chunks/[name]-[hash]",
   target: "es2022",
-  minify: false,
+  minify: true,
   sourcemap: true,
+  metafile: true,
 });
-console.log("✅ Unified bundle built: dist/savanna-access.v1.js");
+console.log("✅ Split browser bundle built in dist/");
 
-// 2. Copy to savanna/module/ for Savanna starter host pages
+// Copy only the emitted browser bundle assets, retaining relative chunk paths.
 fs.mkdirSync("savanna/module", { recursive: true });
-fs.copyFileSync("dist/savanna-access.v1.js", "savanna/module/savanna-access.v1.js");
-if (fs.existsSync("dist/savanna-access.v1.js.map")) {
-  fs.copyFileSync("dist/savanna-access.v1.js.map", "savanna/module/savanna-access.v1.js.map");
+const bundleAssets = [];
+for (const outputName of Object.keys(unifiedBuild.metafile.outputs)) {
+  if (!outputName.endsWith(".js")) continue;
+  const source = path.resolve(outputName);
+  const relative = path.relative(path.resolve("dist"), source);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`Unexpected bundle output path: ${outputName}`);
+  }
+  const destination = path.join("savanna/module", relative);
+  fs.mkdirSync(path.dirname(destination), { recursive: true });
+  fs.copyFileSync(source, destination);
+  bundleAssets.push(relative.replaceAll(path.sep, "/"));
+
+  const mapSource = `${source}.map`;
+  if (fs.existsSync(mapSource)) {
+    fs.copyFileSync(mapSource, `${destination}.map`);
+    bundleAssets.push(`${relative.replaceAll(path.sep, "/")}.map`);
+  }
 }
-console.log("✅ Copied to savanna/module/savanna-access.v1.js");
+fs.writeFileSync(
+  "savanna/module/savanna-access.v1.assets.json",
+  `${JSON.stringify({ entry: "savanna-access.v1.js", files: bundleAssets }, null, 2)}\n`,
+);
+fs.writeFileSync("dist/savanna-access.v1.meta.json", `${JSON.stringify(unifiedBuild.metafile, null, 2)}\n`);
+console.log(`✅ Copied ${bundleAssets.length} bundle assets to savanna/module/`);
 
 // 2b. Serve the lesson cache worker at the application root so it can control the Savanna page.
 fs.copyFileSync("module/src/offline/media-sw.js", "media-sw.js");

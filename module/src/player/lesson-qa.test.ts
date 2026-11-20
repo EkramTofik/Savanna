@@ -31,6 +31,8 @@ test("describes 4:12 as the speaker’s claim rather than a current fact", () =>
 });
 
 test("does not invent answers for unsupported questions or lessons", () => {
-  assert.equal(answerLessonQuestion("What is the capital?", "L-102").supported, false);
+  const unsupported = answerLessonQuestion("What is the capital?", "L-102");
+  assert.equal(unsupported.supported, false);
+  assert.match(unsupported.answer, /^I can't find that in this lesson\./);
   assert.equal(answerLessonQuestion("የዚህ ትምህርት ሐሳብ ምንድነው?", "L-999").supported, false);
 });

@@ -3,32 +3,20 @@ import { customElement, property, state, query } from "lit/decorators.js";
 import en from "./i18n/en.json";
 import am from "./i18n/am.json";
 import { parseWebVtt, getActiveCueText, type VttCue } from "./vtt-parser.js";
-import {
-  type TranscriptLine,
-  type FilteredTranscriptItem,
-  filterTranscriptLines,
-  findActiveTranscriptLineIndex,
-  splitTextByMatch,
-  formatTranscriptForDownload,
-} from "./transcript-manager.js";
-import { formatTranscriptToBrf } from "./braille-formatter.js";
+import type { TranscriptLine, FilteredTranscriptItem } from "./transcript-manager.js";
 import { answerLessonQuestion } from "./lesson-qa.js";
-import {
-  loadPlayerPreferences,
-  savePlayerPreferences,
-  loadStoredPlayerLanguagePreference,
-  getDefaultUiPreferences,
-  getDefaultCaptionsPreferences,
-  type UiPreferences,
-  type CaptionsPreferences,
-  type PlayerPreferences,
-} from "./preferences-manager.js";
+import type { UiPreferences, CaptionsPreferences } from "./preferences-manager.js";
 import {
   resolveCaptionUrl,
   shouldSendApiKey,
   fetchCaptionTrack,
   formatPackSize,
 } from "./caption-loader.js";
+
+function findActiveTranscriptLineIndex(lines: TranscriptLine[], currentTime: number): number {
+  if (!lines.length || !Number.isFinite(currentTime)) return -1;
+  return lines.findIndex((line) => currentTime >= line.start && currentTime < line.end);
+}
 
 @customElement("savanna-player")
 export class SavannaPlayer extends LitElement {
@@ -247,6 +235,9 @@ export class SavannaPlayer extends LitElement {
   /** Search query string in transcript */
   @state()
   private transcriptSearchQuery = "";
+
+  private transcriptTools: typeof import("./transcript-manager.js") | null = null;
+  private preferencesReady: Promise<void> = Promise.resolve();
 
   /** Whether auto-scrolling is enabled during playback */
   @state()
@@ -1490,11 +1481,12 @@ export class SavannaPlayer extends LitElement {
   /**
    * Loads Member 1's preferences (ui, captions) from localStorage per Contract C3.
    */
-  private loadAllPreferences(): void {
-    const prefs = loadPlayerPreferences();
+  private async loadAllPreferences(): Promise<void> {
+    const preferenceManager = await import("./preferences-manager.js");
+    const prefs = preferenceManager.loadPlayerPreferences();
 
     // 1. UI namespace
-    const storedLanguage = loadStoredPlayerLanguagePreference();
+    const storedLanguage = preferenceManager.loadStoredPlayerLanguagePreference();
     if (storedLanguage) {
       this.lang = storedLanguage;
       this.setAttribute("lang", storedLanguage);
@@ -1530,7 +1522,7 @@ export class SavannaPlayer extends LitElement {
    * Persists Member 1's preferences to localStorage per Contract C3,
    * preserving all peer namespaces ('sign', 'ad', 'offline', 'jobs') untouched.
    */
-  private saveAllPreferences(): void {
+  private async saveAllPreferences(): Promise<void> {
     const ui: UiPreferences = {
       lang: this.activeLang,
       speed: this.playbackRate,
@@ -1548,17 +1540,18 @@ export class SavannaPlayer extends LitElement {
       bgOpacity: this.captionBgOpacity,
       position: this.captionPosition,
     };
-    savePlayerPreferences(ui, captions);
+    const preferenceManager = await import("./preferences-manager.js");
+    preferenceManager.savePlayerPreferences(ui, captions);
   }
 
   /** Alias for backward compatibility */
-  private loadCaptionsPreferences(): void {
-    this.loadAllPreferences();
+  private async loadCaptionsPreferences(): Promise<void> {
+    await this.loadAllPreferences();
   }
 
   /** Alias for backward compatibility */
-  private saveCaptionsPreferences(): void {
-    this.saveAllPreferences();
+  private async saveCaptionsPreferences(): Promise<void> {
+    await this.saveAllPreferences();
   }
 
   /**
@@ -1608,9 +1601,10 @@ export class SavannaPlayer extends LitElement {
   /**
    * Resets Member 1's preferences to defaults while preserving peer namespaces.
    */
-  public resetPreferences(): void {
-    const defaultUi = getDefaultUiPreferences();
-    const defaultCap = getDefaultCaptionsPreferences();
+  public async resetPreferences(): Promise<void> {
+    const preferenceManager = await import("./preferences-manager.js");
+    const defaultUi = preferenceManager.getDefaultUiPreferences();
+    const defaultCap = preferenceManager.getDefaultCaptionsPreferences();
 
     this.lang = defaultUi.lang;
     this.playbackRate = defaultUi.speed;
@@ -1630,7 +1624,7 @@ export class SavannaPlayer extends LitElement {
     this.captionBgOpacity = defaultCap.bgOpacity;
     this.captionPosition = defaultCap.position;
 
-    this.saveAllPreferences();
+    await this.saveAllPreferences();
     this.resolveSummary();
     this.syncTranscriptLanguage();
     this.announceStatus(this.t("player.statusPrefsSaved"), "Reset");
@@ -1944,8 +1938,7 @@ export class SavannaPlayer extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    this.loadAllPreferences();
-    this.mediaRequested = !this.lowDataMode;
+    this.preferencesReady = this.loadAllPreferences();
     if (!this.hasAttribute("tabindex")) {
       this.setAttribute("tabindex", "0");
     }
@@ -2116,7 +2109,7 @@ export class SavannaPlayer extends LitElement {
       } catch {}
 
       this.manifestLoadError = false;
-      this.applyManifest(manifest);
+      await this.applyManifest(manifest);
     } catch {
       // Offline fallback: check localStorage (SRS FR-P11, Task 1.7)
       let loadedFromCache = false;
@@ -2125,7 +2118,7 @@ export class SavannaPlayer extends LitElement {
         if (cachedRaw) {
           const cachedManifest = JSON.parse(cachedRaw);
           this.manifestLoadError = false;
-          this.applyManifest(cachedManifest);
+          await this.applyManifest(cachedManifest);
           this.announceStatus(this.t("player.statusOfflineManifest"), "Offline Cache");
           loadedFromCache = true;
         }
@@ -2138,7 +2131,17 @@ export class SavannaPlayer extends LitElement {
     }
   }
 
-  private applyManifest(manifest: any): void {
+  private async applyManifest(manifest: any): Promise<void> {
+    const optionalMediaLoads: Promise<unknown>[] = [];
+    if (typeof manifest?.sign?.url === "string" && manifest.sign.url) {
+      optionalMediaLoads.push(import("../sign-window/sign-window.js"));
+    }
+    if (typeof manifest?.audioDescription?.audioUrl === "string" && manifest.audioDescription.audioUrl &&
+        typeof manifest?.audioDescription?.vttUrl === "string" && manifest.audioDescription.vttUrl) {
+      optionalMediaLoads.push(import("../audio-description/audio-description.js"));
+    }
+    await Promise.all(optionalMediaLoads);
+
     this.manifestData = manifest;
     this.mediaFallbackAttempted = false;
     if (manifest?.title) {
@@ -3102,7 +3105,8 @@ export class SavannaPlayer extends LitElement {
   };
 
   // Runs after Lit completes the first render.
-  protected firstUpdated(): void {
+  protected async firstUpdated(): Promise<void> {
+    await this.preferencesReady;
     if (!this.lowDataMode) this.mediaRequested = true;
     if (this.videoElement?.textTracks) {
       this.videoElement.textTracks.addEventListener("change", this.handleCaptionChange);
@@ -3296,9 +3300,11 @@ export class SavannaPlayer extends LitElement {
     }
   }
 
-  public toggleTranscript = (): void => {
+  public toggleTranscript = async (): Promise<void> => {
     this.isTranscriptOpen = !this.isTranscriptOpen;
     if (this.isTranscriptOpen) {
+      this.transcriptTools ??= await import("./transcript-manager.js");
+      if (!this.isTranscriptOpen) return;
       if (this.transcriptLines.length === 0) {
         if (this.manifestData?.transcript?.url) {
           this.fetchTranscript(this.manifestData.transcript.url, this.manifestData);
@@ -3316,10 +3322,14 @@ export class SavannaPlayer extends LitElement {
     }
   };
 
-  private handleTranscriptSearchInput = (e: Event): void => {
+  private handleTranscriptSearchInput = async (e: Event): Promise<void> => {
     const input = e.target as HTMLInputElement;
     this.transcriptSearchQuery = input.value;
-    const filtered = filterTranscriptLines(this.transcriptLines, this.transcriptSearchQuery);
+    this.transcriptTools ??= await import("./transcript-manager.js");
+    const filtered = this.transcriptTools.filterTranscriptLines(
+      this.transcriptLines,
+      this.transcriptSearchQuery,
+    );
     if (this.transcriptSearchQuery.trim()) {
       if (filtered.length === 0) {
         this.announceStatus(this.t("player.transcriptNoMatches"));
@@ -3327,6 +3337,20 @@ export class SavannaPlayer extends LitElement {
         this.announceStatus(this.t("player.transcriptMatches", { count: filtered.length }));
       }
     }
+  };
+
+  private handleTranscriptSearchKeyDown = async (e: KeyboardEvent): Promise<void> => {
+    if (e.key !== "Enter") return;
+    const input = e.target as HTMLInputElement;
+    this.transcriptSearchQuery = input.value;
+    this.transcriptTools ??= await import("./transcript-manager.js");
+    const firstMatch = this.transcriptTools.filterTranscriptLines(
+      this.transcriptLines,
+      this.transcriptSearchQuery,
+    )[0];
+    if (!firstMatch) return;
+    e.preventDefault();
+    this.seekFromTranscript(firstMatch.line.start);
   };
 
   private clearTranscriptSearch = (): void => {
@@ -3339,7 +3363,8 @@ export class SavannaPlayer extends LitElement {
     this.announceStatus(this.t("player.statusSeek", { time: this.formatTime(start) }));
   }
 
-  private downloadTranscript = (): void => {
+  private downloadTranscript = async (): Promise<void> => {
+    const { formatTranscriptForDownload } = await import("./transcript-manager.js");
     const title =
       this.lessonTitle ||
       (this.manifestData?.title
@@ -3368,7 +3393,8 @@ export class SavannaPlayer extends LitElement {
    * Generates and downloads the transcript as a standard 40 cells x 25 lines
    * ASCII Braille (.brf) document with mandatory draft watermark notice (SRS FR-S1, Task 1.8).
    */
-  private downloadBrailleTranscript = (): void => {
+  private downloadBrailleTranscript = async (): Promise<void> => {
+    const { formatTranscriptToBrf } = await import("./braille-formatter.js");
     const title =
       this.lessonTitle ||
       (this.manifestData?.title
@@ -3397,7 +3423,8 @@ export class SavannaPlayer extends LitElement {
     if (!query || !query.trim()) {
       return text;
     }
-    const parts = splitTextByMatch(text, query);
+    if (!this.transcriptTools) return text;
+    const parts = this.transcriptTools.splitTextByMatch(text, query);
     return parts.map((part) =>
       part.isMatch ? html`<mark class="transcript-mark">${part.text}</mark>` : part.text,
     );
@@ -3481,7 +3508,9 @@ export class SavannaPlayer extends LitElement {
   private renderTranscriptPanel() {
     if (!this.isTranscriptOpen) return "";
 
-    const filteredItems = filterTranscriptLines(this.transcriptLines, this.transcriptSearchQuery);
+    const filteredItems: FilteredTranscriptItem[] = this.transcriptTools
+      ? this.transcriptTools.filterTranscriptLines(this.transcriptLines, this.transcriptSearchQuery)
+      : this.transcriptLines.map((line, originalIndex) => ({ line, originalIndex }));
     const isSearching = Boolean(this.transcriptSearchQuery.trim());
 
     return html`
@@ -3650,6 +3679,7 @@ export class SavannaPlayer extends LitElement {
             placeholder=${this.t("player.transcriptSearchPlaceholder")}
             .value=${this.transcriptSearchQuery}
             @input=${this.handleTranscriptSearchInput}
+            @keydown=${this.handleTranscriptSearchKeyDown}
           />
           ${
             this.transcriptSearchQuery

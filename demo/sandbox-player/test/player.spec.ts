@@ -656,7 +656,9 @@ test.describe("Savanna Player - Member 1 Accessibility & Functional Suite", () =
       .toBe("L-103");
     const offline = player.locator("savanna-offline");
     await expect(offline.locator(".status")).toContainText("Pack ready");
-    await offline.getByRole("button", { name: "Download offline pack" }).click();
+    const downloadPack = offline.getByRole("button", { name: "Download offline pack" });
+    await downloadPack.focus();
+    await downloadPack.press("Enter");
     await expect(offline.locator(".status")).toContainText("Saved offline", { timeout: 30_000 });
 
     await page.reload();
@@ -698,5 +700,55 @@ test.describe("Savanna Player - Member 1 Accessibility & Functional Suite", () =
     } finally {
       await context.setOffline(false);
     }
+  });
+
+  test("1.18 Keyboard-only lesson controls include honest missing-media states and transcript seek", async ({ page }) => {
+    await page.goto("/");
+    const player = page.locator("savanna-player");
+    await expect.poll(() => player.evaluate((element: any) => element.manifestData?.id ?? "")).toBe("L-103");
+
+    const play = player.locator(".btn-play");
+    await play.focus();
+    await play.press("Enter");
+    await expect.poll(() => player.evaluate((element: any) => element.media?.currentTime ?? 0)).toBeGreaterThan(0.1);
+
+    const captions = player.locator(".btn-captions");
+    await captions.focus();
+    await captions.press("Enter");
+    await expect(player.locator(".caption-overlay")).toBeVisible();
+    const language = page.locator("#btn-lang-toggle");
+    await language.focus();
+    await language.press("Enter");
+    await expect(player).toHaveAttribute("lang", "am");
+
+    const signToggle = player.locator(".btn-sign");
+    await signToggle.focus();
+    await signToggle.press("Enter");
+    const sign = page.locator("savanna-sign-window");
+    await expect(sign.locator(".fallback")).toContainText("ለዚህ ትምህርት የምልክት ቪዲዮ የለም");
+    const signHeader = sign.locator("header");
+    await signHeader.focus();
+    const beforeMove = await sign.boundingBox();
+    expect(beforeMove).toBeTruthy();
+    await signHeader.press("ArrowLeft");
+    await expect.poll(async () => (await sign.boundingBox())?.x ?? Infinity).toBeLessThan(beforeMove!.x);
+
+    const ad = player.locator(".btn-ad");
+    await ad.focus();
+    await expect(ad).toHaveAttribute("aria-disabled", "true");
+    await ad.press("Enter");
+    await expect(player.locator('[role="status"][aria-atomic="true"]')).toContainText("የድምጽ ማብራሪያ");
+
+    await language.focus();
+    await language.press("Enter");
+    await expect(player).toHaveAttribute("lang", "en");
+    const transcript = player.locator(".btn-transcript");
+    await transcript.focus();
+    await transcript.press("Enter");
+    const search = player.locator("#transcript-search-input");
+    await search.fill("attention span");
+    await expect(player.locator(".transcript-line")).toContainText("attention span");
+    await search.press("Enter");
+    await expect.poll(() => player.evaluate((element: any) => element.media?.currentTime ?? 0)).toBeGreaterThan(35);
   });
 });

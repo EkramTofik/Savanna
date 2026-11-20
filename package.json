@@ -10,9 +10,12 @@
   "scripts": {
     "mock": "node contracts/mock/server.js",
     "format": "prettier --write .",
-    "test": "node --test pipeline/src/pack/*.test.mjs module/src/**/*.test.ts module/src/member2-a11y.test.ts",
+    "test": "node --test pipeline/src/pack/*.test.mjs module/src/**/*.test.ts module/src/member2-a11y.test.ts scripts/*.test.mjs",
     "build": "tsx build-components.mjs",
+    "size": "node build-components.mjs && node scripts/size-check.mjs",
     "build:site": "node scripts/prepare-static-site.mjs",
+    "l104:ingest": "node scripts/l104-ingest.mjs",
+    "amharic:check": "node scripts/check-amharic-parity.mjs",
     "smoke": "node scripts/smoke-test.mjs",
     "axe": "node scripts/run-axe.mjs",
     "openapi:build": "pnpm --filter @savanna/api openapi:export",
