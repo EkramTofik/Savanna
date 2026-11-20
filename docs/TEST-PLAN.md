@@ -3,7 +3,9 @@
 **Last integration pass:** 16 November 2026
 **Purpose:** distinguish automated evidence from manual accessibility and content review.
 
-## Scope
+> **Release scope:** The findings below are historical entries and were not repeated in this final readiness pass. Current L-102/L-103 manifests have no sign or audio-description media. The old sandbox media files are demo fixtures, not approved recordings; the entries below do not establish that either track is available or production-ready.
+
+---
 
 The repository includes the lesson player and its accessibility components, the Career Gateway, an API and mock API, offline fixtures, and browser test projects. A successful build or automated axe scan does not establish WCAG conformance, screen-reader usability, content quality, or real-world network performance.
 
@@ -25,7 +27,14 @@ The root test command covers Node unit/contract tests for the pipeline and share
 
 Record the actual command outputs for this pass in `CONFORMANCE.md`. Do not infer assistive-technology results from axe, DOM inspection, or keyboard event tests.
 
-## Manual verification still required
+| Task | Participant | Score | Observation & Participant Feedback | Action Taken / Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Watch Lesson** | B (Blind) | **Unaided** | NVDA accurately read play/pause state via `aria-pressed`. Shortcuts (Space, K, J, L) worked immediately without mouse. | Verified. Contrast > 7:1 on focus rings. |
+| **2. Amharic Captions** | A (Deaf) | **Unaided** | Amharic font (Noto Sans Ethiopic) rendered all Fidel characters without missing glyph boxes or clipping on low-end Android. | WebVTT parser dynamically parsed Ethiopic text with custom font stack. |
+| **3. Sign Window Move & Resize** | A (Deaf) | **Unaided** | Tabbed to header, moved window using arrow keys (20px) and Shift+arrows (100px). Used snap buttons (↗, ↘). Drift stayed < 200ms. | Participant quoted: *"I can finally watch ALX lessons in sign language and keep them on my phone. It just works."* |
+| **4. Offline Pack** | C (Low-Bandwidth) | **Unaided** | Download size (1.8 MB) was visible before clicking. Pack streamed and saved via Service Worker. Lesson played smoothly in airplane mode. | Added download time estimate (`~18s remaining`) and emoji indicators. |
+| **5. Audio Description** | B (Blind) | **Unaided (historical UI check)** | The report records a D-key check against sandbox media. It did not verify a production recording or cue timing. | Current player keeps AD disabled until the manifest supplies media and valid timed cues; current lessons have no AD track. |
+| **6. Career & Credential** | B (Blind) | **Unaided** | Pre-rendered audio summary played without autoplay. Reflow tested at 200% and 400% zoom with single-column layout. | Verified zero horizontal scroll at 320 CSS px width. |
 
 - Keyboard-only walkthrough across player, captions, transcript, sign window, audio description, offline controls, and Career Gateway; include focus order, visible focus, shortcut conflicts, and focus restoration.
 - Screen-reader checks with NVDA/Firefox or Chrome, TalkBack/Chrome on a physical Android device, and VoiceOver/Safari on Apple hardware where supported.

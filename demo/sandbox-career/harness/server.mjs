@@ -10,8 +10,8 @@ const repo = path.resolve(here, "../../..");
 const fixtures = path.join(repo, "contracts/fixtures/v1");
 const port = Number(process.env.PORT ?? 4020);
 const publicBaseUrl = process.env.PUBLIC_BASE_URL ?? `http://localhost:${port}`;
-const PK = "pk_live_demo";
-const SK = "sk_live_demo";
+const PK = "pk_demo_local";
+const SK = "sk_demo_local";
 const credFile = path.join(here, "credentials-db.json");
 const amharicContent = JSON.parse(
   readFileSync(path.join(repo, "api/src/routes/member3-amharic.json"), "utf8"),

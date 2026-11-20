@@ -1,8 +1,8 @@
 {
   "id": "L-103",
   "title": {
-    "en": "Full lesson (sign, audio description, offline pack)",
-    "am": "ሙሉ ትምህርት"
+    "en": "Learning through short videos — Amharic transcript demo",
+    "am": "በአጭር ቪዲዮዎች መማር — የአማርኛ ግልባጭ ማሳያ"
   },
   "durationSec": 120,
   "media": {
@@ -19,20 +19,13 @@
       "url": "http://localhost:4010/media/am.vtt"
     }
   ],
-  "sign": {
-    "url": "http://localhost:4010/media/esl-placeholder.mp4",
-    "offsetMs": 0
-  },
-  "audioDescription": {
-    "audioUrl": "http://localhost:4010/media/ad.opus",
-    "vttUrl": "http://localhost:4010/media/ad.vtt",
-    "extended": true
-  },
+  "sign": null,
+  "audioDescription": null,
   "transcript": {
     "url": "/v1/lessons/L-103/transcript"
   },
   "pack": {
     "manifestUrl": "/v1/lessons/L-103/pack",
-    "sizeBytes": 51761
+    "sizeBytes": 29565
   }
 }

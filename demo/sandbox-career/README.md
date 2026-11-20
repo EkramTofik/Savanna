@@ -6,6 +6,8 @@ Owns: `<savanna-job-card>`, `<savanna-credential>`, jobs/credentials/verify API,
 
 Does not wait on the player or the lesson pipeline. Talks to this harness on `http://localhost:4020` (or Member 4's mock on `:4010` once it serves the same fixtures).
 
+The production-style component snippets below deliberately use this local harness and its test-only key (`pk_demo_local`). They are not production credentials or URLs. No production Career Gateway origin is configured here.
+
 ## Run (no npm)
 
 Windows TLS to the npm registry is failing on this machine (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`), so this slice also runs on Node only:
@@ -25,7 +27,7 @@ Verification, application, and PDF pages accept `?lang=am` or `?lang=en`.
 node --test test/api.node.test.mjs
 ```
 
-Keys: publishable `pk_live_demo`, secret `sk_live_demo`.
+Keys: publishable `pk_demo_local`, secret `sk_demo_local`.
 
 ## Run the UI and API together
 
@@ -77,15 +79,15 @@ publish it to your CDN. Load it once, then use either element in any HTML templa
 
 <savanna-job-card
   job="J-9"
-  api="https://api.example.org"
-  api-key="pk_live_xxx"
+  api="http://localhost:4020"
+  api-key="pk_demo_local"
   lang="am"
 ></savanna-job-card>
 
 <savanna-credential
   id="C-7"
-  api="https://api.example.org"
-  api-key="pk_live_xxx"
+  api="http://localhost:4020"
+  api-key="pk_demo_local"
   lang="am"
 ></savanna-credential>
 ```
@@ -116,21 +118,21 @@ Add two lines to any HTML page (no build tool, no npm):
 
 ```html
 <!-- 1. load the module once, at the bottom of <body> or in <head defer> -->
-<script type="module" src="https://your-cdn/savanna-career.v1.js"></script>
+<script type="module" src="/assets/savanna-career.v1.js"></script>
 
 <!-- 2. place the job card -->
 <savanna-job-card
   job="J-9"
-  api="https://api.example.org"
-  api-key="pk_live_xxx"
+  api="http://localhost:4020"
+  api-key="pk_demo_local"
   lang="am"
 ></savanna-job-card>
 
 <!-- 3. place the credential widget -->
 <savanna-credential
   id="C-7"
-  api="https://api.example.org"
-  api-key="pk_live_xxx"
+  api="http://localhost:4020"
+  api-key="pk_demo_local"
   lang="am"
 ></savanna-credential>
 
@@ -182,11 +184,13 @@ curl http://localhost:4020/verify/C-7
 curl -X POST http://localhost:4020/v1/credentials/C-7/revoke \
   -H "X-Savanna-Key: sk_dev_local"
 
-# Register a webhook (secret key required)
-curl -s -X POST http://localhost:4020/v1/webhooks \
-  -H "X-Savanna-Key: sk_dev_local" \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://partner.example/hooks","events":["credential.issued","credential.revoked"]}'
+# Register a webhook (secret key required). Supply an HTTPS callback URL your
+# team controls; do not send webhook events to an example or unowned endpoint.
+$webhookUrl = Read-Host "HTTPS callback URL controlled by your team"
+$body = @{ url = $webhookUrl; events = @("credential.issued", "credential.revoked") } | ConvertTo-Json -Compress
+Invoke-RestMethod -Method Post -Uri "http://localhost:4020/v1/webhooks" `
+  -Headers @{ "X-Savanna-Key" = "sk_dev_local" } `
+  -ContentType "application/json" -Body $body
 ```
 
 ## Languages
@@ -284,10 +288,10 @@ All dependencies are listed in `demo/sandbox-career/package.json` and
 After `npm run build`, partners can load `dist/savanna-career.v1.js` and drop in:
 
 ```html
-<savanna-job-card job="J-9" api="https://api.example.org" api-key="pk_live_xxx"></savanna-job-card>
+<savanna-job-card job="J-9" api="http://localhost:4020" api-key="pk_demo_local"></savanna-job-card>
 <savanna-credential
   id="C-7"
-  api="https://api.example.org"
-  api-key="pk_live_xxx"
+  api="http://localhost:4020"
+  api-key="pk_demo_local"
 ></savanna-credential>
 ```

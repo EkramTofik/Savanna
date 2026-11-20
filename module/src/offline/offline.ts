@@ -134,6 +134,24 @@ export class SavannaOffline extends LitElement {
       color: #0f172a;
       overflow-wrap: anywhere;
     }
+    @media (forced-colors: active) {
+      .status {
+        forced-color-adjust: none;
+        border-color: CanvasText;
+        background: Canvas;
+        color: CanvasText;
+      }
+      button {
+        forced-color-adjust: none;
+        border-color: ButtonText;
+        background: ButtonFace;
+        color: ButtonText;
+      }
+      button:focus-visible {
+        outline-color: Highlight;
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *,
       *::before,

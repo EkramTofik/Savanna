@@ -5,7 +5,10 @@ import '../../../module/src/offline/offline.ts';
 import type { SavannaPlayer } from '../../../module/src/player/savanna-player.ts';
 
 const player = document.getElementById('lesson-player') as SavannaPlayer | null;
-const API_BASE = '/';
+const apiBase = window.location.origin;
+if (player) player.api = apiBase;
+const offline = document.querySelector('savanna-offline') as (HTMLElement & { api: string }) | null;
+if (offline) offline.api = apiBase;
 const eventLog = document.getElementById('event-log');
 const stateText = document.getElementById('state-text');
 const timeText = document.getElementById('time-text');
@@ -28,19 +31,19 @@ function appendLog(message: string): void {
 }
 
 // 14-item checklist tracking
-const verifiedShortcuts = new Set<string>();
+const observedShortcuts = new Set<string>();
 
 function markChecked(key: string): void {
     const row = document.querySelector(`.checklist-item[data-key="${key}"]`);
-    if (row && !verifiedShortcuts.has(key)) {
-        verifiedShortcuts.add(key);
-        row.classList.add('passed');
+    if (row && !observedShortcuts.has(key)) {
+        observedShortcuts.add(key);
+        row.classList.add('observed');
         const statusCell = row.querySelector('.check-status');
         if (statusCell) {
-            statusCell.textContent = '✓ Verified';
+            statusCell.textContent = 'Key observed';
         }
         if (checklistScore) {
-            checklistScore.textContent = `${verifiedShortcuts.size} / 14 Verified`;
+            checklistScore.textContent = `${observedShortcuts.size} / 14 keys observed`;
         }
     }
 }
@@ -174,7 +177,7 @@ if (toggleShortcuts && player) {
     });
 }
 
-// Switching between L-103 (Full Lesson) and L-102 (Minimal Lesson)
+// Switching between the two published sample lesson records.
 const btnLoadL103 = document.getElementById('btn-load-l103');
 const btnLoadL102 = document.getElementById('btn-load-l102');
 const pageLessonTitle = document.getElementById('page-lesson-title');
@@ -188,15 +191,18 @@ const breadcrumbLesson = document.getElementById('breadcrumb-lesson');
 if (btnLoadL103 && player) {
     btnLoadL103.addEventListener('click', async () => {
         player.lesson = 'L-103';
-        player.api = API_BASE;
+        player.api = apiBase;
+        if (offline) offline.setAttribute('lesson-id', 'L-103');
         player.lang = currentHostLang;
         applyHostLanguage(currentHostLang);
         if (mockDataTitle) mockDataTitle.textContent = 'Active Mock Data (contracts/fixtures/v1/lessons/L-103.json)';
-        if (mockRawLink) mockRawLink.href = `${API_BASE}v1/lessons/L-103`;
-        appendLog('Switched to L-103 (Full Lesson: Sign, AD, Captions, Pack)');
+        if (mockRawLink) mockRawLink.href = `${apiBase}/v1/lessons/L-103`;
+        appendLog('Opened L-103 (Amharic transcript demo; sign video and audio description unavailable)');
 
         try {
-            const res = await fetch(`${API_BASE}v1/lessons/L-103`, { headers: { 'X-Savanna-Key': 'pk_demo_public' } });
+            const res = await fetch(`${apiBase}/v1/lessons/L-103`, {
+                headers: { 'X-Savanna-Key': player.apiKey },
+            });
             if (res.ok && mockJsonDisplay) {
                 const data = await res.json();
                 mockJsonDisplay.textContent = JSON.stringify(data, null, 2);
@@ -208,15 +214,18 @@ if (btnLoadL103 && player) {
 if (btnLoadL102 && player) {
     btnLoadL102.addEventListener('click', async () => {
         player.lesson = 'L-102';
-        player.api = API_BASE;
+        player.api = apiBase;
+        if (offline) offline.setAttribute('lesson-id', 'L-102');
         player.lang = currentHostLang;
         applyHostLanguage(currentHostLang);
         if (mockDataTitle) mockDataTitle.textContent = 'Active Mock Data (contracts/fixtures/v1/lessons/L-102.json)';
-        if (mockRawLink) mockRawLink.href = `${API_BASE}v1/lessons/L-102`;
-        appendLog('Switched to L-102 (Minimal Lesson)');
+        if (mockRawLink) mockRawLink.href = `${apiBase}/v1/lessons/L-102`;
+        appendLog('Opened L-102 sample lesson');
 
         try {
-            const res = await fetch(`${API_BASE}v1/lessons/L-102`, { headers: { 'X-Savanna-Key': 'pk_demo_public' } });
+            const res = await fetch(`${apiBase}/v1/lessons/L-102`, {
+                headers: { 'X-Savanna-Key': player.apiKey },
+            });
             if (res.ok && mockJsonDisplay) {
                 const data = await res.json();
                 mockJsonDisplay.textContent = JSON.stringify(data, null, 2);
@@ -231,103 +240,87 @@ let currentHostLang: 'en' | 'am' = 'en';
 const hostI18n = {
     en: {
         brand: 'Learning Portal',
-        learner: 'Learner: Kidus T.',
+        learner: 'Learner: Demo',
         crumbCourses: 'Courses',
-        crumbTrack: 'VA-1 Foundations',
-        crumbModule: 'Module 2',
-        lessonTitleL103: 'The Future of the VA Industry',
-        lessonTitleL102: 'Introduction to Databases',
-        badgeL103: 'Module 2 · Concept 2.1 (L-103)',
-        badgeL102: 'Module 1 · Lesson 102 (Minimal)',
-        durationL103: 'Duration: <strong>12s (Full Lesson)</strong>',
-        durationL102: 'Duration: <strong>12s (Minimal Lesson)</strong>',
-        btnBefore: '← Previous Concept',
-        btnLoadL103: '★ Full Lesson (L-103)',
-        btnLoadL102: 'Minimal Lesson (L-102)',
-        btnAfter: 'Next Concept →',
+        crumbTrack: 'Savanna Access Kit',
+        crumbModule: 'Sample lessons',
+        lessonTitleL103: 'Learning through short videos',
+        lessonTitleL102: 'Learning through short videos',
+        badgeL103: 'L-103 · Amharic transcript demo',
+        badgeL102: 'L-102 · Sample lesson',
+        durationL103: 'Duration: <strong>120 seconds</strong>',
+        durationL102: 'Duration: <strong>120 seconds</strong>',
+        btnBefore: 'Previous lesson is not included in this demo',
+        btnLoadL103: 'Open L-103 transcript demo',
+        btnLoadL102: 'Open L-102 sample lesson',
+        btnAfter: 'Next lesson is not included in this demo',
         summaryHeading: 'Lesson Summary',
-        summaryCardL103: 'The Virtual Assistant profession is evolving rapidly. As businesses adopt AI and remote-first operations, routine tasks are automated while human skills—such as client care, judgment under ambiguity, and empathetic communication—become more valuable than ever.',
-        summaryCardL102: 'Databases organize structured information for fast querying and reliable storage. This lesson introduces tables, keys, and accessible relational schemas.',
-        kp1: '<strong>Human-in-the-loop:</strong> AI tools assist with research, drafting, and scheduling; human professionals provide trust and critical thinking.',
-        kp2: '<strong>Specialization:</strong> Growing demand for specialized remote support in digital workflows, CRM management, and project coordination.',
-        kp3: '<strong>Accessibility:</strong> Press <kbd>C</kbd> for captions, <kbd>S</kbd> for sign language, and <kbd>D</kbd> for Audio Description.',
+        summaryCardL103: 'The speaker reflects on learning from online videos and compares short video segments with long lectures. The 4 minute 12 second figure is presented as the speaker’s premise, not as a verified current statistic.',
+        summaryCardL102: 'The speaker reflects on learning from online videos and compares short video segments with long lectures. The 4 minute 12 second figure is presented as the speaker’s premise, not as a verified current statistic.',
+        kp1: '<strong>4:12:</strong> The speaker presents this as a personal premise, not a verified current statistic.',
+        kp2: '<strong>Short and long formats:</strong> The speaker compares short online-video segments with a longer lecture.',
+        kp3: '<strong>Interpretation:</strong> This personal reflection does not show that all learning follows one fixed duration.',
         studyNotesLabel: 'Learner Study Notes:',
         studyNotesPlaceholder: 'Type personal study notes here (player shortcuts are safely disabled while typing)...',
         studyNotesAria: 'Learner study notes',
-        curriculumHeading: 'Module 2 Curriculum',
-        curr0: '2.0 Module Overview',
-        curr1: '2.1 Evolution of Support Roles',
-        curr2: '2.2 The Future of the VA Industry',
-        curr2Status: 'Current',
-        curr3: '2.3 AI Tools & Prompting',
-        curr3Status: 'Next',
-        curr4: '2.4 Case Study & Reflection',
-        curr4Status: 'Upcoming',
-        curr5: '2.5 Knowledge Check',
-        curr5Status: 'Locked',
+        curriculumHeading: 'Available sample lessons',
+        curr0: 'L-102 · Learning through short videos',
+        curr1: 'L-103 · Amharic transcript demo',
         detailsHeading: 'Lesson Details',
-        sideTrack: 'Track: <strong>VA Foundations</strong>',
-        sideAccess: 'Accessibility: <strong>ESL, AD, Captions</strong>',
+        sideTrack: 'Demo: <strong>sample video lessons</strong>',
+        sideAccess: 'Accessibility: <strong>English and Amharic captions; sign video and audio description unavailable</strong>',
         sideHint: 'Press <kbd>?</kbd> anytime on the player for keyboard shortcuts help.',
-        signTitle: 'ESL Sign Window',
-        signHint: '(Press S to toggle)',
-        alxHeroIntro: 'Every day, artificial intelligence transforms standard administrative routines. In modern distributed workplaces, remote Virtual Assistants pair AI automation with critical human judgment, empathetic communication, and reliable client trust.',
-        objectivesHeading: 'By the end of this lesson, you should be able to:',
-        obj1: 'Explain the evolving role of Virtual Assistants in AI-enabled, remote-first organizations.',
-        obj2: 'Describe how human judgment and empathetic communication complement automated generative tools.',
-        obj3: 'Determine the strategic value of specialized workflows, CRM administration, and project coordination.',
-        obj4: 'Differentiate between raw AI-generated drafts and trustworthy, client-ready deliverables.',
-        obj5: 'Leverage universal accessibility accommodations (captions, sign language, and audio description) for inclusive teamwork.',
+        signTitle: 'Sign-language panel (unavailable for this lesson)',
+        signHint: 'No verified Ethiopian Sign Language recording is supplied.',
+        alxHeroIntro: 'This sample recording reflects on learning from online videos. The speaker compares short video segments with longer lectures; the 4:12 figure is the speaker’s premise, not a verified current statistic.',
+        objectivesHeading: 'This sample lesson helps learners:',
+        obj1: 'Describe the speaker’s reflection on learning from online videos.',
+        obj2: 'Compare the speaker’s view of short video segments with a longer lecture.',
+        obj3: 'Recognize that the 4:12 figure is a personal premise, not a verified current statistic.',
+        obj4: 'Use the English and Amharic captions and transcript controls.',
+        obj5: 'Try keyboard playback controls; sign video and audio description are unavailable for these lesson records.',
     },
     am: {
         brand: 'የትምህርት ፖርታል',
-        learner: 'ተማሪ: ኪዱስ ተ.',
+        learner: 'ተማሪ: ማሳያ',
         crumbCourses: 'ኮርሶች',
-        crumbTrack: 'VA-1 መሠረታዊ',
-        crumbModule: 'ሞጁል 2',
-        lessonTitleL103: 'የቨርቹዋል ረዳት ኢንዱስትሪ የወደፊት ዕጣ ፈንታ',
-        lessonTitleL102: 'የመረጃ ቋቶች መግቢያ',
-        badgeL103: 'ሞጁል 2 · ጽንሰ-ሀሳብ 2.1 (L-103)',
-        badgeL102: 'ሞጁል 1 · ትምህርት 102 (አነስተኛ)',
-        durationL103: 'የቆይታ ጊዜ: <strong>12 ሰከንድ (ሙሉ ትምህርት)</strong>',
-        durationL102: 'የቆይታ ጊዜ: <strong>12 ሰከንድ (አነስተኛ ትምህርት)</strong>',
-        btnBefore: '← ያለፈው ጽንሰ-ሀሳብ',
-        btnLoadL103: '★ ሙሉ ትምህርት (L-103)',
-        btnLoadL102: 'አነስተኛ ትምህርት (L-102)',
-        btnAfter: 'ቀጣይ ጽንሰ-ሀሳብ →',
+        crumbTrack: 'ሳቫና አክሰስ ኪት',
+        crumbModule: 'የማሳያ ትምህርቶች',
+        lessonTitleL103: 'በአጭር ቪዲዮዎች መማር',
+        lessonTitleL102: 'በአጭር ቪዲዮዎች መማር',
+        badgeL103: 'L-103 · የአማርኛ ግልባጭ ማሳያ',
+        badgeL102: 'L-102 · የማሳያ ትምህርት',
+        durationL103: 'የቆይታ ጊዜ: <strong>120 ሰከንድ</strong>',
+        durationL102: 'የቆይታ ጊዜ: <strong>120 ሰከንድ</strong>',
+        btnBefore: 'ያለፈው ትምህርት በዚህ ማሳያ ውስጥ የለም',
+        btnLoadL103: 'የ L-103 ግልባጭ ማሳያን ክፈት',
+        btnLoadL102: 'የ L-102 ማሳያ ትምህርትን ክፈት',
+        btnAfter: 'ቀጣዩ ትምህርት በዚህ ማሳያ ውስጥ የለም',
         summaryHeading: 'የትምህርት ማጠቃለያ',
-        summaryCardL103: 'የቨርቹዋል ረዳት (VA) ሙያ በፍጥነት እያደገ ነው። የንግድ ድርጅቶች አርቴፊሻል ኢንተለጀንስን እና የርቀት ሥራን ሲጠቀሙ፣ የተለመዱ ተግባራት በራስ-ሰር ይሰራሉ፤ የሰው ችሎታዎች—እንደ ደንበኛ እንክብካቤ፣ ውሳኔ አሰጣጥ እና የርኅራኄ ተግባቦት—ከምንጊዜውም በላይ አስፈላጊ ይሆናሉ።',
-        summaryCardL102: 'የመረጃ ቋቶች መረጃን ለፈጣን ፍለጋ እና አስተማማኝ ማከማቻ ያደራጃሉ። ይህ ትምህርት ሰንጠረዦችን፣ ቁልፎችን እና ግንኙነቶችን ያስተዋውቃል።',
-        kp1: '<strong>ሰው እና ቴክኖሎጂ:</strong> የ AI መሣሪያዎች ለምርምር፣ ለረቂቅ ጽሑፍ እና ለቀጠሮ ይረዳሉ፤ የሰው ባለሙያዎች አመኔታ እና ሂሳዊ አስተሳሰብን ይሰጣሉ።',
-        kp2: '<strong>ልዩ ሙያ:</strong> በዲጂታል የሥራ ፍሰት፣ በ CRM አስተዳደር እና በፕሮጀክት ቅንጅት ውስጥ የልዩ የርቀት ድጋፍ ፍላጎት እያደገ ነው።',
-        kp3: '<strong>ተደራሽነት:</strong> ለግርጌ ጽሑፍ <kbd>C</kbd>ን፣ ለምልክት ቋንቋ <kbd>S</kbd>ን፣ እና ለድምጽ ማብራሪያ <kbd>D</kbd>ን ይጫኑ።',
+        summaryCardL103: 'ተናጋሪው ከመስመር ላይ ቪዲዮዎች ስለመማር ያሰላስላል፤ አጭር የቪዲዮ ክፍሎችን ከረጅም ንግግሮች ጋር ያነጻጽራል። የ4 ደቂቃ ከ12 ሰከንድ ቁጥር የተናጋሪው አስተያየት ነው፤ የዛሬ የተረጋገጠ ስታቲስቲክስ አይደለም።',
+        summaryCardL102: 'ተናጋሪው ከመስመር ላይ ቪዲዮዎች ስለመማር ያሰላስላል፤ አጭር የቪዲዮ ክፍሎችን ከረጅም ንግግሮች ጋር ያነጻጽራል። የ4 ደቂቃ ከ12 ሰከንድ ቁጥር የተናጋሪው አስተያየት ነው፤ የዛሬ የተረጋገጠ ስታቲስቲክስ አይደለም።',
+        kp1: '<strong>4:12:</strong> ተናጋሪው ይህንን እንደ የግል አስተያየት እንጂ የዛሬ የተረጋገጠ ስታቲስቲክስ እንዳልሆነ ያቀርበዋል።',
+        kp2: '<strong>አጭርና ረጅም ቅርጾች:</strong> ተናጋሪው አጭር የመስመር ላይ ቪዲዮ ክፍሎችን ከረጅም ንግግር ጋር ያነጻጽራል።',
+        kp3: '<strong>ትርጓሜ:</strong> ይህ የግል አስተያየት ሁሉም መማር አንድ ቋሚ ጊዜ እንደሚከተል አያሳይም።',
         studyNotesLabel: 'የተማሪው የጥናት ማስታወሻዎች:',
         studyNotesPlaceholder: 'የግል ጥናት ማስታወሻዎችን እዚህ ይጻፉ (በመጻፍ ወቅት የተጫዋች አቋራጮች በደህና ይቦዝናሉ)...',
         studyNotesAria: 'የተማሪው የጥናት ማስታወሻዎች',
-        curriculumHeading: 'የሞጁል 2 ይዘቶች',
-        curr0: '2.0 የሞጁል አጠቃላይ እይታ',
-        curr1: '2.1 የድጋፍ ሚናዎች እድገት',
-        curr2: '2.2 የቨርቹዋል ረዳት ኢንዱስትሪ የወደፊት ዕጣ ፈንታ',
-        curr2Status: 'ወቅታዊ',
-        curr3: '2.3 የ AI መሣሪያዎች እና መጠይቆች',
-        curr3Status: 'ቀጣይ',
-        curr4: '2.4 የጥናት ጉዳይ እና አስተያየት',
-        curr4Status: 'መጪ',
-        curr5: '2.5 የእውቀት ፍተሻ',
-        curr5Status: 'የተቆለፈ',
+        curriculumHeading: 'ያሉ የማሳያ ትምህርቶች',
+        curr0: 'L-102 · በአጭር ቪዲዮዎች መማር',
+        curr1: 'L-103 · የአማርኛ ግልባጭ ማሳያ',
         detailsHeading: 'የትምህርት ዝርዝሮች',
-        sideTrack: 'የትምህርት መስመር: <strong>VA መሠረታዊ</strong>',
-        sideAccess: 'ተደራሽነት: <strong>የምልክት ቋንቋ፣ የድምጽ ማብራሪያ፣ የግርጌ ጽሑፍ</strong>',
+        sideTrack: 'ማሳያ: <strong>የቪዲዮ ትምህርቶች</strong>',
+        sideAccess: 'ተደራሽነት: <strong>የእንግሊዝኛና የአማርኛ ግርጌ ጽሑፎች አሉ፤ የምልክት ቪዲዮና የድምፅ መግለጫ የሉም</strong>',
         sideHint: 'የቁልፍ ሰሌዳ አቋራጮች እገዛ ለማግኘት በማጫወቻው ላይ በማንኛውም ጊዜ <kbd>?</kbd>ን ይጫኑ።',
-        signTitle: 'የምልክት ቋንቋ መስኮት (ESL)',
-        signHint: '(ለማብራት/ማጥፋት S ይጫኑ)',
-        alxHeroIntro: 'በየቀኑ፣ አርቴፊሻል ኢንተለጀንስ መደበኛ የአስተዳደር ሥራዎችን ይለውጣል። በዘመናዊ የርቀት የሥራ ቦታዎች፣ የቨርቹዋል ረዳቶች የ AI አውቶሜሽንን ከሰው ልጅ ሂሳዊ ፍርድ፣ የርኅራኄ ተግባቦት እና አስተማማኝ የደንበኛ እምነት ጋር ያጣምራሉ።',
-        objectivesHeading: 'በዚህ ትምህርት መጨረሻ ላይ የሚከተሉትን ማከናወን ይችላሉ፡',
-        obj1: 'በ AI በተደገፉ የርቀት ድርጅቶች ውስጥ የቨርቹዋል ረዳቶችን እያደገ የመጣ ሚና ማስረዳት።',
-        obj2: 'የሰው ልጅ ውሳኔ እና የርኅራኄ ተግባቦት አውቶሜትድ የሆኑ የፈጠራ መሣሪያዎችን እንዴት እንደሚያሟሉ መግለጽ።',
-        obj3: 'የተለዩ የሥራ ፍሰቶች፣ የ CRM አስተዳደር እና የፕሮጀክት ቅንጅት ስልታዊ ጠቀሜታን መወሰን።',
-        obj4: 'በ AI ከተዘጋጁ ያልተጣሩ ረቂቆች እና ለደንበኛ ዝግጁ ከሆኑ አስተማማኝ ውጤቶች መካከል ያለውን ልዩነት መለየት።',
-        obj5: 'ሁሉን አቀፍ የቡድን ሥራን ለማሳካት ዓለም አቀፍ የተደራሽነት ማመቻቸቶችን (የግርጌ ጽሑፍ፣ የምልክት ቋንቋ እና የድምጽ ማብራሪያ) መጠቀም።',
+        signTitle: 'የምልክት ቋንቋ መስኮት (ለዚህ ትምህርት የለም)',
+        signHint: 'የተረጋገጠ የኢትዮጵያ ምልክት ቋንቋ ቀረጻ አልቀረበም።',
+        alxHeroIntro: 'ይህ የማሳያ ቀረጻ ከመስመር ላይ ቪዲዮዎች ስለመማር የሚያሰላስል ንግግር ያቀርባል። ተናጋሪው አጭር የቪዲዮ ክፍሎችን ከረጅም ንግግር ጋር ያነጻጽራል፤ የ4:12 ቁጥር የግል አስተያየቱ ነው፣ ዛሬ የተረጋገጠ ስታቲስቲክስ አይደለም።',
+        objectivesHeading: 'ይህ የማሳያ ትምህርት ተማሪዎችን የሚያግዘው፦',
+        obj1: 'ተናጋሪው ከመስመር ላይ ቪዲዮዎች ስለመማር ያቀረበውን አስተያየት መግለጽ።',
+        obj2: 'ተናጋሪው አጭር ቪዲዮዎችን ከረጅም ንግግር ጋር እንዴት እንዳነጻጸረ መለየት።',
+        obj3: 'የ4:12 ቁጥር የግል አስተያየት እንጂ የተረጋገጠ የዛሬ ስታቲስቲክስ እንዳልሆነ መረዳት።',
+        obj4: 'የእንግሊዝኛና የአማርኛ ግርጌ ጽሑፎችን እና የግልባጭ መቆጣጠሪያዎችን መጠቀም።',
+        obj5: 'የቁልፍ ሰሌዳ መቆጣጠሪያዎችን መሞከር፤ የምልክት ቪዲዮና የድምፅ መግለጫ በእነዚህ መዝገቦች ውስጥ የሉም።',
     }
 };
 
@@ -391,10 +384,6 @@ function applyHostLanguage(lang: 'en' | 'am'): void {
     };
     setCurrItem('curr-0', t.curr0);
     setCurrItem('curr-1', t.curr1);
-    setCurrItem('curr-2', t.curr2, t.curr2Status);
-    setCurrItem('curr-3', t.curr3, t.curr3Status);
-    setCurrItem('curr-4', t.curr4, t.curr4Status);
-    setCurrItem('curr-5', t.curr5, t.curr5Status);
 
     setText('sidebar-details-heading', t.detailsHeading);
     setHtml('side-track', t.sideTrack);
@@ -447,14 +436,14 @@ try {
 // Reset checklist
 if (btnResetChecks) {
     btnResetChecks.addEventListener('click', () => {
-        verifiedShortcuts.clear();
+        observedShortcuts.clear();
         document.querySelectorAll('.checklist-item').forEach((row) => {
-            row.classList.remove('passed');
+            row.classList.remove('observed');
             const statusCell = row.querySelector('.check-status');
             if (statusCell) statusCell.textContent = '∯ Not tested';
         });
         if (checklistScore) {
-            checklistScore.textContent = '0 / 14 Verified';
+            checklistScore.textContent = '0 / 14 keys observed';
         }
         appendLog('Reset testing checklist score.');
     });

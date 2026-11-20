@@ -189,16 +189,16 @@
 <body>
   <main>
     <h1>Savanna Access Kit — Member 2 Demo</h1>
-    <p class="subtitle">Sign language window, audio description, and offline pack for accessible learning.</p>
+    <p class="subtitle">Component test harness only. It is not a playable production lesson, and no approved sign-language or audio-description recording is included.</p>
     
     <!-- Accessibility Features Info -->
     <div class="info-card">
       <h3>⌨️ Keyboard Shortcuts & Accessibility</h3>
       <ul>
         <li><strong>Sign window:</strong> Press Tab to focus, then Arrow keys to move (Shift for big jumps, Alt+Arrows to resize)</li>
-        <li><strong>Audio Description:</strong> Press 'D' key anywhere to toggle extended descriptions</li>
-        <li><strong>Offline mode:</strong> Download lesson, enable airplane mode, refresh page — video still works!</li>
-        <li><strong>Screen readers:</strong> All controls have ARIA labels, progress announced every 10%</li>
+        <li><strong>Audio description:</strong> Unavailable until a genuine recording and valid timed cues are approved</li>
+        <li><strong>Offline mode:</strong> Test with a configured local API and pack, then reload without a network. Results depend on browser storage and service-worker support.</li>
+        <li><strong>Screen readers:</strong> This page does not verify assistive-technology announcements. Arrange a human review with the target screen reader.</li>
       </ul>
     </div>
     
@@ -208,12 +208,11 @@
       <!-- Video with Sign Window -->
       <div class="video-container">
         <video id="lesson" controls playsinline>
-          <source src="./media/lesson.mp4" type="video/mp4">
+          <source src="../../../contracts/fixtures/media/lesson.mp4" type="video/mp4">
           Video unavailable.
         </video>
         
-        <savanna-sign-window 
-          src="./media/sign.mp4" 
+        <savanna-sign-window
           offset-ms="0"
           lang="en"
           enabled>
@@ -222,12 +221,7 @@
       
       <!-- Audio Description Bar - NO GAP, directly attached -->
       <div class="ad-bar">
-        <savanna-audio-description 
-          src="./media/ad.opus" 
-          text-vtt="./media/ad.vtt"
-          offset-ms="0"
-          lang="en">
-        </savanna-audio-description>
+        <p role="status">Audio description is not supplied for this lesson.</p>
       </div>
       
       <!-- Offline Download Section -->
@@ -269,38 +263,8 @@
     
   </main>
   
-  <!-- Sync Components with Video -->
+  <!-- Local demo API config only; the optional access tracks have no media. -->
   <script type="module">
-    const video = document.querySelector('#lesson');
-    const videoContainer = document.querySelector('.video-container');
-    const signWindow = document.querySelector('savanna-sign-window');
-    const audioDesc = document.querySelector('savanna-audio-description');
-    
-    if (video && signWindow && audioDesc) {
-      // Sync components with video playback
-      function sync() {
-        const event = new CustomEvent('savanna:timeupdate', {
-          bubbles: true,
-          composed: true,
-          detail: {
-            time: video.currentTime,
-            paused: video.paused,
-            rate: video.playbackRate
-          }
-        });
-        signWindow.dispatchEvent(event);
-        audioDesc.dispatchEvent(event);
-      }
-      
-      ['timeupdate', 'play', 'pause', 'seeked', 'ratechange'].forEach(eventName => {
-        video.addEventListener(eventName, sync);
-      });
-      
-      // Expose media for components (C2 contract requirement)
-      // Audio-description checks for media on closest player element
-      if (videoContainer) videoContainer.media = video;
-    }
-    
     // API config update
     document.querySelector('#connect').onclick = () => {
       const offline = document.querySelector('#offline');

@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { generateKeyPairSync } from "node:crypto";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
@@ -8,7 +9,10 @@ import { loadConfig } from "../src/config";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const routesDir = path.join(here, "fixtures/routes");
 const KEY = { "X-Savanna-Key": "pk_dev_local" };
-const SECRET = { "X-Savanna-Key": "sk_dev_local_change_me_please" };
+const SECRET = { "X-Savanna-Key": "sk_dev_local_only_not_secure" };
+const testIssuerPrivateJwk = JSON.stringify(
+  generateKeyPairSync("ed25519").privateKey.export({ format: "jwk" }),
+);
 
 async function app(env: Record<string, string> = {}) {
   return createApp({ config: loadConfig(env), routesDir });
@@ -39,8 +43,8 @@ describe("API skeleton", () => {
   });
 
   it("blocks a publishable key from an unknown origin (production rules)", async () => {
-    const res = await request(await app({ NODE_ENV: "production", STORE: "memory", SECRET_KEY: "s".repeat(20), PARTNERS: JSON.stringify([{ name: "p", key: "pk_live_12345", origins: ["https://ok.example"] }]) }))
-      .get("/v1/hello").set({ "X-Savanna-Key": "pk_live_12345", Origin: "https://evil.example" });
+  const res = await request(await app({ NODE_ENV: "production", STORE: "memory", SECRET_KEY: "s".repeat(20), PARTNERS: JSON.stringify([{ name: "p", key: "pk_test_only_12345", origins: ["https://ok.example"] }]), PUBLIC_BASE_URL: "https://api.ok.example", ISSUER_PRIVATE_JWK: testIssuerPrivateJwk }))
+      .get("/v1/hello").set({ "X-Savanna-Key": "pk_test_only_12345", Origin: "https://evil.example" });
     expect(res.status).toBe(403);
   });
 

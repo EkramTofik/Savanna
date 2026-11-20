@@ -1,6 +1,7 @@
 export interface LessonTrack {
   url: string;
   offsetMs?: number;
+  languageName?: string;
 }
 
 export interface LessonManifest {
@@ -10,7 +11,7 @@ export interface LessonManifest {
   media: { video: string; audio: string };
   captions: Array<{ lang: 'en' | 'am'; url: string }>;
   sign: LessonTrack | null;
-  audioDescription: { audioUrl: string; vttUrl: string; extended: boolean } | null;
+  audioDescription: { audioUrl: string; vttUrl: string; extended: boolean; offsetMs?: number } | null;
   transcript: { url: string };
   pack: { manifestUrl: string; sizeBytes: number } | null;
   summary?: string | Partial<Record<'en' | 'am', string>>;
@@ -65,7 +66,14 @@ export function parseLessonManifest(value: unknown, expectedId?: string): Lesson
     if (!isRecord(value.sign) || !isHttpUrl(value.sign.url) || typeof value.sign.offsetMs !== 'number' || !Number.isFinite(value.sign.offsetMs)) {
       throw new Error('Lesson manifest sign track must include a valid URL and numeric offsetMs, or be null.');
     }
-    sign = { url: value.sign.url, offsetMs: value.sign.offsetMs };
+    if (value.sign.languageName !== undefined && typeof value.sign.languageName !== 'string') {
+      throw new Error('Lesson manifest sign languageName must be text when supplied.');
+    }
+    sign = {
+      url: value.sign.url,
+      offsetMs: value.sign.offsetMs,
+      ...(typeof value.sign.languageName === 'string' ? { languageName: value.sign.languageName } : {}),
+    };
   }
 
   let audioDescription: LessonManifest['audioDescription'] = null;
@@ -73,10 +81,15 @@ export function parseLessonManifest(value: unknown, expectedId?: string): Lesson
     if (!isRecord(value.audioDescription) || !isHttpUrl(value.audioDescription.audioUrl) || !isHttpUrl(value.audioDescription.vttUrl) || typeof value.audioDescription.extended !== 'boolean') {
       throw new Error('Lesson manifest audio description must include valid audio and VTT URLs and an extended flag, or be null.');
     }
+    if (value.audioDescription.offsetMs !== undefined &&
+      (typeof value.audioDescription.offsetMs !== 'number' || !Number.isFinite(value.audioDescription.offsetMs))) {
+      throw new Error('Lesson manifest audio description offsetMs must be numeric when supplied.');
+    }
     audioDescription = {
       audioUrl: value.audioDescription.audioUrl,
       vttUrl: value.audioDescription.vttUrl,
       extended: value.audioDescription.extended,
+      ...(typeof value.audioDescription.offsetMs === 'number' ? { offsetMs: value.audioDescription.offsetMs } : {}),
     };
   }
 

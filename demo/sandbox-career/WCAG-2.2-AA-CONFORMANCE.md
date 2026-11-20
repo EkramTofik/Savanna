@@ -1,7 +1,8 @@
-# WCAG 2.2 AA conformance report — Career Gateway (Member 3)
+# Accessibility self-assessment — Career Gateway (Member 3)
 
-Required submission artifact (deck slides 14 and 16: _"your team submits a WCAG 2.2 AA
-conformance report with the code"_). Scope is the Career Gateway slice only:
+**This document is not a WCAG conformance claim.** It records a source review and selected automated checks; the manual and human review gates below have not all been completed. It is not an independent accessibility audit.
+
+Pitch submission artifact requested by the deck (slides 14 and 16). Scope is the Career Gateway slice only:
 `<savanna-job-card>`, `<savanna-credential>`, the `/verify/{id}` page, the apply form,
 the JSON-LD APIs and the certificate PDF. It does **not** cover the player, lessons or
 the host page shell (those are other members' surfaces).
@@ -39,7 +40,7 @@ node --test test/api.node.test.mjs
 - **Source review**: semantic `<article>`/`<h2>`/`<dl>`, `lang` per component, 44 px
   targets, `role="status"` live regions, `preload="none"` (no autoplay).
 
-## Conformance by criterion (in-scope surfaces)
+## Initial self-assessment by criterion (in-scope surfaces)
 
 | SC                                      | Level | Status         | Note                                                                 |
 | --------------------------------------- | ----- | -------------- | -------------------------------------------------------------------- |
@@ -93,6 +94,7 @@ before submitting.
 ## Known exceptions
 
 - The certificate PDF tagging depends on the headless Chromium build (`page.pdf({ tagged: true })`);
-  until PAC/veraPDF sign off, treat the HTML certificate as the primary, fully-conformant output.
+  until PAC/veraPDF sign off, treat the HTML certificate as the primary display only. That does not
+  establish that the HTML or PDF is WCAG-conformant.
 - The Open Badges proof is canonical-JSON Ed25519, not full RDFC-1.0 Data Integrity — this affects
   verifiability, not accessibility, but it is disclosed in `README.md`.

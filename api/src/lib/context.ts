@@ -23,12 +23,16 @@ export interface AppConfig {
   rateLimitPerMin: number;
   /** "memory" (default in dev, no database needed) or "prisma" (PostgreSQL). */
   store: "memory" | "prisma";
-  /** Optional local media directory. Production assets can instead use external URLs in the lesson records. */
+  /** Optional local media directory. Production assets may instead be served by the frontend host. */
   mediaRoot?: string;
-  /** Optional root directory containing per-lesson pack.json/manifest.json and pack.zip folders. */
+  /** Optional persistent root containing <lesson-id>/pack.json and optional pack.zip files. */
   packRoot?: string;
-  /** Optional directory containing the public site files served by this API process. */
+  /** Optional directory containing public site files served by the API process. */
   webRoot?: string;
+  /** Public HTTPS API origin used for did:web and credential links in production. */
+  publicBaseUrl?: string;
+  /** Server-only Ed25519 JWK JSON. Never expose this value to browser clients. */
+  issuerPrivateJwk?: string;
 }
 
 // Replace `unknown` with the generated PrismaClient type once Prisma is set up (task 4.3).
@@ -37,8 +41,12 @@ export interface Ctx {
   /** Content store (lessons, transcripts, preferences). Added in task 4.3. */
   store: Store;
   config: AppConfig;
-  /** Optional explicit offline pack directory, primarily for app-specific deployments. */
+  /** Optional persistent lesson pack directory; defaults to repository fixtures. */
   packRoot?: string;
+  /** Public origin used when creating absolute credential and job URLs. */
+  publicBaseUrl: string;
+  /** Server-only Ed25519 JWK used to issue signed credentials. */
+  issuerPrivateJwk?: string;
 }
 
 export type RegisterRoutes = (router: Router, ctx: Ctx) => void;

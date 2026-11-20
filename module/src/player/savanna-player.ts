@@ -1,69 +1,59 @@
-import { LitElement, css, html, nothing, type PropertyValues } from 'lit';
-import { customElement, property, state, query } from 'lit/decorators.js';
-import en from './i18n/en.json';
-import am from './i18n/am.json';
-import { parseWebVtt, getActiveCueText, type VttCue } from './vtt-parser.js';
-import {
-  type TranscriptLine,
-  type FilteredTranscriptItem,
-  filterTranscriptLines,
-  findActiveTranscriptLineIndex,
-  splitTextByMatch,
-  formatTranscriptForDownload,
-} from './transcript-manager.js';
-import { formatTranscriptToBrf } from './braille-formatter.js';
-import {
-  loadPlayerPreferences,
-  savePlayerPreferences,
-  getDefaultUiPreferences,
-  getDefaultCaptionsPreferences,
-  type UiPreferences,
-  type CaptionsPreferences,
-  type PlayerPreferences,
-} from './preferences-manager.js';
+import { LitElement, css, html, nothing, type PropertyValues } from "lit";
+import { customElement, property, state, query } from "lit/decorators.js";
+import en from "./i18n/en.json";
+import am from "./i18n/am.json";
+import { parseWebVtt, getActiveCueText, type VttCue } from "./vtt-parser.js";
+import type { TranscriptLine, FilteredTranscriptItem } from "./transcript-manager.js";
+import { answerLessonQuestion } from "./lesson-qa.js";
+import { parseLessonManifest, type LessonManifest } from "./lesson-manifest.js";
+import type { UiPreferences, CaptionsPreferences } from "./preferences-manager.js";
+import { getCachedObjectUrl } from "../offline/offline-cache.js";
 import {
   resolveCaptionUrl,
   shouldSendApiKey,
   fetchCaptionTrack,
   formatPackSize,
-} from './caption-loader.js';
-import { parseLessonManifest, type LessonManifest } from './lesson-manifest.js';
-import { getCachedObjectUrl } from '../offline/offline-cache.js';
+} from "./caption-loader.js";
 
-@customElement('savanna-player')
+function findActiveTranscriptLineIndex(lines: TranscriptLine[], currentTime: number): number {
+  if (!lines.length || !Number.isFinite(currentTime)) return -1;
+  return lines.findIndex((line) => currentTime >= line.start && currentTime < line.end);
+}
+
+@customElement("savanna-player")
 export class SavannaPlayer extends LitElement {
   @property({ type: String })
-  src = '';
+  src = "";
 
   /** Contract C1 / C6: Lesson ID to fetch from the API */
   @property({ type: String })
-  lesson = '';
+  lesson = "";
 
   /** Contract C6: API base URL (e.g. http://localhost:4010) */
   @property({ type: String })
-  api = '';
+  api = "";
 
   /** Contract C6: Public publishable API key */
-  @property({ type: String, attribute: 'api-key' })
-  apiKey = '';
+  @property({ type: String, attribute: "api-key" })
+  apiKey = "";
 
   /** Contract C4: Component language code ('en' | 'am') */
   @property({ type: String })
-  lang = 'en';
+  lang = "en";
 
   /**
    * Allows disabling keyboard shortcuts per WCAG 2.1.4
    * (Character Key Shortcuts) or host application preferences.
    */
-  @property({ type: Boolean, attribute: 'disable-shortcuts', reflect: true })
+  @property({ type: Boolean, attribute: "disable-shortcuts", reflect: true })
   disableShortcuts = false;
 
   /** Toggle state for slotted sign language window */
-  @property({ type: Boolean, attribute: 'show-sign-window', reflect: true })
+  @property({ type: Boolean, attribute: "show-sign-window", reflect: true })
   showSignWindow = true;
 
   /** Toggle state for audio description */
-  @property({ type: Boolean, attribute: 'audio-description', reflect: true })
+  @property({ type: Boolean, attribute: "audio-description", reflect: true })
   audioDescriptionEnabled = false;
 
   /** Exposes the offline pack metadata from the lesson manifest (Contract C1) */
@@ -92,11 +82,11 @@ export class SavannaPlayer extends LitElement {
 
   /** Selected player display theme (Contract C3 / SRS FR-P9) */
   @state()
-  private playerTheme: 'dark' | 'light' | 'high-contrast' = 'dark';
+  private playerTheme: "dark" | "light" | "high-contrast" = "dark";
 
   /** Active preferences tab: 'general' | 'captions' */
   @state()
-  private activePrefsTab: 'general' | 'captions' = 'general';
+  private activePrefsTab: "general" | "captions" = "general";
 
   /** Caption track list loaded from lesson manifest */
   @state()
@@ -104,30 +94,57 @@ export class SavannaPlayer extends LitElement {
 
   /** Selected caption language: 'en' | 'am' | 'off' */
   @state()
-  private selectedCaptionLang: 'en' | 'am' | 'off' = 'en';
+  private selectedCaptionLang: "en" | "am" | "off" = "en";
+
+  /** Save bandwidth by waiting for the learner to press Play before fetching video bytes. */
+  @state()
+  private lowDataMode = true;
+
+  /** The large media URL is attached only after a learner explicitly starts playback. */
+  @state()
+  private mediaRequested = false;
+  private mediaFallbackAttempted = false;
+
+  @state()
+  private mediaLoadError = false;
+
+  @state()
+  private mediaLoading = false;
+
+  @state()
+  private questionAnswer = "";
+
+  @state()
+  private questionText = "";
+
+  @state()
+  private questionSupported = true;
+
+  @state()
+  private questionLanguage: "en" | "am" = "en";
 
   /** Active cue text computed on playback timeupdate */
   @state()
-  private currentCueText = '';
+  private currentCueText = "";
 
   /** Captions customization settings per SRS FR-P3 & Contract C3 */
   @state()
   private captionFontSize = 100; // 100%, 150%, 200%, 300%
 
   @state()
-  private captionPreset: 'white-black' | 'yellow-black' | 'black-white' | 'custom' = 'white-black';
+  private captionPreset: "white-black" | "yellow-black" | "black-white" | "custom" = "white-black";
 
   @state()
-  private captionTextColor = '#ffffff';
+  private captionTextColor = "#ffffff";
 
   @state()
-  private captionBgColor = '#000000';
+  private captionBgColor = "#000000";
 
   @state()
   private captionBgOpacity = 80; // 100%, 75%, 50%, 0%
 
   @state()
-  private captionPosition: 'bottom' | 'top' = 'bottom';
+  private captionPosition: "bottom" | "top" = "bottom";
 
   /** In-memory cache of parsed WebVTT cues mapped by language */
   private vttCuesCache = new Map<string, VttCue[]>();
@@ -162,43 +179,44 @@ export class SavannaPlayer extends LitElement {
 
   /** Temporary on-screen HUD toast message for shortcut confirmation (visual only) */
   @state()
-  private statusToast = '';
+  private statusToast = "";
 
   /** Permanent polite live region announcement string for screen readers */
   @state()
-  private liveRegionMessage = '';
+  private liveRegionMessage = "";
 
   /** Contract C1: Null-safety flags derived from manifest */
   @state()
-  private hasSignTrack = true;
+  private hasSignTrack = false;
 
   @state()
-  private hasAdTrack = true;
+  private hasAdTrack = false;
 
   private toastTimeout: number | null = null;
   private liveRegionTimeout: number | null = null;
   private triggerElementBeforeDialog: HTMLElement | null = null;
 
-  @query('video')
+  @query("video")
   private videoElement!: HTMLVideoElement;
 
-  @query('.shortcuts-dialog')
+  @query(".shortcuts-dialog")
   private helpDialogElement!: HTMLDialogElement | null;
 
-  @query('.captions-dialog')
+  @query(".captions-dialog")
   private captionsDialogElement!: HTMLDialogElement | null;
 
-  @query('.btn-help')
+  @query(".btn-help")
   private helpButtonElement!: HTMLButtonElement | null;
 
-  @query('.btn-captions-settings')
+  @query(".btn-captions-settings")
   private captionsSettingsBtnElement!: HTMLButtonElement | null;
 
-  @query('.btn-fullscreen')
+  @query(".btn-fullscreen")
   private fullscreenButtonElement!: HTMLButtonElement | null;
 
   /** FR-P1a: Tracks the last focused control in the player for fullscreen restoration */
   private lastFocusedControl: HTMLElement | null = null;
+  private lastFocusedControlSelector = "";
 
   /** FR-P12: Whether non-speech sound descriptions should be voiced to screen readers */
   @state()
@@ -214,11 +232,14 @@ export class SavannaPlayer extends LitElement {
 
   /** Plain-language summary of the lesson (SRS FR-P8, FR-D4) */
   @state()
-  private transcriptSummary = '';
+  private transcriptSummary = "";
 
   /** Search query string in transcript */
   @state()
-  private transcriptSearchQuery = '';
+  private transcriptSearchQuery = "";
+
+  private transcriptTools: typeof import("./transcript-manager.js") | null = null;
+  private preferencesReady: Promise<void> = Promise.resolve();
 
   /** Whether auto-scrolling is enabled during playback */
   @state()
@@ -238,7 +259,7 @@ export class SavannaPlayer extends LitElement {
 
   /** Lesson title from manifest */
   @state()
-  private lessonTitle = '';
+  private lessonTitle = "";
 
   /** Stored manifest cache */
   private manifestData: LessonManifest | null = null;
@@ -261,7 +282,7 @@ export class SavannaPlayer extends LitElement {
   }
   set isPrefsOpen(val: boolean) {
     if (val) {
-      this.openPreferencesDialog('general');
+      this.openPreferencesDialog("general");
     } else {
       this.closePreferencesDialog();
     }
@@ -285,19 +306,19 @@ export class SavannaPlayer extends LitElement {
     }
   }
 
-  @query('.btn-transcript')
+  @query(".btn-transcript")
   private transcriptBtnElement!: HTMLButtonElement | null;
 
-  @query('#transcript-search-input')
+  @query("#transcript-search-input")
   private transcriptSearchInput!: HTMLInputElement | null;
 
-  @query('.transcript-lines-container')
+  @query(".transcript-lines-container")
   private transcriptScrollContainer!: HTMLElement | null;
 
-  @query('.prefs-dialog')
+  @query(".prefs-dialog")
   private prefsDialogElement!: HTMLDialogElement | null;
 
-  @query('.btn-preferences')
+  @query(".btn-preferences")
   private prefsBtnElement!: HTMLButtonElement | null;
 
   // Expose the real browser media element (Contract C2).
@@ -325,7 +346,7 @@ export class SavannaPlayer extends LitElement {
       cursor: pointer;
     }
 
-    :host([data-theme='light']) {
+    :host([data-theme="light"]) {
       --savanna-accent: #0284c7;
       --savanna-ctrl-bg: #f8fafc;
       --savanna-ctrl-text: #0f172a;
@@ -336,7 +357,7 @@ export class SavannaPlayer extends LitElement {
       --savanna-header-bg: #e2e8f0;
     }
 
-    :host([data-theme='high-contrast']) {
+    :host([data-theme="high-contrast"]) {
       --savanna-accent: #f59e0b;
       --savanna-focus: #f59e0b;
       --savanna-ctrl-bg: #000000;
@@ -372,10 +393,116 @@ export class SavannaPlayer extends LitElement {
       overflow: hidden;
     }
 
+    .player video {
+      aspect-ratio: 16 / 9;
+      object-fit: contain;
+    }
+
+    .media-pending {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-content: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      color: #ffffff;
+      text-align: center;
+      background: #101827;
+      pointer-events: none;
+    }
+
+    .media-pending strong {
+      font-size: 1.1rem;
+    }
+    .media-pending span {
+      max-width: 32rem;
+    }
+
+    .media-error {
+      pointer-events: auto;
+    }
+
+    .media-retry {
+      justify-self: center;
+      min-height: 44px;
+      padding: 0.55rem 1rem;
+      border: 2px solid #ffffff;
+      border-radius: 6px;
+      background: #155e75;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .media-retry:focus-visible {
+      outline: 3px solid #fbbf24;
+      outline-offset: 3px;
+    }
+
+    .lesson-qa {
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 10px;
+      background: #0f172a;
+      color: #f8fafc;
+    }
+
+    .lesson-qa h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.1rem;
+    }
+    .lesson-qa p {
+      margin: 0.35rem 0 0.8rem;
+    }
+    .lesson-qa form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .lesson-qa input {
+      flex: 1 1 16rem;
+      min-width: 0;
+      min-height: 44px;
+      padding: 0.5rem 0.7rem;
+      border: 1px solid #64748b;
+      border-radius: 6px;
+      font: inherit;
+    }
+    .lesson-qa button {
+      min-height: 44px;
+      padding: 0.5rem 0.9rem;
+      border: 1px solid #fff;
+      border-radius: 6px;
+      background: #315b83;
+      color: #fff;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    .lesson-qa :focus-visible {
+      outline: 3px solid #ffbf47;
+      outline-offset: 3px;
+    }
+    .lesson-qa-answer {
+      margin-top: 0.8rem !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
     video {
       display: block;
       width: 100%;
-      aspect-ratio: 16 / 9;
       height: auto;
     }
 
@@ -404,11 +531,11 @@ export class SavannaPlayer extends LitElement {
 
     /* Noto Sans Ethiopic font family stack for native Amharic glyph support */
     @font-face {
-      font-family: 'Noto Sans Ethiopic';
+      font-family: "Noto Sans Ethiopic";
       font-style: normal;
       font-weight: 400 700;
       font-display: swap;
-      src: local('Noto Sans Ethiopic'), local('Nyala'), local('Abyssinica SIL'), local('Kefa');
+      src: local("Noto Sans Ethiopic"), local("Nyala"), local("Abyssinica SIL"), local("Kefa");
       unicode-range: U+1200-137F, U+1380-139F, U+2D80-2DDF, U+AB00-AB2F;
     }
 
@@ -422,7 +549,9 @@ export class SavannaPlayer extends LitElement {
       align-items: center;
       pointer-events: none;
       z-index: 20;
-      transition: top 0.15s ease, bottom 0.15s ease;
+      transition:
+        top 0.15s ease,
+        bottom 0.15s ease;
     }
 
     .caption-overlay.pos-bottom {
@@ -434,7 +563,14 @@ export class SavannaPlayer extends LitElement {
     }
 
     .caption-cue {
-      font-family: 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', 'Kefa', system-ui, -apple-system, sans-serif;
+      font-family:
+        "Noto Sans Ethiopic",
+        "Nyala",
+        "Abyssinica SIL",
+        "Kefa",
+        system-ui,
+        -apple-system,
+        sans-serif;
       line-height: 1.4;
       white-space: pre-wrap;
       display: inline-block;
@@ -444,7 +580,10 @@ export class SavannaPlayer extends LitElement {
       box-sizing: border-box;
       max-width: 90%;
       word-break: break-word;
-      transition: font-size 0.1s ease, color 0.1s ease, background-color 0.1s ease;
+      transition:
+        font-size 0.1s ease,
+        color 0.1s ease,
+        background-color 0.1s ease;
     }
 
     /* Modal Dialogs (Shortcuts Help & Captions Settings) */
@@ -657,12 +796,6 @@ export class SavannaPlayer extends LitElement {
       box-sizing: border-box;
     }
 
-    .accessibility-modules {
-      padding: 0.5rem 0.75rem;
-      background: var(--savanna-panel-bg, #0b192c);
-      border-top: 1px solid rgba(255, 255, 255, 0.15);
-    }
-
     .ctrl-btn {
       min-width: 44px;
       min-height: 44px;
@@ -678,7 +811,9 @@ export class SavannaPlayer extends LitElement {
       font-weight: 600;
       padding: 0 0.5rem;
       box-sizing: border-box;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
     }
 
     .ctrl-btn:hover {
@@ -709,7 +844,10 @@ export class SavannaPlayer extends LitElement {
       align-items: center;
       justify-content: center;
       gap: 0.4rem;
-      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        border-color 0.15s ease;
     }
 
     .prefs-tab-btn:hover {
@@ -718,14 +856,14 @@ export class SavannaPlayer extends LitElement {
     }
 
     .prefs-tab-btn.is-active-tab,
-    .prefs-tab-btn[aria-selected='true'] {
+    .prefs-tab-btn[aria-selected="true"] {
       background: var(--savanna-accent, #0f4c81);
       color: #ffffff;
       border-color: #ffffff;
     }
 
-    :host([data-theme='high-contrast']) .prefs-tab-btn.is-active-tab,
-    :host([data-theme='high-contrast']) .prefs-tab-btn[aria-selected='true'] {
+    :host([data-theme="high-contrast"]) .prefs-tab-btn.is-active-tab,
+    :host([data-theme="high-contrast"]) .prefs-tab-btn[aria-selected="true"] {
       background: #f59e0b;
       color: #000000;
       border-color: #ffffff;
@@ -750,15 +888,15 @@ export class SavannaPlayer extends LitElement {
     }
 
     .ctrl-btn.active,
-    .ctrl-btn[aria-pressed='true'] {
+    .ctrl-btn[aria-pressed="true"] {
       background: var(--savanna-accent, #0f4c81);
       border-color: #38bdf8;
       color: #ffffff;
       box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
     }
 
-    :host([data-theme='high-contrast']) .ctrl-btn.active,
-    :host([data-theme='high-contrast']) .ctrl-btn[aria-pressed='true'] {
+    :host([data-theme="high-contrast"]) .ctrl-btn.active,
+    :host([data-theme="high-contrast"]) .ctrl-btn[aria-pressed="true"] {
       background: #f59e0b;
       color: #000000;
       border-color: #ffffff;
@@ -766,7 +904,7 @@ export class SavannaPlayer extends LitElement {
     }
 
     .ctrl-btn.is-disabled,
-    .ctrl-btn[aria-disabled='true'] {
+    .ctrl-btn[aria-disabled="true"] {
       opacity: 0.45;
       cursor: not-allowed;
     }
@@ -821,8 +959,8 @@ export class SavannaPlayer extends LitElement {
     .speed-popover {
       position: absolute;
       bottom: calc(100% + 8px);
-      left: 50%;
-      transform: translateX(-50%);
+      right: 0;
+      left: auto;
       background: #0b192c;
       border: 1px solid rgba(255, 255, 255, 0.25);
       border-radius: var(--savanna-radius, 4px);
@@ -833,15 +971,16 @@ export class SavannaPlayer extends LitElement {
       z-index: 40;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       min-width: 140px;
+      max-width: calc(100vw - 1rem);
     }
 
-    :host([data-theme='light']) .speed-popover {
+    :host([data-theme="light"]) .speed-popover {
       background: #ffffff;
       border-color: #cbd5e1;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
 
-    :host([data-theme='high-contrast']) .speed-popover {
+    :host([data-theme="high-contrast"]) .speed-popover {
       background: #000000;
       border: 2px solid #ffffff;
     }
@@ -859,12 +998,14 @@ export class SavannaPlayer extends LitElement {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
       min-height: 36px;
       box-sizing: border-box;
     }
 
-    :host([data-theme='light']) .speed-opt-btn {
+    :host([data-theme="light"]) .speed-opt-btn {
       background: #f1f5f9;
       color: #0f172a;
     }
@@ -877,8 +1018,8 @@ export class SavannaPlayer extends LitElement {
       outline-offset: 1px;
     }
 
-    :host([data-theme='light']) .speed-opt-btn:hover,
-    :host([data-theme='light']) .speed-opt-btn:focus-visible {
+    :host([data-theme="light"]) .speed-opt-btn:hover,
+    :host([data-theme="light"]) .speed-opt-btn:focus-visible {
       background: #e2e8f0;
       border-color: #94a3b8;
     }
@@ -890,7 +1031,7 @@ export class SavannaPlayer extends LitElement {
       font-weight: 700;
     }
 
-    :host([data-theme='high-contrast']) .speed-opt-btn.is-selected {
+    :host([data-theme="high-contrast"]) .speed-opt-btn.is-selected {
       background: #f59e0b;
       color: #000000;
       border-color: #ffffff;
@@ -994,7 +1135,7 @@ export class SavannaPlayer extends LitElement {
     }
 
     .transcript-action-btn.is-active-btn,
-    .transcript-action-btn[aria-pressed='true'] {
+    .transcript-action-btn[aria-pressed="true"] {
       background: var(--savanna-accent, #0f4c81);
       border-color: #38bdf8;
       box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
@@ -1115,7 +1256,14 @@ export class SavannaPlayer extends LitElement {
     .summary-text {
       margin: 0;
       color: #e2e8f0;
-      font-family: 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', 'Kefa', system-ui, -apple-system, sans-serif;
+      font-family:
+        "Noto Sans Ethiopic",
+        "Nyala",
+        "Abyssinica SIL",
+        "Kefa",
+        system-ui,
+        -apple-system,
+        sans-serif;
     }
 
     /* Search Controls */
@@ -1201,7 +1349,10 @@ export class SavannaPlayer extends LitElement {
       font-family: inherit;
       font-size: 0.85rem;
       line-height: 1.45;
-      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        border-color 0.15s ease;
       min-height: 44px;
       box-sizing: border-box;
       width: 100%;
@@ -1219,7 +1370,7 @@ export class SavannaPlayer extends LitElement {
     }
 
     .transcript-line.is-active,
-    .transcript-line[aria-current='true'] {
+    .transcript-line[aria-current="true"] {
       background: rgba(15, 76, 129, 0.4);
       border-color: rgba(255, 255, 255, 0.2);
       border-left: 3px solid var(--savanna-accent, #0f4c81);
@@ -1241,7 +1392,7 @@ export class SavannaPlayer extends LitElement {
     }
 
     .transcript-line.is-active .cue-timestamp,
-    .transcript-line[aria-current='true'] .cue-timestamp {
+    .transcript-line[aria-current="true"] .cue-timestamp {
       background: var(--savanna-accent, #0f4c81);
       color: #ffffff;
     }
@@ -1249,7 +1400,14 @@ export class SavannaPlayer extends LitElement {
     .cue-text {
       flex: 1;
       word-break: break-word;
-      font-family: 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', 'Kefa', system-ui, -apple-system, sans-serif;
+      font-family:
+        "Noto Sans Ethiopic",
+        "Nyala",
+        "Abyssinica SIL",
+        "Kefa",
+        system-ui,
+        -apple-system,
+        sans-serif;
     }
 
     .transcript-mark {
@@ -1273,11 +1431,15 @@ export class SavannaPlayer extends LitElement {
    * Reads component's lang attribute, falls back to document.documentElement.lang, else 'en'.
    * Normalizes 'am-ET' or any 'am*' to 'am'; any unknown code becomes 'en'.
    */
-  public get activeLang(): 'en' | 'am' {
-    const raw = (this.lang || (typeof document !== 'undefined' ? document.documentElement?.lang : '') || 'en')
+  public get activeLang(): "en" | "am" {
+    const raw = (
+      this.lang ||
+      (typeof document !== "undefined" ? document.documentElement?.lang : "") ||
+      "en"
+    )
       .trim()
       .toLowerCase();
-    return raw.startsWith('am') ? 'am' : 'en';
+    return raw.startsWith("am") ? "am" : "en";
   }
 
   /**
@@ -1285,7 +1447,8 @@ export class SavannaPlayer extends LitElement {
    * replacing {placeholder} variables if provided.
    */
   public t(key: string, vars?: Record<string, string | number>): string {
-    const dict = this.activeLang === 'am' ? (am as Record<string, string>) : (en as Record<string, string>);
+    const dict =
+      this.activeLang === "am" ? (am as Record<string, string>) : (en as Record<string, string>);
     let text = dict[key] || (en as Record<string, string>)[key] || key;
     if (vars) {
       for (const [k, v] of Object.entries(vars)) {
@@ -1299,8 +1462,8 @@ export class SavannaPlayer extends LitElement {
    * Converts the selected caption background color and opacity to an rgba string.
    */
   private get captionBackgroundRgba(): string {
-    if (this.captionBgOpacity === 0) return 'transparent';
-    const hex = this.captionBgColor.replace('#', '');
+    if (this.captionBgOpacity === 0) return "transparent";
+    const hex = this.captionBgColor.replace("#", "");
     const r = parseInt(hex.substring(0, 2), 16) || 0;
     const g = parseInt(hex.substring(2, 4), 16) || 0;
     const b = parseInt(hex.substring(4, 6), 16) || 0;
@@ -1312,10 +1475,10 @@ export class SavannaPlayer extends LitElement {
    * Computes inline CSS style string for live caption rendering.
    */
   private computeCaptionStyle(): string {
-    let fontRem = '1.15rem';
-    if (this.captionFontSize === 150) fontRem = '1.65rem';
-    else if (this.captionFontSize === 200) fontRem = '2.15rem';
-    else if (this.captionFontSize === 300) fontRem = '3rem';
+    let fontRem = "1.15rem";
+    if (this.captionFontSize === 150) fontRem = "1.65rem";
+    else if (this.captionFontSize === 200) fontRem = "2.15rem";
+    else if (this.captionFontSize === 300) fontRem = "3rem";
 
     return `font-size: ${fontRem}; color: ${this.captionTextColor}; background-color: ${this.captionBackgroundRgba};`;
   }
@@ -1323,23 +1486,30 @@ export class SavannaPlayer extends LitElement {
   /**
    * Loads Member 1's preferences (ui, captions) from localStorage per Contract C3.
    */
-  private loadAllPreferences(): void {
-    const prefs = loadPlayerPreferences();
+  private async loadAllPreferences(): Promise<void> {
+    const preferenceManager = await import("./preferences-manager.js");
+    const prefs = preferenceManager.loadPlayerPreferences();
 
     // 1. UI namespace
-    if (prefs.ui.lang) {
-      this.lang = prefs.ui.lang;
+    const storedLanguage = preferenceManager.loadStoredPlayerLanguagePreference();
+    if (storedLanguage) {
+      this.lang = storedLanguage;
+      this.setAttribute("lang", storedLanguage);
+      if (typeof document !== "undefined" && document.documentElement) {
+        document.documentElement.lang = storedLanguage;
+      }
     }
-    if (typeof prefs.ui.speed === 'number') {
+    if (typeof prefs.ui.speed === "number") {
       this.playbackRate = prefs.ui.speed;
     }
     if (prefs.ui.theme) {
       this.playerTheme = prefs.ui.theme;
-      this.setAttribute('data-theme', this.playerTheme);
+      this.setAttribute("data-theme", this.playerTheme);
     }
-    if (typeof prefs.ui.shortcuts === 'boolean') {
+    if (typeof prefs.ui.shortcuts === "boolean") {
       this.disableShortcuts = !prefs.ui.shortcuts;
     }
+    this.lowDataMode = prefs.ui.lowData;
 
     // 2. Captions namespace
     const c = prefs.captions;
@@ -1357,12 +1527,13 @@ export class SavannaPlayer extends LitElement {
    * Persists Member 1's preferences to localStorage per Contract C3,
    * preserving all peer namespaces ('sign', 'ad', 'offline', 'jobs') untouched.
    */
-  private saveAllPreferences(): void {
+  private async saveAllPreferences(): Promise<void> {
     const ui: UiPreferences = {
       lang: this.activeLang,
       speed: this.playbackRate,
       theme: this.playerTheme,
       shortcuts: !this.disableShortcuts,
+      lowData: this.lowDataMode,
     };
     const captions: CaptionsPreferences = {
       enabled: this.captionsShowing,
@@ -1374,30 +1545,31 @@ export class SavannaPlayer extends LitElement {
       bgOpacity: this.captionBgOpacity,
       position: this.captionPosition,
     };
-    savePlayerPreferences(ui, captions);
+    const preferenceManager = await import("./preferences-manager.js");
+    preferenceManager.savePlayerPreferences(ui, captions);
   }
 
   /** Alias for backward compatibility */
-  private loadCaptionsPreferences(): void {
-    this.loadAllPreferences();
+  private async loadCaptionsPreferences(): Promise<void> {
+    await this.loadAllPreferences();
   }
 
   /** Alias for backward compatibility */
-  private saveCaptionsPreferences(): void {
-    this.saveAllPreferences();
+  private async saveCaptionsPreferences(): Promise<void> {
+    await this.saveAllPreferences();
   }
 
   /**
    * Switches the active language per Contract C4 without requiring a page reload.
    * Fires 'savanna:lang-change' on window with detail: { lang }.
    */
-  public setLanguage(newLang: 'en' | 'am'): void {
+  public setLanguage(newLang: "en" | "am"): void {
     if (this.lang === newLang) return;
     this.lang = newLang;
-    this.setAttribute('lang', newLang);
-    if (typeof document !== 'undefined' && document.documentElement) {
+    this.setAttribute("lang", newLang);
+    if (typeof document !== "undefined" && document.documentElement) {
       document.documentElement.lang = newLang;
-      document.documentElement.setAttribute('lang', newLang);
+      document.documentElement.setAttribute("lang", newLang);
     }
     this.saveAllPreferences();
     this.resolveSummary();
@@ -1405,45 +1577,48 @@ export class SavannaPlayer extends LitElement {
 
     // Contract C4: fires savanna:lang-change on window with detail.lang
     window.dispatchEvent(
-      new CustomEvent('savanna:lang-change', {
+      new CustomEvent("savanna:lang-change", {
         detail: { lang: newLang },
         bubbles: true,
         composed: true,
-      })
+      }),
     );
 
     this.announceStatus(
-      this.t('player.statusLangChanged', { lang: newLang === 'am' ? 'Amharic' : 'English' }),
-      newLang.toUpperCase()
+      this.t("player.statusLangChanged", { lang: newLang === "am" ? "Amharic" : "English" }),
+      newLang.toUpperCase(),
     );
   }
 
   /**
    * Applies display theme per Contract C3 & C5 (dark, light, high-contrast).
    */
-  public setTheme(newTheme: 'dark' | 'light' | 'high-contrast'): void {
+  public setTheme(newTheme: "dark" | "light" | "high-contrast"): void {
     this.playerTheme = newTheme;
-    this.setAttribute('data-theme', newTheme);
+    this.setAttribute("data-theme", newTheme);
     this.saveAllPreferences();
     this.announceStatus(
       `Theme: ${newTheme}`,
-      newTheme === 'high-contrast' ? 'AAA' : newTheme.toUpperCase()
+      newTheme === "high-contrast" ? "AAA" : newTheme.toUpperCase(),
     );
   }
 
   /**
    * Resets Member 1's preferences to defaults while preserving peer namespaces.
    */
-  public resetPreferences(): void {
-    const defaultUi = getDefaultUiPreferences();
-    const defaultCap = getDefaultCaptionsPreferences();
+  public async resetPreferences(): Promise<void> {
+    const preferenceManager = await import("./preferences-manager.js");
+    const defaultUi = preferenceManager.getDefaultUiPreferences();
+    const defaultCap = preferenceManager.getDefaultCaptionsPreferences();
 
     this.lang = defaultUi.lang;
     this.playbackRate = defaultUi.speed;
     if (this.media) this.media.playbackRate = defaultUi.speed;
     this.playerTheme = defaultUi.theme;
-    this.setAttribute('data-theme', defaultUi.theme);
+    this.setAttribute("data-theme", defaultUi.theme);
     this.disableShortcuts = !defaultUi.shortcuts;
+    this.lowDataMode = defaultUi.lowData;
+    this.mediaRequested = !this.lowDataMode;
 
     this.captionsShowing = defaultCap.enabled;
     this.selectedCaptionLang = defaultCap.lang;
@@ -1454,10 +1629,10 @@ export class SavannaPlayer extends LitElement {
     this.captionBgOpacity = defaultCap.bgOpacity;
     this.captionPosition = defaultCap.position;
 
-    this.saveAllPreferences();
+    await this.saveAllPreferences();
     this.resolveSummary();
     this.syncTranscriptLanguage();
-    this.announceStatus(this.t('player.statusPrefsSaved'), 'Reset');
+    this.announceStatus(this.t("player.statusPrefsSaved"), "Reset");
   }
 
   /**
@@ -1465,17 +1640,20 @@ export class SavannaPlayer extends LitElement {
    */
   public downloadMySettings(): void {
     try {
-      const raw = typeof localStorage !== 'undefined' ? (localStorage.getItem('savanna.prefs.v1') || '{}') : '{}';
-      const blob = new Blob([raw], { type: 'application/json' });
+      const raw =
+        typeof localStorage !== "undefined"
+          ? localStorage.getItem("savanna.prefs.v1") || "{}"
+          : "{}";
+      const blob = new Blob([raw], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = 'savanna-preferences.json';
+      a.download = "savanna-preferences.json";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      this.announceStatus(this.t('player.prefDownload'), 'Export');
+      this.announceStatus(this.t("player.prefDownload"), "Export");
     } catch {
       // ignore
     }
@@ -1486,11 +1664,11 @@ export class SavannaPlayer extends LitElement {
    */
   public deleteMySettings(): void {
     try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('savanna.prefs.v1');
+      if (typeof localStorage !== "undefined") {
+        localStorage.removeItem("savanna.prefs.v1");
       }
       this.resetPreferences();
-      this.announceStatus(this.t('player.prefDelete'), 'Delete');
+      this.announceStatus(this.t("player.prefDelete"), "Delete");
     } catch {
       // ignore
     }
@@ -1507,7 +1685,7 @@ export class SavannaPlayer extends LitElement {
       window.clearTimeout(this.liveRegionTimeout);
     }
     this.liveRegionTimeout = window.setTimeout(() => {
-      this.liveRegionMessage = '';
+      this.liveRegionMessage = "";
       this.liveRegionTimeout = null;
     }, 5000);
 
@@ -1521,7 +1699,7 @@ export class SavannaPlayer extends LitElement {
       window.clearTimeout(this.toastTimeout);
     }
     this.toastTimeout = window.setTimeout(() => {
-      this.statusToast = '';
+      this.statusToast = "";
       this.toastTimeout = null;
     }, 1500);
   }
@@ -1531,7 +1709,7 @@ export class SavannaPlayer extends LitElement {
    */
   private handleLangChange = (event: Event): void => {
     const detail = (event as CustomEvent<{ lang?: string }>).detail;
-    if (detail && typeof detail.lang === 'string') {
+    if (detail && typeof detail.lang === "string") {
       this.lang = detail.lang;
       this.resolveSummary();
       this.syncTranscriptLanguage();
@@ -1547,8 +1725,10 @@ export class SavannaPlayer extends LitElement {
     const wasFullscreen = this.isFullscreen;
     this.isFullscreen = isNowFullscreen;
     this.announceStatus(
-      this.isFullscreen ? this.t('player.statusFullscreenOn') : this.t('player.statusFullscreenOff'),
-      this.isFullscreen ? 'Fullscreen ⛶' : 'Exit Fullscreen'
+      this.isFullscreen
+        ? this.t("player.statusFullscreenOn")
+        : this.t("player.statusFullscreenOff"),
+      this.isFullscreen ? "Fullscreen ⛶" : "Exit Fullscreen",
     );
     // FR-P1a: Only restore focus on actual fullscreen exit/entry when focus was lost to document.body
     if (wasFullscreen !== isNowFullscreen) {
@@ -1565,10 +1745,47 @@ export class SavannaPlayer extends LitElement {
 
   private handleControlFocus = (e: FocusEvent): void => {
     const target = e.target as HTMLElement | null;
-    if (target && (target.classList?.contains('ctrl-btn') || target.tagName === 'BUTTON' || target.tagName === 'INPUT')) {
+    if (
+      target &&
+      (target.classList?.contains("ctrl-btn") ||
+        target.tagName === "BUTTON" ||
+        target.tagName === "INPUT")
+    ) {
       this.lastFocusedControl = target;
+      const stableClass = Array.from(target.classList).find(
+        (className) => className.startsWith("btn-") || className.startsWith("slider-"),
+      );
+      this.lastFocusedControlSelector = stableClass ? `.${stableClass}` : "";
     }
   };
+
+  private handlePlayerSurfaceClick = (event: MouseEvent): void => {
+    const target = event.composedPath()[0];
+    if (
+      target instanceof Element &&
+      target.closest("button, a, input, select, textarea, [role='button']")
+    ) {
+      return;
+    }
+    this.focus();
+  };
+
+  private restoreControlFocusAfterUpdate(): void {
+    const root = this.shadowRoot;
+    if (
+      !root ||
+      root.activeElement ||
+      document.activeElement !== this ||
+      !this.lastFocusedControlSelector
+    )
+      return;
+
+    const replacement = root.querySelector<HTMLElement>(this.lastFocusedControlSelector);
+    if (!replacement) return;
+
+    replacement.focus({ preventScroll: true });
+    this.lastFocusedControl = replacement;
+  }
 
   /**
    * FR-P12: Formats cue text for screen readers. Bracketed non-speech cues
@@ -1578,14 +1795,14 @@ export class SavannaPlayer extends LitElement {
     if (this.soundDescriptionsEnabled) {
       return cueText;
     }
-    return cueText.replace(/\[.*?\]/g, '').trim();
+    return cueText.replace(/\[.*?\]/g, "").trim();
   }
 
   private formatTime(seconds: number): string {
-    if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+    if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
   }
 
   private handleSeekInput = (event: Event): void => {
@@ -1626,24 +1843,43 @@ export class SavannaPlayer extends LitElement {
       this.media.playbackRate = rate;
     }
     this.saveAllPreferences();
-    this.announceStatus(this.t('player.statusSpeed', { speed: rate }), `${rate}x`);
+    this.announceStatus(this.t("player.statusSpeed", { speed: rate }), `${rate}x`);
     this.isSpeedMenuOpen = false;
   }
 
   private handleDocumentClick = (e: MouseEvent): void => {
     if (this.isSpeedMenuOpen) {
       const path = e.composedPath();
-      const inSpeedMenu = path.some((node) => (node as HTMLElement)?.classList?.contains('speed-menu-container'));
+      const inSpeedMenu = path.some((node) =>
+        (node as HTMLElement)?.classList?.contains("speed-menu-container"),
+      );
       if (!inSpeedMenu) {
         this.isSpeedMenuOpen = false;
       }
     }
   };
 
+  private handleSpeedMenuKeydown = (event: KeyboardEvent): void => {
+    if (!this.isSpeedMenuOpen || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    const items = Array.from(
+      this.shadowRoot?.querySelectorAll<HTMLButtonElement>(".speed-opt-btn") ?? [],
+    );
+    if (!items.length) return;
+    event.preventDefault();
+    const current = items.indexOf(this.shadowRoot?.activeElement as HTMLButtonElement);
+    const next = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? items.length - 1
+        : (current + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+    items[next]?.focus();
+  };
+
   private handleWindowKeyDown = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape') {
+    if (event.key === "Escape") {
       if (this.isSpeedMenuOpen) {
         this.isSpeedMenuOpen = false;
+        this.shadowRoot?.querySelector<HTMLButtonElement>(".btn-speed")?.focus();
       }
       if (this.showHelpDialog || this.helpDialogElement?.open) {
         this.closeShortcutsDialog();
@@ -1670,9 +1906,10 @@ export class SavannaPlayer extends LitElement {
     const total = Math.max(0, Math.floor(this.duration));
 
     if (total < 60) {
-      const secUnit = cur === 1 ? this.t('player.secondSingular') : this.t('player.secondPlural');
-      const totalSecUnit = total === 1 ? this.t('player.secondSingular') : this.t('player.secondPlural');
-      return this.t('player.positionValueTextSeconds', {
+      const secUnit = cur === 1 ? this.t("player.secondSingular") : this.t("player.secondPlural");
+      const totalSecUnit =
+        total === 1 ? this.t("player.secondSingular") : this.t("player.secondPlural");
+      return this.t("player.positionValueTextSeconds", {
         curSec: cur,
         secUnit,
         totalSec: total,
@@ -1683,10 +1920,11 @@ export class SavannaPlayer extends LitElement {
     const curMin = Math.floor(cur / 60);
     const curSec = cur % 60;
     const totalMin = Math.floor(total / 60);
-    const minUnit = curMin === 1 ? this.t('player.minuteSingular') : this.t('player.minutePlural');
-    const totalMinUnit = totalMin === 1 ? this.t('player.minuteSingular') : this.t('player.minutePlural');
+    const minUnit = curMin === 1 ? this.t("player.minuteSingular") : this.t("player.minutePlural");
+    const totalMinUnit =
+      totalMin === 1 ? this.t("player.minuteSingular") : this.t("player.minutePlural");
 
-    return this.t('player.positionValueText', {
+    return this.t("player.positionValueText", {
       curMin,
       minUnit,
       curSec,
@@ -1700,39 +1938,37 @@ export class SavannaPlayer extends LitElement {
    */
   public get volumeValueText(): string {
     const pct = this.isMuted ? 0 : Math.round(this.volume * 100);
-    return this.t('player.volumeValueText', { percent: pct });
+    return this.t("player.volumeValueText", { percent: pct });
   }
 
   override connectedCallback(): void {
     super.connectedCallback();
-    this.loadAllPreferences();
-    if (!this.hasAttribute('tabindex')) {
-      this.setAttribute('tabindex', '0');
+    this.preferencesReady = this.loadAllPreferences();
+    if (!this.hasAttribute("tabindex")) {
+      this.setAttribute("tabindex", "0");
     }
-    this.addEventListener('keydown', this.handleKeyDown);
-    this.addEventListener('savanna:sign-toggle', this.handleSignStateChange as EventListener);
-    this.addEventListener('savanna:ad-change', this.handleAdStateChange as EventListener);
-    window.addEventListener('keydown', this.handleWindowKeyDown);
-    window.addEventListener('offline', this.handleOffline);
-    window.addEventListener('savanna:lang-change', this.handleLangChange);
-    document.addEventListener('fullscreenchange', this.handleFullscreenChange);
-    document.addEventListener('click', this.handleDocumentClick);
+    this.addEventListener("keydown", this.handleKeyDown);
+    this.addEventListener("savanna:ad-availability", this.handleAdAvailability);
+    window.addEventListener("keydown", this.handleWindowKeyDown);
+    window.addEventListener("offline", this.handleOffline);
+    window.addEventListener("savanna:lang-change", this.handleLangChange);
+    document.addEventListener("fullscreenchange", this.handleFullscreenChange);
+    document.addEventListener("click", this.handleDocumentClick);
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.removeEventListener('keydown', this.handleKeyDown);
-    this.removeEventListener('savanna:sign-toggle', this.handleSignStateChange as EventListener);
-    this.removeEventListener('savanna:ad-change', this.handleAdStateChange as EventListener);
-    window.removeEventListener('keydown', this.handleWindowKeyDown);
-    window.removeEventListener('offline', this.handleOffline);
-    window.removeEventListener('savanna:lang-change', this.handleLangChange);
-    document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
-    document.removeEventListener('click', this.handleDocumentClick);
+    this.removeEventListener("keydown", this.handleKeyDown);
+    this.removeEventListener("savanna:ad-availability", this.handleAdAvailability);
+    window.removeEventListener("keydown", this.handleWindowKeyDown);
+    window.removeEventListener("savanna:lang-change", this.handleLangChange);
+    document.removeEventListener("fullscreenchange", this.handleFullscreenChange);
+    document.removeEventListener("click", this.handleDocumentClick);
+    window.removeEventListener("offline", this.handleOffline);
     this.manifestAbortController?.abort();
     this.manifestGeneration += 1;
     if (this.videoElement?.textTracks) {
-      this.videoElement.textTracks.removeEventListener('change', this.handleCaptionChange);
+      this.videoElement.textTracks.removeEventListener("change", this.handleCaptionChange);
     }
     this.revokeCaptionBlobUrls();
     this.revokeOfflineMediaUrls();
@@ -1745,14 +1981,14 @@ export class SavannaPlayer extends LitElement {
     for (const [, blobUrl] of this.captionBlobUrls) {
       try {
         URL.revokeObjectURL(blobUrl);
-      } catch { }
+      } catch {}
     }
     this.captionBlobUrls.clear();
   }
 
   private revokeOfflineMediaUrls(): void {
     for (const url of this.offlineMediaUrls.values()) {
-      try { URL.revokeObjectURL(url); } catch { }
+      try { URL.revokeObjectURL(url); } catch {}
     }
     this.offlineMediaUrls.clear();
   }
@@ -1764,8 +2000,8 @@ export class SavannaPlayer extends LitElement {
   private suppressNativeSubtitles(): void {
     if (this.videoElement?.textTracks) {
       Array.from(this.videoElement.textTracks).forEach((t) => {
-        if (t.mode === 'showing') {
-          t.mode = 'hidden';
+        if (t.mode === "showing") {
+          t.mode = "hidden";
         }
       });
     }
@@ -1773,7 +2009,7 @@ export class SavannaPlayer extends LitElement {
 
   protected override updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
-    if (changedProps.has('lesson') || changedProps.has('api') || changedProps.has('apiKey')) {
+    if (changedProps.has("lesson") || changedProps.has("api")) {
       if (this.lesson && this.api) {
         void this.fetchLessonManifest();
       } else {
@@ -1782,36 +2018,75 @@ export class SavannaPlayer extends LitElement {
         this.manifestGeneration += 1;
       }
     }
-    if (changedProps.has('lang')) {
+    if (changedProps.has("lang")) {
       this.syncTranscriptLanguage();
       this.configureAccessibilityChildren();
     }
+    this.restoreControlFocusAfterUpdate();
   }
 
   /**
    * Loads and parses all WebVTT caption files referenced in manifestCaptions.
    */
+  private resolveLoopbackMediaFallback(url: string): string | null {
+    if (typeof window === "undefined" || !this.api) return null;
+    try {
+      const media = new URL(url, window.location.origin);
+      const api = new URL(this.api, window.location.origin);
+      const isLoopback = (hostname: string) =>
+        hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+      if (
+        !media.pathname.startsWith("/media/") ||
+        media.origin === api.origin ||
+        !isLoopback(media.hostname) ||
+        !isLoopback(api.hostname)
+      ) {
+        return null;
+      }
+      return new URL(`${media.pathname}${media.search}`, api.origin).href;
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchCaptionWithLoopbackFallback(
+    url: string,
+    createBlobUrl = false,
+  ): Promise<Awaited<ReturnType<typeof fetchCaptionTrack>>> {
+    try {
+      return await fetchCaptionTrack({
+        url,
+        apiKey: this.apiKey,
+        apiBase: this.api,
+        createBlobUrl,
+      });
+    } catch (error) {
+      const fallback = this.resolveLoopbackMediaFallback(url);
+      if (!fallback) throw error;
+      return fetchCaptionTrack({
+        url: fallback,
+        apiKey: this.apiKey,
+        apiBase: this.api,
+        createBlobUrl,
+      });
+    }
+  }
+
   private async loadVttCues(): Promise<void> {
-    const expectedLesson = this.manifestData?.id;
     for (const track of this.manifestCaptions) {
       if (!track.url || this.vttCuesCache.has(track.lang)) continue;
       try {
-        const resolvedUrl = resolveCaptionUrl({ urlPath: track.url, apiBase: this.api });
+        const resolvedUrl = this.resolveLessonAssetUrl(track.url);
         const requiresAuth = shouldSendApiKey(resolvedUrl, this.apiKey, this.api);
 
-        const result = await fetchCaptionTrack({
-          url: resolvedUrl,
-          apiKey: this.apiKey,
-          apiBase: this.api,
-          createBlobUrl: requiresAuth,
-        });
-
-        if (expectedLesson && this.manifestData?.id !== expectedLesson) return;
+        const result = await this.fetchCaptionWithLoopbackFallback(resolvedUrl, requiresAuth);
 
         if (result.blobUrl) {
           const prevBlob = this.captionBlobUrls.get(track.lang);
           if (prevBlob) {
-            try { URL.revokeObjectURL(prevBlob); } catch { }
+            try {
+              URL.revokeObjectURL(prevBlob);
+            } catch {}
           }
           this.captionBlobUrls.set(track.lang, result.blobUrl);
           this.requestUpdate();
@@ -1819,11 +2094,17 @@ export class SavannaPlayer extends LitElement {
 
         const cues = parseWebVtt(result.text);
         this.vttCuesCache.set(track.lang, cues);
+        if (this.captionsShowing && this.selectedCaptionLang === track.lang) {
+          this.currentCueText = getActiveCueText(cues, this.currentTime);
+        }
         if (track.lang === this.activeLang && this.transcriptLines.length === 0) {
           this.fallbackTranscriptFromCaptions();
         }
       } catch (err: any) {
-        console.warn(`[savanna-player] Failed to load caption track (${track.lang}):`, err?.message || err);
+        console.warn(
+          `[savanna-player] Failed to load caption track (${track.lang}):`,
+          err?.message || err,
+        );
       }
     }
     this.suppressNativeSubtitles();
@@ -1840,21 +2121,20 @@ export class SavannaPlayer extends LitElement {
     const controller = new AbortController();
     this.manifestAbortController = controller;
     const generation = ++this.manifestGeneration;
-
     try {
       const apiBase = new URL(this.api.trim(), document.baseURI);
-      if (apiBase.protocol !== 'http:' && apiBase.protocol !== 'https:') {
-        throw new Error('The API URL must use HTTP or HTTPS.');
+      if (apiBase.protocol !== "http:" && apiBase.protocol !== "https:") {
+        throw new Error("The API URL must use HTTP or HTTPS.");
       }
       const endpoint = new URL(`/v1/lessons/${encodeURIComponent(lessonId)}`, apiBase).href;
       const headers: Record<string, string> = {};
       if (this.apiKey) {
-        headers['X-Savanna-Key'] = this.apiKey;
+        headers["X-Savanna-Key"] = this.apiKey;
       }
       const res = await fetch(endpoint, { headers, signal: controller.signal });
       if (!res.ok) {
         const detail = res.status === 401 || res.status === 403
-          ? 'The lesson API key was rejected.'
+          ? "The lesson API key was rejected."
           : `The lesson service returned HTTP ${res.status}.`;
         throw new Error(detail);
       }
@@ -1863,11 +2143,11 @@ export class SavannaPlayer extends LitElement {
       // Cache manifest in localStorage for offline fallback (SRS FR-P11, Task 1.7)
       try {
         localStorage.setItem(`savanna.cached_manifest.${lessonId}`, JSON.stringify(manifest));
-      } catch { }
+      } catch {}
 
       this.manifestLoadError = false;
-      this.applyManifest(manifest);
-    } catch (error) {
+      await this.applyManifest(manifest);
+    } catch {
       if (controller.signal.aborted || generation !== this.manifestGeneration) return;
       // Offline fallback: check localStorage (SRS FR-P11, Task 1.7)
       let loadedFromCache = false;
@@ -1876,50 +2156,115 @@ export class SavannaPlayer extends LitElement {
         if (cachedRaw) {
           const cachedManifest = parseLessonManifest(JSON.parse(cachedRaw), lessonId);
           this.manifestLoadError = false;
-          this.applyManifest(cachedManifest);
-          this.announceStatus(this.t('player.statusOfflineManifest'), 'Offline Cache');
+          await this.applyManifest(cachedManifest);
+          this.announceStatus(this.t("player.statusOfflineManifest"), "Offline Cache");
           loadedFromCache = true;
         }
-      } catch { }
+      } catch {}
 
       if (!loadedFromCache) {
         this.manifestLoadError = true;
-        const detail = error instanceof Error ? error.message : this.t('player.errorManifestLoad');
-        this.announceStatus(`${this.t('player.errorManifestLoad')} ${detail}`, 'Lesson API error');
+        this.announceStatus(this.t("player.errorManifestLoad"), "Network Error");
       }
     } finally {
       if (generation === this.manifestGeneration) this.manifestAbortController = undefined;
     }
   }
 
-  private applyManifest(manifest: LessonManifest): void {
+  private async applyManifest(manifest: LessonManifest): Promise<void> {
     const lessonChanged = this.manifestData?.id !== manifest.id;
     if (lessonChanged) {
       this.vttCuesCache.clear();
       this.transcriptLines = [];
-      this.transcriptSummary = '';
+      this.transcriptSummary = "";
       this.activeTranscriptIndex = -1;
       this.revokeCaptionBlobUrls();
       this.revokeOfflineMediaUrls();
     }
+    const optionalMediaLoads: Promise<unknown>[] = [];
+    if (typeof manifest?.sign?.url === "string" && manifest.sign.url) {
+      optionalMediaLoads.push(import("../sign-window/sign-window.js"));
+    }
+    if (typeof manifest?.audioDescription?.audioUrl === "string" && manifest.audioDescription.audioUrl &&
+        typeof manifest?.audioDescription?.vttUrl === "string" && manifest.audioDescription.vttUrl) {
+      optionalMediaLoads.push(import("../audio-description/audio-description.js"));
+    }
+    await Promise.all(optionalMediaLoads);
+
     this.manifestData = manifest;
-    this.lessonTitle = manifest.title[this.activeLang] || manifest.title.en;
-    this.src = manifest.media.video;
-    void this.useCachedPlayerMedia(manifest);
-    this.revokeCaptionBlobUrls();
-    this.manifestCaptions = manifest.captions.map((caption) => ({
-      lang: caption.lang,
-      url: resolveCaptionUrl({ urlPath: caption.url, apiBase: this.api }),
-    }));
-    void this.loadVttCues();
+    this.mediaFallbackAttempted = false;
+    if (manifest?.title) {
+      this.lessonTitle = manifest.title[this.activeLang] || manifest.title.en || "";
+    }
+    if (manifest?.media?.video) {
+      this.src = manifest.media.video;
+      void this.useCachedPlayerMedia(manifest);
+    }
+    if (Number.isFinite(manifest?.durationSec) && manifest.durationSec > 0) {
+      this.duration = manifest.durationSec;
+    }
+    if (Array.isArray(manifest?.captions)) {
+      this.revokeCaptionBlobUrls();
+      this.manifestCaptions = manifest.captions.map((c: { lang: string; url: string }) => {
+        try {
+          return {
+            lang: c.lang,
+            url: this.resolveLessonAssetUrl(c.url),
+          };
+        } catch {
+          return c;
+        }
+      });
+      void this.loadVttCues();
+    }
 
     // Step 6: Derive sign and audioDescription track availability from manifest (Contract C1)
-    this.hasSignTrack = manifest.sign !== null;
-    this.hasAdTrack = manifest.audioDescription !== null;
-    this.configureAccessibilityChildren();
+    this.hasSignTrack = Boolean(manifest?.sign?.url);
+    this.showSignWindow = this.hasSignTrack && this.showSignWindow;
+
+    const signEl = this.querySelector("savanna-sign-window, [data-sign-window]") as
+      (
+        HTMLElement & {
+          src?: string;
+          offsetMs?: number;
+          lang?: string;
+          languageName?: string;
+          enabled?: boolean;
+        }
+      ) | null;
+    if (signEl) {
+      signEl.src = manifest?.sign?.url || "";
+      signEl.offsetMs = Number(manifest?.sign?.offsetMs) || 0;
+      signEl.lang = this.activeLang;
+      signEl.languageName = manifest?.sign?.languageName || "";
+      signEl.enabled = this.showSignWindow;
+      signEl.hidden = !this.showSignWindow;
+    }
+
+    const adEl = this.querySelector("savanna-audio-description") as
+      (HTMLElement & {
+        src?: string;
+        textVtt?: string;
+        offsetMs?: number;
+        validateTrack?: () => Promise<boolean>;
+      }) | null;
+    if (adEl) {
+      const audioUrl = manifest?.audioDescription?.audioUrl || "";
+      const textVtt = manifest?.audioDescription?.vttUrl || "";
+      const offsetMs = Number(manifest?.audioDescription?.offsetMs ?? 0);
+      const trackChanged =
+        adEl.src !== audioUrl || adEl.textVtt !== textVtt || adEl.offsetMs !== offsetMs;
+      if (trackChanged || !audioUrl || !textVtt) this.hasAdTrack = false;
+      adEl.src = audioUrl;
+      adEl.textVtt = textVtt;
+      adEl.offsetMs = offsetMs;
+      adEl.hidden = !this.hasAdTrack;
+      if (!trackChanged && audioUrl && textVtt && !this.hasAdTrack)
+        void adEl.validateTrack?.();
+    }
 
     // Load interactive transcript (SRS FR-P8)
-    if (manifest.transcript.url) {
+    if (manifest?.transcript?.url) {
       this.fetchTranscript(manifest.transcript.url, manifest);
     } else {
       this.fallbackTranscriptFromCaptions(manifest);
@@ -1927,48 +2272,45 @@ export class SavannaPlayer extends LitElement {
 
     this.resolveSummary(manifest);
 
+    // Keep missing media hidden; unavailable controls only announce that no track is supplied.
     if (!this.hasAdTrack) {
-      const adAudio = this.querySelector('audio[data-ad], audio.ad-track') as HTMLAudioElement | null;
-      adAudio?.pause();
+      const adAudio = this.querySelector(
+        "audio[data-ad], audio.ad-track",
+      ) as HTMLAudioElement | null;
+      if (adAudio) {
+        adAudio.muted = true;
+        adAudio.pause();
+      }
     }
+    this.configureAccessibilityChildren();
   }
 
   private configureAccessibilityChildren(): void {
     const sign = this.manifestData?.sign;
-    const signElement = this.querySelector('savanna-sign-window') as (HTMLElement & {
-      src?: string; offsetMs?: number; lang?: string; enabled?: boolean;
-    }) | null;
+    const signElement = this.querySelector("savanna-sign-window, [data-sign-window]") as
+      (HTMLElement & { src?: string; offsetMs?: number; lang?: string; enabled?: boolean }) | null;
     if (signElement) {
       signElement.hidden = !this.hasSignTrack;
-      signElement.src = sign?.url ?? '';
-      if (sign?.url) void this.useCachedChildMedia(sign.url, signElement, this.manifestId);
+      signElement.src = sign?.url ?? "";
+      if (sign?.url) void this.useCachedChildMedia(sign.url, signElement, this.manifestData?.id);
       signElement.offsetMs = sign?.offsetMs ?? 0;
       signElement.lang = this.activeLang;
-      if (this.hasSignTrack) {
-        this.showSignWindow = signElement.enabled !== false;
-        signElement.enabled = this.showSignWindow;
-      }
+      signElement.enabled = this.hasSignTrack && this.showSignWindow;
     }
 
     const ad = this.manifestData?.audioDescription;
-    const adElement = this.querySelector('savanna-audio-description') as (HTMLElement & {
-      src?: string; textVtt?: string; api?: string; apiKey?: string; lang?: string; defaultExtended?: boolean; isEnabled?: boolean;
-    }) | null;
+    const adElement = this.querySelector("savanna-audio-description") as
+      (HTMLElement & { src?: string; textVtt?: string; offsetMs?: number; lang?: string; api?: string; apiKey?: string }) | null;
     if (adElement) {
       adElement.hidden = !this.hasAdTrack;
-      adElement.src = ad?.audioUrl ?? '';
-      if (ad?.audioUrl) void this.useCachedChildMedia(ad.audioUrl, adElement, this.manifestId);
-      adElement.textVtt = ad?.vttUrl ?? '';
+      adElement.src = ad?.audioUrl ?? "";
+      if (ad?.audioUrl) void this.useCachedChildMedia(ad.audioUrl, adElement, this.manifestData?.id);
+      adElement.textVtt = ad?.vttUrl ?? "";
+      adElement.offsetMs = ad?.offsetMs ?? 0;
+      adElement.lang = this.activeLang;
       adElement.api = this.api;
       adElement.apiKey = this.apiKey;
-      adElement.lang = this.activeLang;
-      adElement.defaultExtended = ad?.extended ?? false;
-      this.audioDescriptionEnabled = Boolean(adElement.isEnabled);
     }
-  }
-
-  private get manifestId(): string | undefined {
-    return this.manifestData?.id;
   }
 
   private async cachedUrl(source: string, lessonId?: string): Promise<string | null> {
@@ -1988,9 +2330,16 @@ export class SavannaPlayer extends LitElement {
     const videoUrl = await this.cachedUrl(manifest.media.video, manifest.id);
     const audioUrl = videoUrl ? null : await this.cachedUrl(manifest.media.audio, manifest.id);
     const source = videoUrl || audioUrl;
-    if (source && this.manifestData?.id === manifest.id) {
-      this.src = source;
-    }
+    if (source && this.manifestData?.id === manifest.id) this.src = source;
+  }
+
+  private async useCachedChildMedia(
+    originalUrl: string,
+    element: HTMLElement & { src?: string },
+    lessonId?: string,
+  ): Promise<void> {
+    const source = await this.cachedUrl(originalUrl, lessonId);
+    if (source && element.isConnected && this.manifestData?.id === lessonId) element.src = source;
   }
 
   private handleOffline = (): void => {
@@ -1999,30 +2348,12 @@ export class SavannaPlayer extends LitElement {
     this.configureAccessibilityChildren();
   };
 
-  private async useCachedChildMedia(
-    originalUrl: string,
-    element: HTMLElement & { src?: string },
-    lessonId?: string,
-  ): Promise<void> {
-    const source = await this.cachedUrl(originalUrl, lessonId);
-    if (source && element.isConnected && this.manifestData?.id === lessonId) {
-      element.src = source;
+  private resolveLessonAssetUrl(urlPath: string): string {
+    if (urlPath.startsWith("/media/") && typeof window !== "undefined") {
+      return new URL(urlPath, window.location.origin).href;
     }
+    return resolveCaptionUrl({ urlPath, apiBase: this.api });
   }
-
-  private handleSignStateChange = (event: CustomEvent<{ enabled?: boolean }>): void => {
-    if (typeof event.detail?.enabled !== 'boolean') return;
-    this.showSignWindow = event.detail.enabled;
-  };
-
-  private handleAdStateChange = (event: CustomEvent<{ enabled?: boolean }>): void => {
-    if (typeof event.detail?.enabled !== 'boolean') return;
-    this.audioDescriptionEnabled = event.detail.enabled;
-    this.announceStatus(
-      event.detail.enabled ? this.t('player.statusAdOn') : this.t('player.statusAdOff'),
-      event.detail.enabled ? 'Audio Description: ON' : 'Audio Description: OFF',
-    );
-  };
 
   /**
    * Helper to check if the active element is an editable input or textarea.
@@ -2031,9 +2362,9 @@ export class SavannaPlayer extends LitElement {
     if (!target || !(target instanceof HTMLElement)) return false;
     const tagName = target.tagName.toLowerCase();
     return (
-      tagName === 'input' ||
-      tagName === 'textarea' ||
-      tagName === 'select' ||
+      tagName === "input" ||
+      tagName === "textarea" ||
+      tagName === "select" ||
       target.isContentEditable
     );
   }
@@ -2043,7 +2374,7 @@ export class SavannaPlayer extends LitElement {
    */
   private handleKeyDown = (event: KeyboardEvent): void => {
     // If the speed menu is open, let Escape close it
-    if (this.isSpeedMenuOpen && event.key === 'Escape') {
+    if (this.isSpeedMenuOpen && event.key === "Escape") {
       event.preventDefault();
       this.isSpeedMenuOpen = false;
       return;
@@ -2051,7 +2382,7 @@ export class SavannaPlayer extends LitElement {
 
     // If the help dialog is open, let Escape or '?' close it
     if (this.showHelpDialog || this.helpDialogElement?.open) {
-      if (event.key === 'Escape' || event.key === '?') {
+      if (event.key === "Escape" || event.key === "?") {
         event.preventDefault();
         this.closeShortcutsDialog();
         return;
@@ -2065,7 +2396,7 @@ export class SavannaPlayer extends LitElement {
       this.showCaptionsDialog ||
       this.captionsDialogElement?.open
     ) {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.preventDefault();
         this.closePreferencesDialog();
         return;
@@ -2073,7 +2404,7 @@ export class SavannaPlayer extends LitElement {
     }
 
     // If the transcript panel is open, let Escape close it
-    if (this.isTranscriptOpen && event.key === 'Escape') {
+    if (this.isTranscriptOpen && event.key === "Escape") {
       event.preventDefault();
       this.toggleTranscript();
       return;
@@ -2097,140 +2428,143 @@ export class SavannaPlayer extends LitElement {
 
     // 2. Safety: If focus is on a button, preserve Space and Enter for native button click
     if (target instanceof HTMLButtonElement) {
-      if (event.key === ' ' || event.key === 'Enter') {
+      if (event.key === " " || event.key === "Enter") {
         return;
       }
     }
 
     switch (event.key) {
       // Play / Pause (Space or K)
-      case ' ':
-      case 'k':
-      case 'K': {
+      case " ":
+      case "k":
+      case "K": {
         event.preventDefault();
         this.togglePlay();
         break;
       }
 
       // Seeking -5s / +5s (Left / Right Arrow)
-      case 'ArrowLeft': {
+      case "ArrowLeft": {
         event.preventDefault();
         this.seekBy(-5);
         break;
       }
 
-      case 'ArrowRight': {
+      case "ArrowRight": {
         event.preventDefault();
         this.seekBy(5);
         break;
       }
 
       // Seeking -10s / +10s (J / L)
-      case 'j':
-      case 'J': {
+      case "j":
+      case "J": {
         event.preventDefault();
         this.seekBy(-10);
         break;
       }
 
-      case 'l':
-      case 'L': {
+      case "l":
+      case "L": {
         event.preventDefault();
         this.seekBy(10);
         break;
       }
 
       // Volume Controls (Up / Down Arrow)
-      case 'ArrowUp': {
+      case "ArrowUp": {
         event.preventDefault();
         this.changeVolume(0.1);
         break;
       }
 
-      case 'ArrowDown': {
+      case "ArrowDown": {
         event.preventDefault();
         this.changeVolume(-0.1);
         break;
       }
 
       // Mute / Unmute (M)
-      case 'm':
-      case 'M': {
+      case "m":
+      case "M": {
         event.preventDefault();
         this.toggleMute();
         break;
       }
 
       // Toggle Captions (C)
-      case 'c':
-      case 'C': {
+      case "c":
+      case "C": {
         event.preventDefault();
         this.toggleCaptions();
         break;
       }
 
       // Toggle Sign Window (S)
-      case 's':
-      case 'S': {
+      case "s":
+      case "S": {
         event.preventDefault();
         this.toggleSignWindow();
         break;
       }
 
       // Toggle Audio Description (D)
-      case 'd':
-      case 'D': {
+      case "d":
+      case "D": {
         event.preventDefault();
         this.toggleAudioDescription();
         break;
       }
 
       // Toggle Interactive Transcript (T)
-      case 't':
-      case 'T': {
+      case "t":
+      case "T": {
         event.preventDefault();
         this.toggleTranscript();
         break;
       }
 
       // Toggle Fullscreen (F)
-      case 'f':
-      case 'F': {
+      case "f":
+      case "F": {
         event.preventDefault();
         this.toggleFullscreen();
         break;
       }
 
       // Toggle Preferences Dialog (P)
-      case 'p':
-      case 'P': {
+      case "p":
+      case "P": {
         event.preventDefault();
-        this.togglePreferences('general');
+        this.togglePreferences("general");
         break;
       }
 
       // Keyboard Shortcuts Help (?)
-      case '?': {
+      case "?": {
         event.preventDefault();
         this.toggleShortcutsHelp();
         break;
       }
 
       // Home: Seek to beginning (clamped to 0)
-      case 'Home': {
+      case "Home": {
         event.preventDefault();
         this.seekTo(0);
-        this.announceStatus(this.t('player.statusSeek', { time: this.formatTime(0) }), '0:00 ⏪');
+        this.announceStatus(this.t("player.statusSeek", { time: this.formatTime(0) }), "0:00 ⏪");
         break;
       }
 
       // End: Seek to end of video
-      case 'End': {
+      case "End": {
         event.preventDefault();
         if (this.media && Number.isFinite(this.media.duration)) {
           const end = this.media.duration;
           this.seekTo(end);
-          this.announceStatus(this.t('player.statusSeek', { time: this.formatTime(end) }), `${this.formatTime(end)} ⏩`);
+          this.announceStatus(
+            this.t("player.statusSeek", { time: this.formatTime(end) }),
+            `${this.formatTime(end)} ⏩`,
+          );
         }
         break;
       }
@@ -2240,18 +2574,43 @@ export class SavannaPlayer extends LitElement {
   /**
    * Toggles play and pause on the underlying media element.
    */
-  public togglePlay(): void {
+  public async togglePlay(): Promise<void> {
     if (!this.media) return;
     if (this.media.paused || this.media.ended) {
-      this.media.play().catch(() => { });
-      this.isPlaying = true;
-      this.announceStatus(this.t('player.statusPlay'), 'Play ▶');
+      this.mediaLoadError = false;
+      this.mediaLoading = true;
+      if (!this.mediaRequested) {
+        this.mediaRequested = true;
+        await this.updateComplete;
+      }
+      try {
+        await this.media.play();
+        this.isPlaying = true;
+        this.mediaLoading = false;
+        this.announceStatus(this.t("player.statusPlay"), "Play ▶");
+      } catch {
+        this.mediaLoadError = true;
+        this.mediaLoading = false;
+        this.isPlaying = false;
+        this.announceStatus(this.t("player.errorMediaLoad"));
+      }
     } else {
       this.media.pause();
       this.isPlaying = false;
-      this.announceStatus(this.t('player.statusPause'), 'Pause ⏸');
+      this.announceStatus(this.t("player.statusPause"), "Pause ⏸");
     }
   }
+
+  private retryMedia = async (): Promise<void> => {
+    if (!this.videoElement) return;
+    this.mediaFallbackAttempted = false;
+    this.mediaLoadError = false;
+    this.mediaLoading = true;
+    this.mediaRequested = true;
+    await this.updateComplete;
+    this.videoElement.load();
+    await this.togglePlay();
+  };
 
   /**
    * Adjusts the volume by delta (-1.0 to 1.0) and un-mutes if volume increases.
@@ -2267,10 +2626,7 @@ export class SavannaPlayer extends LitElement {
       this.isMuted = false;
     }
     const pct = Math.round(this.media.volume * 100);
-    this.announceStatus(
-      this.t('player.statusVolume', { percent: pct }),
-      `Volume: ${pct}% 🔊`
-    );
+    this.announceStatus(this.t("player.statusVolume", { percent: pct }), `Volume: ${pct}% 🔊`);
   }
 
   /**
@@ -2282,8 +2638,8 @@ export class SavannaPlayer extends LitElement {
     this.isMuted = this.media.muted;
     const isMutedNow = this.media.muted;
     this.announceStatus(
-      isMutedNow ? this.t('player.statusMuted') : this.t('player.statusUnmuted'),
-      isMutedNow ? 'Muted 🔇' : 'Unmuted 🔊'
+      isMutedNow ? this.t("player.statusMuted") : this.t("player.statusUnmuted"),
+      isMutedNow ? "Muted 🔇" : "Unmuted 🔊",
     );
   }
 
@@ -2291,51 +2647,58 @@ export class SavannaPlayer extends LitElement {
    * Toggles captions display across available text tracks and fires C2 savanna:caption-change.
    */
   public toggleCaptions(): void {
-    if (this.manifestCaptions.length === 0 && (!this.videoElement?.textTracks || this.videoElement.textTracks.length === 0)) {
-      this.announceStatus(this.t('player.captionsUnavailable'), 'No Captions Track');
+    if (
+      this.manifestCaptions.length === 0 &&
+      (!this.videoElement?.textTracks || this.videoElement.textTracks.length === 0)
+    ) {
+      this.announceStatus(this.t("player.captionsUnavailable"), "No Captions Track");
       return;
     }
 
     this.captionsShowing = !this.captionsShowing;
 
     if (this.captionsShowing) {
-      if (this.selectedCaptionLang === 'off') {
+      if (this.selectedCaptionLang === "off") {
         this.selectedCaptionLang = this.activeLang;
       }
-      const label = this.selectedCaptionLang === 'am' ? 'Amharic' : 'English';
-      this.announceStatus(this.t('player.statusCaptionsOn'), `Captions: ${label} ON`);
+      const label = this.selectedCaptionLang === "am" ? "Amharic" : "English";
+      this.announceStatus(this.t("player.statusCaptionsOn"), `Captions: ${label} ON`);
     } else {
-      this.currentCueText = '';
-      this.announceStatus(this.t('player.statusCaptionsOff'), 'Captions: OFF');
+      this.currentCueText = "";
+      this.announceStatus(this.t("player.statusCaptionsOff"), "Captions: OFF");
     }
 
     // Hide native browser cues so only our custom overlay renders
     if (this.videoElement?.textTracks) {
-      Array.from(this.videoElement.textTracks).forEach((t) => (t.mode = 'hidden'));
+      Array.from(this.videoElement.textTracks).forEach((t) => (t.mode = "hidden"));
     }
 
     this.saveCaptionsPreferences();
-    this.emitEvent('savanna:caption-change');
+    this.emitEvent("savanna:caption-change");
   }
 
   /**
    * Opens the Preferences modal dialog (Contract C3/C4 & Task 1.6).
    */
-  public openPreferencesDialog(tab: 'general' | 'captions' = 'general'): void {
+  public openPreferencesDialog(tab: "general" | "captions" = "general"): void {
     const dialog = this.prefsDialogElement || this.captionsDialogElement;
     if (!dialog) return;
     this.activePrefsTab = tab;
     this.triggerElementBeforeDialog =
-      (this.shadowRoot?.activeElement as HTMLElement) || this.prefsBtnElement || this.captionsSettingsBtnElement;
+      (this.shadowRoot?.activeElement as HTMLElement) ||
+      this.prefsBtnElement ||
+      this.captionsSettingsBtnElement;
     if (!dialog.open) {
-      if (typeof dialog.showModal === 'function') {
+      if (typeof dialog.showModal === "function") {
         dialog.showModal();
       } else {
-        dialog.setAttribute('open', '');
+        dialog.setAttribute("open", "");
       }
       this.showPreferencesDialog = true;
       this.showCaptionsDialog = true;
-      const closeBtn = dialog.querySelector('.close-prefs-btn, .close-captions-btn') as HTMLElement | null;
+      const closeBtn = dialog.querySelector(
+        ".close-prefs-btn, .close-captions-btn",
+      ) as HTMLElement | null;
       closeBtn?.focus();
     }
   }
@@ -2347,17 +2710,17 @@ export class SavannaPlayer extends LitElement {
     const dialog = this.prefsDialogElement || this.captionsDialogElement;
     if (!dialog) return;
     if (dialog.open) {
-      if (typeof dialog.close === 'function') {
+      if (typeof dialog.close === "function") {
         dialog.close();
       } else {
-        dialog.removeAttribute('open');
+        dialog.removeAttribute("open");
       }
     }
     this.showPreferencesDialog = false;
     this.showCaptionsDialog = false;
   }
 
-  public togglePreferences(tab: 'general' | 'captions' = 'general'): void {
+  public togglePreferences(tab: "general" | "captions" = "general"): void {
     const dialog = this.prefsDialogElement || this.captionsDialogElement;
     if (dialog?.open) {
       this.closePreferencesDialog();
@@ -2368,7 +2731,7 @@ export class SavannaPlayer extends LitElement {
 
   /** Backward-compatibility aliases for captions settings dialog */
   public openCaptionsDialog(): void {
-    this.openPreferencesDialog('captions');
+    this.openPreferencesDialog("captions");
   }
 
   public closeCaptionsDialog(): void {
@@ -2376,7 +2739,7 @@ export class SavannaPlayer extends LitElement {
   }
 
   public toggleCaptionsSettings(): void {
-    this.togglePreferences('captions');
+    this.togglePreferences("captions");
   }
 
   private handlePrefsDialogClose = (): void => {
@@ -2414,7 +2777,7 @@ export class SavannaPlayer extends LitElement {
   private handleCaptionsDialogClick = this.handlePrefsDialogClick;
 
   private handlePrefLangChange = (e: Event): void => {
-    const val = (e.target as HTMLSelectElement).value as 'en' | 'am';
+    const val = (e.target as HTMLSelectElement).value as "en" | "am";
     this.setLanguage(val);
   };
 
@@ -2426,57 +2789,77 @@ export class SavannaPlayer extends LitElement {
         this.media.playbackRate = val;
       }
       this.saveAllPreferences();
-      this.announceStatus(this.t('player.statusSpeed', { speed: val }), `${val}x`);
+      this.announceStatus(this.t("player.statusSpeed", { speed: val }), `${val}x`);
     }
   };
 
   private handlePrefThemeChange = (e: Event): void => {
-    const val = (e.target as HTMLSelectElement).value as 'dark' | 'light' | 'high-contrast';
+    const val = (e.target as HTMLSelectElement).value as "dark" | "light" | "high-contrast";
     this.setTheme(val);
   };
 
   private handlePrefShortcutsChange = (e: Event): void => {
-    const val = (e.target as HTMLSelectElement).value === 'true';
+    const val = (e.target as HTMLSelectElement).value === "true";
     this.disableShortcuts = !val;
     this.saveAllPreferences();
     this.announceStatus(
-      val ? this.t('player.prefShortcutsOn') : this.t('player.prefShortcutsOff'),
-      val ? 'Keys: ON' : 'Keys: OFF'
+      val ? this.t("player.prefShortcutsOn") : this.t("player.prefShortcutsOff"),
+      val ? "Keys: ON" : "Keys: OFF",
     );
   };
 
   private handlePrefSignChange = (e: Event): void => {
-    const val = (e.target as HTMLSelectElement).value === 'true';
+    const val = (e.target as HTMLSelectElement).value === "true";
     if (this.showSignWindow !== val) {
       this.toggleSignWindow();
     }
   };
 
   private handlePrefAdChange = (e: Event): void => {
-    const val = (e.target as HTMLSelectElement).value === 'true';
+    const val = (e.target as HTMLSelectElement).value === "true";
     if (this.audioDescriptionEnabled !== val) {
       this.toggleAudioDescription();
     }
   };
 
+  private handleAdAvailability = (event: Event): void => {
+    const detail = (event as CustomEvent<{ available?: boolean; enabled?: boolean }>).detail;
+    const available = Boolean(detail?.available);
+    const description = this.manifestData?.audioDescription;
+    const hasManifestTracks = Boolean(description?.audioUrl && description?.vttUrl);
+    const nextAvailable = available && hasManifestTracks;
+    const wasAvailable = this.hasAdTrack;
+    this.hasAdTrack = nextAvailable;
+    if (nextAvailable && typeof detail?.enabled === "boolean")
+      this.audioDescriptionEnabled = detail.enabled;
+
+    const adElement = this.querySelector("savanna-audio-description") as HTMLElement | null;
+    if (adElement) adElement.hidden = !nextAvailable;
+    if (!nextAvailable && this.audioDescriptionEnabled) {
+      this.audioDescriptionEnabled = false;
+      if (wasAvailable)
+        this.announceStatus(this.t("player.adUnavailable"), this.t("player.adUnavailable"));
+    }
+  };
+
   private handleCaptionTrackSelect = (e: Event): void => {
-    const val = (e.target as HTMLSelectElement).value as 'en' | 'am' | 'off';
-    if (val === 'off') {
+    const val = (e.target as HTMLSelectElement).value as "en" | "am" | "off";
+    if (val === "off") {
       this.captionsShowing = false;
-      this.selectedCaptionLang = 'off';
-      this.currentCueText = '';
-      this.announceStatus(this.t('player.statusCaptionsOff'), 'Captions: OFF');
+      this.selectedCaptionLang = "off";
+      this.currentCueText = "";
+      this.announceStatus(this.t("player.statusCaptionsOff"), "Captions: OFF");
     } else {
       this.selectedCaptionLang = val;
       this.captionsShowing = true;
-      const label = val === 'am' ? 'Amharic' : 'English';
-      this.announceStatus(this.t('player.statusCaptionsOn'), `Captions: ${label}`);
+      const label = val === "am" ? "Amharic" : "English";
+      this.announceStatus(this.t("player.statusCaptionsOn"), `Captions: ${label}`);
       // Refresh current cue immediately
       const cues = this.vttCuesCache.get(val) || [];
       this.currentCueText = getActiveCueText(cues, this.currentTime);
     }
     this.saveCaptionsPreferences();
-    this.emitEvent('savanna:caption-change');
+    this.emitEvent("savanna:caption-change");
   };
 
   private handleCaptionSizeSelect = (e: Event): void => {
@@ -2485,48 +2868,54 @@ export class SavannaPlayer extends LitElement {
       this.captionFontSize = size;
       this.saveCaptionsPreferences();
       // FR-P3a: Polite live region announcement in active language
-      const msg = this.activeLang === 'am'
-        ? `የግርጌ ጽሑፍ መጠን ${size} በመቶ`
-        : `Caption size ${size} percent`;
+      const msg =
+        this.activeLang === "am" ? `የግርጌ ጽሑፍ መጠን ${size} በመቶ` : `Caption size ${size} percent`;
       this.announceStatus(msg);
     }
   };
 
   private handleCaptionPresetSelect = (e: Event): void => {
-    const preset = (e.target as HTMLSelectElement).value as 'white-black' | 'yellow-black' | 'black-white' | 'custom';
+    const preset = (e.target as HTMLSelectElement).value as
+      "white-black" | "yellow-black" | "black-white" | "custom";
     this.captionPreset = preset;
-    if (preset === 'white-black') {
-      this.captionTextColor = '#ffffff';
-      this.captionBgColor = '#000000';
-    } else if (preset === 'yellow-black') {
-      this.captionTextColor = '#ffff00';
-      this.captionBgColor = '#000000';
-    } else if (preset === 'black-white') {
-      this.captionTextColor = '#000000';
-      this.captionBgColor = '#ffffff';
+    if (preset === "white-black") {
+      this.captionTextColor = "#ffffff";
+      this.captionBgColor = "#000000";
+    } else if (preset === "yellow-black") {
+      this.captionTextColor = "#ffff00";
+      this.captionBgColor = "#000000";
+    } else if (preset === "black-white") {
+      this.captionTextColor = "#000000";
+      this.captionBgColor = "#ffffff";
     }
     this.saveCaptionsPreferences();
     // FR-P3a: Polite announcement of caption style change
-    const presetName = preset === 'yellow-black'
-      ? (this.activeLang === 'am' ? 'ቢጫ በጥቁር ላይ' : 'Yellow on black')
-      : preset === 'white-black'
-        ? (this.activeLang === 'am' ? 'ነጭ በጥቁር ላይ' : 'White on black')
-        : (this.activeLang === 'am' ? 'ጥቁር በነጭ ላይ' : 'Black on white');
-    const msg = this.activeLang === 'am'
-      ? `የግርጌ ጽሑፍ ገጽታ ${presetName}`
-      : `Caption style ${presetName}`;
+    const presetName =
+      preset === "yellow-black"
+        ? this.activeLang === "am"
+          ? "ቢጫ በጥቁር ላይ"
+          : "Yellow on black"
+        : preset === "white-black"
+          ? this.activeLang === "am"
+            ? "ነጭ በጥቁር ላይ"
+            : "White on black"
+          : this.activeLang === "am"
+            ? "ጥቁር በነጭ ላይ"
+            : "Black on white";
+    const msg =
+      this.activeLang === "am" ? `የግርጌ ጽሑፍ ገጽታ ${presetName}` : `Caption style ${presetName}`;
     this.announceStatus(msg);
   };
 
   private handleCaptionTextColorChange = (e: Event): void => {
     this.captionTextColor = (e.target as HTMLInputElement).value;
-    this.captionPreset = 'custom';
+    this.captionPreset = "custom";
     this.saveCaptionsPreferences();
   };
 
   private handleCaptionBgColorChange = (e: Event): void => {
     this.captionBgColor = (e.target as HTMLInputElement).value;
-    this.captionPreset = 'custom';
+    this.captionPreset = "custom";
     this.saveCaptionsPreferences();
   };
 
@@ -2539,7 +2928,7 @@ export class SavannaPlayer extends LitElement {
   };
 
   private handleCaptionPositionSelect = (e: Event): void => {
-    const pos = (e.target as HTMLSelectElement).value as 'bottom' | 'top';
+    const pos = (e.target as HTMLSelectElement).value as "bottom" | "top";
     this.captionPosition = pos;
     this.saveCaptionsPreferences();
   };
@@ -2548,21 +2937,27 @@ export class SavannaPlayer extends LitElement {
    * Toggles sign window visibility on any slotted sign window component (Step 6 null-safe).
    */
   public toggleSignWindow(): void {
+    const signElement = this.querySelector("savanna-sign-window, [data-sign-window]") as
+      (HTMLElement & { enabled?: boolean; lang?: string }) | null;
     if (!this.hasSignTrack) {
-      this.announceStatus(this.t('player.signUnavailable'), this.t('player.signUnavailable'));
+      this.showSignWindow = false;
+      if (signElement) {
+        signElement.hidden = true;
+        signElement.enabled = false;
+        signElement.lang = this.activeLang;
+      }
+      this.announceStatus(this.t("player.signUnavailable"), this.t("player.signUnavailable"));
       return;
     }
     this.showSignWindow = !this.showSignWindow;
-    const signComponent = this.querySelector('savanna-sign-window') as (HTMLElement & { enabled?: boolean }) | null;
-    const signElement = signComponent || this.querySelector('[data-sign-window]') as HTMLElement | null;
     if (signElement) {
-      signElement.hidden = false;
-      if (signComponent) signComponent.enabled = this.showSignWindow;
-      else signElement.hidden = !this.showSignWindow;
+      signElement.hidden = !this.showSignWindow;
+      signElement.enabled = this.showSignWindow;
+      signElement.lang = this.activeLang;
     }
     this.announceStatus(
-      this.showSignWindow ? this.t('player.statusSignOn') : this.t('player.statusSignOff'),
-      this.showSignWindow ? 'Sign Window: Visible 🤟' : 'Sign Window: Hidden'
+      this.showSignWindow ? this.t("player.statusSignOn") : this.t("player.statusSignOff"),
+      this.showSignWindow ? "Sign Window: Visible 🤟" : "Sign Window: Hidden",
     );
   }
 
@@ -2571,31 +2966,29 @@ export class SavannaPlayer extends LitElement {
    */
   public toggleAudioDescription(): void {
     if (!this.hasAdTrack) {
-      this.announceStatus(this.t('player.adUnavailable'), this.t('player.adUnavailable'));
+      this.announceStatus(this.t("player.adUnavailable"), this.t("player.adUnavailable"));
       return;
     }
-    const adComponent = this.querySelector('savanna-audio-description') as (HTMLElement & { toggle?: () => void }) | null;
+    this.audioDescriptionEnabled = !this.audioDescriptionEnabled;
+    const adComponent = this.querySelector("savanna-audio-description") as
+      (HTMLElement & { toggle?: () => void }) | null;
     if (adComponent?.toggle) {
       adComponent.toggle();
       return;
     }
-
-    this.audioDescriptionEnabled = !this.audioDescriptionEnabled;
-    const adAudio = this.querySelector(
-      'audio[data-ad], audio.ad-track'
-    ) as HTMLAudioElement | null;
+    const adAudio = this.querySelector("audio[data-ad], audio.ad-track") as HTMLAudioElement | null;
     if (adAudio) {
       adAudio.muted = !this.audioDescriptionEnabled;
       if (this.audioDescriptionEnabled && this.media && !this.media.paused) {
         adAudio.currentTime = this.media.currentTime;
-        adAudio.play().catch(() => { });
+        adAudio.play().catch(() => {});
       } else {
         adAudio.pause();
       }
     }
     this.announceStatus(
-      this.audioDescriptionEnabled ? this.t('player.statusAdOn') : this.t('player.statusAdOff'),
-      this.audioDescriptionEnabled ? 'Audio Description: ON 🎙️' : 'Audio Description: OFF'
+      this.audioDescriptionEnabled ? this.t("player.statusAdOn") : this.t("player.statusAdOff"),
+      this.audioDescriptionEnabled ? "Audio Description: ON 🎙️" : "Audio Description: OFF",
     );
   }
 
@@ -2604,11 +2997,11 @@ export class SavannaPlayer extends LitElement {
    */
   public toggleFullscreen(): void {
     if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => { });
+      document.exitFullscreen().catch(() => {});
     } else {
       this.requestFullscreen().catch(() => {
         if (this.videoElement && this.videoElement.requestFullscreen) {
-          this.videoElement.requestFullscreen().catch(() => { });
+          this.videoElement.requestFullscreen().catch(() => {});
         }
       });
     }
@@ -2622,13 +3015,15 @@ export class SavannaPlayer extends LitElement {
     this.triggerElementBeforeDialog =
       (this.shadowRoot?.activeElement as HTMLElement) || this.helpButtonElement;
     if (!this.helpDialogElement.open) {
-      if (typeof this.helpDialogElement.showModal === 'function') {
+      if (typeof this.helpDialogElement.showModal === "function") {
         this.helpDialogElement.showModal();
       } else {
-        this.helpDialogElement.setAttribute('open', '');
+        this.helpDialogElement.setAttribute("open", "");
       }
       this.showHelpDialog = true;
-      const closeBtn = this.helpDialogElement.querySelector('.close-help-btn') as HTMLElement | null;
+      const closeBtn = this.helpDialogElement.querySelector(
+        ".close-help-btn",
+      ) as HTMLElement | null;
       closeBtn?.focus();
     }
   }
@@ -2639,10 +3034,10 @@ export class SavannaPlayer extends LitElement {
   public closeShortcutsDialog(): void {
     if (!this.helpDialogElement) return;
     if (this.helpDialogElement.open) {
-      if (typeof this.helpDialogElement.close === 'function') {
+      if (typeof this.helpDialogElement.close === "function") {
         this.helpDialogElement.close();
       } else {
-        this.helpDialogElement.removeAttribute('open');
+        this.helpDialogElement.removeAttribute("open");
       }
     }
     this.showHelpDialog = false;
@@ -2690,13 +3085,13 @@ export class SavannaPlayer extends LitElement {
    * Seeks relatively by a given number of seconds.
    */
   public seekBy(deltaSeconds: number): void {
-    if (!this.media) return;
+    if (!this.media || !this.mediaRequested) return;
     const duration = Number.isFinite(this.media.duration) ? this.media.duration : Infinity;
     const newTime = Math.max(0, Math.min(this.media.currentTime + deltaSeconds, duration));
     this.media.currentTime = newTime;
     this.announceStatus(
-      this.t('player.statusSeek', { time: this.formatTime(newTime) }),
-      deltaSeconds > 0 ? `+${deltaSeconds}s ⏩` : `${deltaSeconds}s ⏪`
+      this.t("player.statusSeek", { time: this.formatTime(newTime) }),
+      deltaSeconds > 0 ? `+${deltaSeconds}s ⏩` : `${deltaSeconds}s ⏪`,
     );
   }
 
@@ -2704,7 +3099,7 @@ export class SavannaPlayer extends LitElement {
    * Seeks to an absolute timestamp in seconds.
    */
   public seekTo(targetSeconds: number): void {
-    if (!this.media) return;
+    if (!this.media || !this.mediaRequested) return;
     const duration = Number.isFinite(this.media.duration) ? this.media.duration : 0;
     const newTime = Math.max(0, Math.min(targetSeconds, duration));
     this.media.currentTime = newTime;
@@ -2719,10 +3114,7 @@ export class SavannaPlayer extends LitElement {
   }
 
   // Dispatch events that other components can listen to (Contract C2).
-  private emitEvent(
-    eventName: string,
-    detail?: Record<string, unknown>,
-  ): void {
+  private emitEvent(eventName: string, detail?: Record<string, unknown>): void {
     this.dispatchEvent(
       new CustomEvent(eventName, {
         detail,
@@ -2735,13 +3127,28 @@ export class SavannaPlayer extends LitElement {
   // 1. Video starts playing.
   private handlePlay = (): void => {
     this.isPlaying = true;
-    this.emitEvent('savanna:play');
+    this.mediaLoading = false;
+    this.emitEvent("savanna:play");
   };
 
   // 2. Video is paused.
   private handlePause = (): void => {
     this.isPlaying = false;
-    this.emitEvent('savanna:pause');
+    this.mediaLoading = false;
+    this.emitEvent("savanna:pause");
+  };
+
+  private handleMediaLoadStart = (): void => {
+    if (this.mediaRequested) this.mediaLoading = true;
+  };
+
+  private handleMediaReady = (): void => {
+    this.mediaLoading = false;
+    this.mediaLoadError = false;
+  };
+
+  private handleMediaWaiting = (): void => {
+    if (this.mediaRequested) this.mediaLoading = true;
   };
 
   // 3. User seeks to another position (Contract C2: detail.time in seconds).
@@ -2749,7 +3156,7 @@ export class SavannaPlayer extends LitElement {
     if (this.media) {
       this.currentTime = this.media.currentTime;
     }
-    this.emitEvent('savanna:seek', {
+    this.emitEvent("savanna:seek", {
       time: this.media ? this.media.currentTime : 0,
     });
   };
@@ -2762,11 +3169,11 @@ export class SavannaPlayer extends LitElement {
         this.duration = this.media.duration;
       }
       // Update active caption cue from parsed VTT cues
-      if (this.captionsShowing && this.selectedCaptionLang !== 'off') {
+      if (this.captionsShowing && this.selectedCaptionLang !== "off") {
         const cues = this.vttCuesCache.get(this.selectedCaptionLang) || [];
         this.currentCueText = getActiveCueText(cues, this.currentTime);
       } else {
-        this.currentCueText = '';
+        this.currentCueText = "";
       }
 
       // Update active transcript line (SRS FR-P8)
@@ -2778,7 +3185,7 @@ export class SavannaPlayer extends LitElement {
         }
       }
     }
-    this.emitEvent('savanna:timeupdate', {
+    this.emitEvent("savanna:timeupdate", {
       time: this.media ? this.media.currentTime : 0,
       paused: this.media ? this.media.paused : true,
       rate: this.media ? this.media.playbackRate : 1,
@@ -2790,39 +3197,51 @@ export class SavannaPlayer extends LitElement {
     if (this.videoElement?.textTracks) {
       const tracks = Array.from(this.videoElement.textTracks);
       tracks.forEach((t) => {
-        if (t.mode === 'showing') {
-          t.mode = 'hidden';
+        if (t.mode === "showing") {
+          t.mode = "hidden";
           this.captionsShowing = true;
         }
       });
     }
-    this.emitEvent('savanna:caption-change');
+    this.emitEvent("savanna:caption-change");
   };
 
   // 6. Video encounters an error.
   private handleError = (): void => {
-    this.emitEvent('savanna:error');
+    if (this.mediaRequested && !this.mediaFallbackAttempted) {
+      const fallback = this.resolveLoopbackMediaFallback(this.src);
+      if (fallback) {
+        this.mediaFallbackAttempted = true;
+        this.mediaLoadError = false;
+        this.mediaLoading = true;
+        this.src = fallback;
+        return;
+      }
+    }
+    this.mediaLoading = false;
+    this.mediaLoadError = true;
+    this.announceStatus(this.t("player.errorMediaLoad"));
+    this.emitEvent("savanna:error");
   };
 
   // Runs after Lit completes the first render.
-  protected firstUpdated(): void {
+  protected async firstUpdated(): Promise<void> {
+    await this.preferencesReady;
+    if (!this.lowDataMode) this.mediaRequested = true;
     if (this.videoElement?.textTracks) {
-      this.videoElement.textTracks.addEventListener(
-        'change',
-        this.handleCaptionChange,
-      );
+      this.videoElement.textTracks.addEventListener("change", this.handleCaptionChange);
     }
 
     if (this.videoElement) {
       if (this.playbackRate) {
         this.videoElement.playbackRate = this.playbackRate;
       }
-      this.videoElement.addEventListener('volumechange', () => {
+      this.videoElement.addEventListener("volumechange", () => {
         this.volume = this.videoElement.volume;
         this.isMuted = this.videoElement.muted;
       });
 
-      this.videoElement.addEventListener('loadedmetadata', () => {
+      this.videoElement.addEventListener("loadedmetadata", () => {
         if (Number.isFinite(this.videoElement.duration)) {
           this.duration = this.videoElement.duration;
         }
@@ -2832,25 +3251,26 @@ export class SavannaPlayer extends LitElement {
       });
     }
 
-    if (!this.lesson || !this.api) {
+    if (this.lesson && this.api) {
+      this.fetchLessonManifest();
+    } else {
       // Standalone mode: detect light DOM slotted stubs
-      this.hasSignTrack = Boolean(this.querySelector('savanna-sign-window, [data-sign-window]'));
-      this.hasAdTrack = Boolean(this.querySelector('savanna-audio-description[src], savanna-audio-description[text-vtt], audio[data-ad], audio.ad-track'));
+      this.hasSignTrack = Boolean(this.querySelector("savanna-sign-window, [data-sign-window]"));
+      this.hasAdTrack = Boolean(this.querySelector("audio[data-ad], audio.ad-track"));
     }
 
-    this.emitEvent('savanna:ready');
+    this.emitEvent("savanna:ready");
   }
 
   /**
    * Fetches transcript from the API endpoint per Contract C1 or falls back to VTT cues.
    */
   private async fetchTranscript(url: string, manifest?: any): Promise<void> {
-    const expectedLesson = this.manifestData?.id;
     let targetUrl: string;
     try {
       targetUrl = resolveCaptionUrl({ urlPath: url, apiBase: this.api });
       const parsed = new URL(targetUrl);
-      parsed.searchParams.set('lang', this.activeLang);
+      parsed.searchParams.set("lang", this.activeLang);
       targetUrl = parsed.href;
     } catch {
       targetUrl = url;
@@ -2859,44 +3279,61 @@ export class SavannaPlayer extends LitElement {
     try {
       const headers: Record<string, string> = {};
       if (this.apiKey && shouldSendApiKey(targetUrl, this.apiKey, this.api)) {
-        headers['X-Savanna-Key'] = this.apiKey;
+        headers["X-Savanna-Key"] = this.apiKey;
       }
       const res = await fetch(targetUrl, { headers });
-      if (expectedLesson && this.manifestData?.id !== expectedLesson) return;
       if (res.ok) {
         const data = await res.json();
-        if (expectedLesson && this.manifestData?.id !== expectedLesson) return;
-        const lines = Array.isArray(data?.lines)
-          ? data.lines.filter((line: unknown): line is TranscriptLine => {
-              if (!line || typeof line !== 'object') return false;
-              const item = line as Partial<TranscriptLine>;
-              return Number.isFinite(item.start) && Number.isFinite(item.end) && item.start! >= 0 && item.end! >= item.start! && typeof item.text === 'string';
-            })
-          : [];
-        if (lines.length > 0) {
+        if (Array.isArray(data?.lines) && data.lines.length > 0) {
           const matchingVtt = this.vttCuesCache.get(this.activeLang);
 
           // If the API returned a different language than requested, prefer authentic VTT cues
           if (data.lang && data.lang !== this.activeLang && matchingVtt && matchingVtt.length > 0) {
-            this.transcriptLines = matchingVtt.map((c) => ({ start: c.start, end: c.end, text: c.text }));
+            this.transcriptLines = matchingVtt.map((c) => ({
+              start: c.start,
+              end: c.end,
+              text: c.text,
+            }));
             this.resolveSummary(manifest);
             return;
           }
 
           // If VTT cues have more complete coverage than a partial API transcript, prefer VTT cues
-          if (matchingVtt && matchingVtt.length > lines.length) {
-            this.transcriptLines = matchingVtt.map((c) => ({ start: c.start, end: c.end, text: c.text }));
+          if (matchingVtt && matchingVtt.length > data.lines.length) {
+            this.transcriptLines = matchingVtt.map((c) => ({
+              start: c.start,
+              end: c.end,
+              text: c.text,
+            }));
             this.resolveSummary(manifest);
             return;
           }
 
           // Otherwise use data.lines
-          this.transcriptLines = lines;
+          this.transcriptLines = data.lines;
           this.resolveSummary(manifest);
           return;
         }
       }
-    } catch { }
+    } catch {
+      if (typeof caches !== "undefined") {
+        try {
+          const packNames = (await caches.keys()).filter((name) =>
+            name.startsWith("savanna-pack-"),
+          );
+          for (const name of packNames) {
+            const cached = await (await caches.open(name)).match(targetUrl);
+            if (!cached?.ok) continue;
+            const data = await cached.json();
+            if (Array.isArray(data?.lines) && data.lines.length > 0) {
+              this.transcriptLines = data.lines;
+              this.resolveSummary(manifest);
+              return;
+            }
+          }
+        } catch {}
+      }
+    }
 
     this.fallbackTranscriptFromCaptions(manifest);
   }
@@ -2909,20 +3346,21 @@ export class SavannaPlayer extends LitElement {
     if (cues && cues.length > 0) {
       this.transcriptLines = cues.map((c) => ({ start: c.start, end: c.end, text: c.text }));
     } else {
-      const track = this.manifestCaptions.find((c) => c.lang === this.activeLang) || this.manifestCaptions[0];
+      const track =
+        this.manifestCaptions.find((c) => c.lang === this.activeLang) || this.manifestCaptions[0];
       if (track?.url) {
-        const resolvedUrl = resolveCaptionUrl({ urlPath: track.url, apiBase: this.api });
-        fetchCaptionTrack({
-          url: resolvedUrl,
-          apiKey: this.apiKey,
-          apiBase: this.api,
-        })
+        const resolvedUrl = this.resolveLessonAssetUrl(track.url);
+        this.fetchCaptionWithLoopbackFallback(resolvedUrl)
           .then((res) => {
             const parsed = parseWebVtt(res.text);
             this.vttCuesCache.set(track.lang, parsed);
-            this.transcriptLines = parsed.map((c) => ({ start: c.start, end: c.end, text: c.text }));
+            this.transcriptLines = parsed.map((c) => ({
+              start: c.start,
+              end: c.end,
+              text: c.text,
+            }));
           })
-          .catch(() => { });
+          .catch(() => {});
       }
     }
     this.resolveSummary(manifest);
@@ -2933,17 +3371,17 @@ export class SavannaPlayer extends LitElement {
    */
   private resolveSummary(manifest?: any): void {
     const m = manifest || this.manifestData;
-    let resolved = '';
+    let resolved = "";
     if (m?.summary) {
-      if (typeof m.summary === 'object') {
-        resolved = m.summary[this.activeLang] || m.summary.en || '';
-      } else if (typeof m.summary === 'string') {
+      if (typeof m.summary === "object") {
+        resolved = m.summary[this.activeLang] || m.summary.en || "";
+      } else if (typeof m.summary === "string") {
         resolved = m.summary;
       }
     }
-    this.transcriptSummary = resolved || this.t('player.defaultSummary');
+    this.transcriptSummary = resolved || this.t("player.defaultSummary");
     if (m?.title) {
-      this.lessonTitle = m.title[this.activeLang] || m.title.en || '';
+      this.lessonTitle = m.title[this.activeLang] || m.title.en || "";
     }
   }
 
@@ -2953,13 +3391,13 @@ export class SavannaPlayer extends LitElement {
   private getEffectiveSummary(): string {
     const m = this.manifestData;
     if (m?.summary) {
-      if (typeof m.summary === 'object') {
-        return m.summary[this.activeLang] || m.summary.en || '';
-      } else if (typeof m.summary === 'string') {
+      if (typeof m.summary === "object") {
+        return m.summary[this.activeLang] || m.summary.en || "";
+      } else if (typeof m.summary === "string") {
         return m.summary;
       }
     }
-    return this.t('player.defaultSummary');
+    return this.t("player.defaultSummary");
   }
 
   /**
@@ -2974,15 +3412,19 @@ export class SavannaPlayer extends LitElement {
   }
 
   private scrollActiveLineIntoView(index: number): void {
-    const el = this.shadowRoot?.querySelector(`.transcript-line[data-index="${index}"]`) as HTMLElement | null;
+    const el = this.shadowRoot?.querySelector(
+      `.transcript-line[data-index="${index}"]`,
+    ) as HTMLElement | null;
     if (el) {
-      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
   }
 
-  public toggleTranscript = (): void => {
+  public toggleTranscript = async (): Promise<void> => {
     this.isTranscriptOpen = !this.isTranscriptOpen;
     if (this.isTranscriptOpen) {
+      this.transcriptTools ??= await import("./transcript-manager.js");
+      if (!this.isTranscriptOpen) return;
       if (this.transcriptLines.length === 0) {
         if (this.manifestData?.transcript?.url) {
           this.fetchTranscript(this.manifestData.transcript.url, this.manifestData);
@@ -2990,114 +3432,212 @@ export class SavannaPlayer extends LitElement {
           this.fallbackTranscriptFromCaptions(this.manifestData);
         }
       }
-      this.announceStatus(
-        this.t('player.statusTranscriptOpen'),
-        'Transcript 📝'
-      );
+      this.announceStatus(this.t("player.statusTranscriptOpen"), "Transcript 📝");
       this.updateComplete.then(() => {
         this.transcriptSearchInput?.focus();
       });
     } else {
-      this.announceStatus(
-        this.t('player.statusTranscriptClosed'),
-        'Transcript Closed'
-      );
+      this.announceStatus(this.t("player.statusTranscriptClosed"), "Transcript Closed");
       this.transcriptBtnElement?.focus();
     }
   };
 
-  private handleTranscriptSearchInput = (e: Event): void => {
+  private handleTranscriptSearchInput = async (e: Event): Promise<void> => {
     const input = e.target as HTMLInputElement;
     this.transcriptSearchQuery = input.value;
-    const filtered = filterTranscriptLines(this.transcriptLines, this.transcriptSearchQuery);
+    this.transcriptTools ??= await import("./transcript-manager.js");
+    const filtered = this.transcriptTools.filterTranscriptLines(
+      this.transcriptLines,
+      this.transcriptSearchQuery,
+    );
     if (this.transcriptSearchQuery.trim()) {
       if (filtered.length === 0) {
-        this.announceStatus(this.t('player.transcriptNoMatches'));
+        this.announceStatus(this.t("player.transcriptNoMatches"));
       } else {
-        this.announceStatus(this.t('player.transcriptMatches', { count: filtered.length }));
+        this.announceStatus(this.t("player.transcriptMatches", { count: filtered.length }));
       }
     }
   };
 
+  private handleTranscriptSearchKeyDown = async (e: KeyboardEvent): Promise<void> => {
+    if (e.key !== "Enter") return;
+    const input = e.target as HTMLInputElement;
+    this.transcriptSearchQuery = input.value;
+    this.transcriptTools ??= await import("./transcript-manager.js");
+    const firstMatch = this.transcriptTools.filterTranscriptLines(
+      this.transcriptLines,
+      this.transcriptSearchQuery,
+    )[0];
+    if (!firstMatch) return;
+    e.preventDefault();
+    this.seekFromTranscript(firstMatch.line.start);
+  };
+
   private clearTranscriptSearch = (): void => {
-    this.transcriptSearchQuery = '';
+    this.transcriptSearchQuery = "";
     this.transcriptSearchInput?.focus();
   };
 
   private seekFromTranscript(start: number): void {
     this.seekTo(start);
-    this.announceStatus(this.t('player.statusSeek', { time: this.formatTime(start) }));
+    this.announceStatus(this.t("player.statusSeek", { time: this.formatTime(start) }));
   }
 
-  private downloadTranscript = (): void => {
-    const title = this.lessonTitle || (this.manifestData?.title ? this.manifestData.title[this.activeLang] || this.manifestData.title.en : 'Lesson');
+  private downloadTranscript = async (): Promise<void> => {
+    const { formatTranscriptForDownload } = await import("./transcript-manager.js");
+    const title =
+      this.lessonTitle ||
+      (this.manifestData?.title
+        ? this.manifestData.title[this.activeLang] || this.manifestData.title.en
+        : "Lesson");
     const content = formatTranscriptForDownload(
       title,
       this.activeLang,
       this.transcriptSummary,
       this.transcriptLines,
-      (sec) => this.formatTime(sec)
+      (sec) => this.formatTime(sec),
     );
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `${this.lesson || 'lesson'}-transcript-${this.activeLang}.txt`;
+    a.download = `${this.lesson || "lesson"}-transcript-${this.activeLang}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    this.announceStatus(this.t('player.transcriptDownloaded'));
+    this.announceStatus(this.t("player.transcriptDownloaded"));
   };
 
   /**
    * Generates and downloads the transcript as a standard 40 cells x 25 lines
    * ASCII Braille (.brf) document with mandatory draft watermark notice (SRS FR-S1, Task 1.8).
    */
-  private downloadBrailleTranscript = (): void => {
-    const title = this.lessonTitle || (this.manifestData?.title ? this.manifestData.title[this.activeLang] || this.manifestData.title.en : 'Lesson');
+  private downloadBrailleTranscript = async (): Promise<void> => {
+    const { formatTranscriptToBrf } = await import("./braille-formatter.js");
+    const title =
+      this.lessonTitle ||
+      (this.manifestData?.title
+        ? this.manifestData.title[this.activeLang] || this.manifestData.title.en
+        : "Lesson");
     const content = formatTranscriptToBrf(
       title,
       this.activeLang,
       this.getEffectiveSummary(),
       this.transcriptLines,
-      (sec) => this.formatTime(sec)
+      (sec) => this.formatTime(sec),
     );
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `${this.lesson || 'lesson'}-transcript-${this.activeLang}.brf`;
+    a.download = `${this.lesson || "lesson"}-transcript-${this.activeLang}.brf`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    this.announceStatus(this.t('player.statusBrailleDownloaded'), 'BRF (.brf)');
+    this.announceStatus(this.t("player.statusBrailleDownloaded"), "BRF (.brf)");
   };
 
   private renderCueText(text: string, query: string) {
     if (!query || !query.trim()) {
       return text;
     }
-    const parts = splitTextByMatch(text, query);
+    if (!this.transcriptTools) return text;
+    const parts = this.transcriptTools.splitTextByMatch(text, query);
     return parts.map((part) =>
-      part.isMatch
-        ? html`<mark class="transcript-mark">${part.text}</mark>`
-        : part.text
+      part.isMatch ? html`<mark class="transcript-mark">${part.text}</mark>` : part.text,
     );
   }
 
-  private renderTranscriptPanel() {
-    if (!this.isTranscriptOpen) return '';
+  public toggleLowDataMode(): void {
+    this.lowDataMode = !this.lowDataMode;
+    if (!this.lowDataMode) {
+      this.mediaRequested = true;
+    } else if (!this.isPlaying && this.currentTime === 0 && this.videoElement?.readyState === 0) {
+      this.mediaRequested = false;
+      this.videoElement.removeAttribute("src");
+      this.videoElement.load();
+    }
+    this.saveAllPreferences();
+    this.announceStatus(
+      this.t(this.lowDataMode ? "player.lowDataEnabled" : "player.lowDataDisabled"),
+    );
+  }
 
-    const filteredItems = filterTranscriptLines(this.transcriptLines, this.transcriptSearchQuery);
+  public toggleLearningLanguage(): void {
+    const nextLanguage = this.activeLang === "am" ? "en" : "am";
+    this.setLanguage(nextLanguage);
+    this.selectedCaptionLang = nextLanguage;
+    this.captionsShowing = true;
+    this.currentCueText = getActiveCueText(
+      this.vttCuesCache.get(nextLanguage) || [],
+      this.currentTime,
+    );
+    this.loadVttCues();
+    this.syncTranscriptLanguage();
+    this.saveAllPreferences();
+  }
+
+  private handleLessonQuestionSubmit = (event: SubmitEvent): void => {
+    event.preventDefault();
+    const result = answerLessonQuestion(this.questionText, this.lesson);
+    this.questionAnswer = result.answer;
+    this.questionSupported = result.supported;
+    this.questionLanguage = result.language;
+  };
+
+  private renderLessonQuestionPanel() {
+    if (this.lesson !== "L-102" && this.lesson !== "L-103") return nothing;
+    return html`
+      <section class="lesson-qa" aria-labelledby="lesson-qa-title" lang=${this.questionLanguage}>
+        <h2 id="lesson-qa-title">${this.t("player.qaTitle")}</h2>
+        <p>${this.t("player.qaDescription")}</p>
+        <form @submit=${this.handleLessonQuestionSubmit}>
+          <label class="sr-only" for="lesson-question">${this.t("player.qaQuestionLabel")}</label>
+          <input
+            id="lesson-question"
+            type="text"
+            dir="auto"
+            .value=${this.questionText}
+            @input=${(event: InputEvent) => {
+              this.questionText = (event.target as HTMLInputElement).value;
+            }}
+            placeholder=${this.t("player.qaPlaceholder")}
+            autocomplete="off"
+          />
+          <button type="submit">${this.t("player.qaAsk")}</button>
+        </form>
+        ${
+          this.questionAnswer
+            ? html`<p
+                class="lesson-qa-answer"
+                role="status"
+                aria-live="polite"
+                dir="auto"
+                lang=${this.questionLanguage}
+              >
+                ${this.questionAnswer}
+              </p>`
+            : nothing
+        }
+      </section>
+    `;
+  }
+
+  private renderTranscriptPanel() {
+    if (!this.isTranscriptOpen) return "";
+
+    const filteredItems: FilteredTranscriptItem[] = this.transcriptTools
+      ? this.transcriptTools.filterTranscriptLines(this.transcriptLines, this.transcriptSearchQuery)
+      : this.transcriptLines.map((line, originalIndex) => ({ line, originalIndex }));
     const isSearching = Boolean(this.transcriptSearchQuery.trim());
 
     return html`
       <section
         id="transcript-panel"
         class="transcript-panel"
-        aria-label=${this.t('player.transcriptTitle')}
+        aria-label=${this.t("player.transcriptTitle")}
         lang=${this.activeLang}
       >
         <!-- Panel Header -->
@@ -3119,26 +3659,36 @@ export class SavannaPlayer extends LitElement {
               <line x1="16" y1="13" x2="8" y2="13"></line>
               <line x1="16" y1="17" x2="8" y2="17"></line>
             </svg>
-            ${this.t('player.transcriptTitle')}
+            ${this.t("player.transcriptTitle")}
           </h2>
 
           <div class="transcript-header-actions">
             <!-- Auto-scroll Toggle -->
             <button
               type="button"
-              class="transcript-action-btn ${this.transcriptAutoScroll ? 'is-active-btn' : ''}"
+              class="transcript-action-btn ${this.transcriptAutoScroll ? "is-active-btn" : ""}"
               @click=${() => {
-        this.transcriptAutoScroll = !this.transcriptAutoScroll;
-        this.announceStatus(
-          this.transcriptAutoScroll ? 'Auto-scroll on' : 'Auto-scroll off'
-        );
-      }}
-              aria-pressed=${this.transcriptAutoScroll ? 'true' : 'false'}
-              aria-label=${this.t('player.transcriptAutoScroll')}
-              title=${this.t('player.transcriptAutoScroll')}
+                this.transcriptAutoScroll = !this.transcriptAutoScroll;
+                this.announceStatus(
+                  this.transcriptAutoScroll ? "Auto-scroll on" : "Auto-scroll off",
+                );
+              }}
+              aria-pressed=${this.transcriptAutoScroll ? "true" : "false"}
+              aria-label=${this.t("player.transcriptAutoScroll")}
+              title=${this.t("player.transcriptAutoScroll")}
             >
-              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              <svg
+                aria-hidden="true"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
               </svg>
             </button>
 
@@ -3147,15 +3697,25 @@ export class SavannaPlayer extends LitElement {
               type="button"
               class="transcript-action-btn btn-download-transcript"
               @click=${this.downloadTranscript}
-              aria-label=${this.t('player.transcriptDownload')}
-              title=${this.t('player.transcriptDownload')}
+              aria-label=${this.t("player.transcriptDownload")}
+              title=${this.t("player.transcriptDownload")}
             >
-              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                aria-hidden="true"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              <span>${this.t('player.transcriptDownload')}</span>
+              <span>${this.t("player.transcriptDownload")}</span>
             </button>
 
             <!-- Download Braille (.brf) Button (SRS FR-S1, Task 1.8) -->
@@ -3163,16 +3723,26 @@ export class SavannaPlayer extends LitElement {
               type="button"
               class="transcript-action-btn btn-braille-transcript"
               @click=${this.downloadBrailleTranscript}
-              aria-label=${this.t('player.transcriptDownloadBraille')}
-              title=${this.t('player.transcriptDownloadBraille')}
+              aria-label=${this.t("player.transcriptDownloadBraille")}
+              title=${this.t("player.transcriptDownloadBraille")}
             >
               <span class="btn-braille-badge" aria-hidden="true">⠃⠗</span>
-              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                aria-hidden="true"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              <span>${this.t('player.transcriptDownloadBraille')}</span>
+              <span>${this.t("player.transcriptDownloadBraille")}</span>
             </button>
 
             <!-- Close Panel Button -->
@@ -3180,10 +3750,20 @@ export class SavannaPlayer extends LitElement {
               type="button"
               class="transcript-action-btn btn-close-transcript"
               @click=${this.toggleTranscript}
-              aria-label="${this.t('player.transcriptClose')} ✕"
-              title="${this.t('player.transcriptClose')} (Esc)"
+              aria-label="${this.t("player.transcriptClose")} ✕"
+              title="${this.t("player.transcriptClose")} (Esc)"
             >
-              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                aria-hidden="true"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
@@ -3192,824 +3772,1041 @@ export class SavannaPlayer extends LitElement {
         </div>
 
         <!-- Plain-Language Summary Header (SRS FR-P8 & FR-D4) -->
-        ${this.getEffectiveSummary()
-        ? html`
-              <div class="transcript-summary-card" role="region" aria-label=${this.t('player.transcriptSummaryTitle')}>
-                <span class="summary-badge">${this.t('player.transcriptSummaryTitle')}</span>
-                <p class="summary-text">${this.getEffectiveSummary()}</p>
-              </div>
-            `
-        : ''}
+        ${
+          this.getEffectiveSummary()
+            ? html`
+                <div
+                  class="transcript-summary-card"
+                  role="region"
+                  aria-label=${this.t("player.transcriptSummaryTitle")}
+                >
+                  <span class="summary-badge">${this.t("player.transcriptSummaryTitle")}</span>
+                  <p class="summary-text">${this.getEffectiveSummary()}</p>
+                </div>
+              `
+            : ""
+        }
 
         <!-- Search Bar (SRS FR-P8) -->
         <div class="transcript-search-row">
           <label for="transcript-search-input" class="sr-only">
-            ${this.t('player.transcriptSearch')}
+            ${this.t("player.transcriptSearch")}
           </label>
           <input
             id="transcript-search-input"
             type="search"
             class="transcript-search-input"
-            placeholder=${this.t('player.transcriptSearchPlaceholder')}
+            placeholder=${this.t("player.transcriptSearchPlaceholder")}
             .value=${this.transcriptSearchQuery}
             @input=${this.handleTranscriptSearchInput}
+            @keydown=${this.handleTranscriptSearchKeyDown}
           />
-          ${this.transcriptSearchQuery
-        ? html`
-                <button
-                  type="button"
-                  class="btn-clear-search"
-                  @click=${this.clearTranscriptSearch}
-                  aria-label="${this.t('player.transcriptClearSearch')} ✕"
-                >
-                  ✕
-                </button>
-              `
-        : ''}
+          ${
+            this.transcriptSearchQuery
+              ? html`
+                  <button
+                    type="button"
+                    class="btn-clear-search"
+                    @click=${this.clearTranscriptSearch}
+                    aria-label="${this.t("player.transcriptClearSearch")} ✕"
+                  >
+                    ✕
+                  </button>
+                `
+              : ""
+          }
         </div>
 
-        ${isSearching
-        ? html`
-              <div class="search-status-bar" aria-live="polite">
-                ${filteredItems.length === 0
-            ? this.t('player.transcriptNoMatches')
-            : this.t('player.transcriptMatches', { count: filteredItems.length })}
-              </div>
-            `
-        : ''}
+        ${
+          isSearching
+            ? html`
+                <div class="search-status-bar" aria-live="polite">
+                  ${
+                    filteredItems.length === 0
+                      ? this.t("player.transcriptNoMatches")
+                      : this.t("player.transcriptMatches", { count: filteredItems.length })
+                  }
+                </div>
+              `
+            : ""
+        }
 
         <!-- Timed Cue Lines List (SRS FR-P8) -->
-        <div class="transcript-lines-container" aria-label=${this.t('player.transcript')}>
-          ${filteredItems.length === 0
-        ? html`<div class="transcript-empty">${this.t('player.transcriptNoMatches')}</div>`
-        : filteredItems.map(
-          ({ line, originalIndex }) => {
-            const isActive = originalIndex === this.activeTranscriptIndex;
-            return html`
+        <div class="transcript-lines-container" aria-label=${this.t("player.transcript")}>
+          ${
+            filteredItems.length === 0
+              ? html`<div class="transcript-empty">${this.t("player.transcriptNoMatches")}</div>`
+              : filteredItems.map(({ line, originalIndex }) => {
+                  const isActive = originalIndex === this.activeTranscriptIndex;
+                  return html`
                     <button
                       type="button"
-                      class="transcript-line ${isActive ? 'is-active' : ''}"
+                      class="transcript-line ${isActive ? "is-active" : ""}"
                       data-index=${originalIndex}
-                      aria-current=${isActive ? 'true' : 'false'}
+                      aria-current=${isActive ? "true" : "false"}
                       @click=${() => this.seekFromTranscript(line.start)}
                     >
                       <span class="cue-timestamp">${this.formatTime(line.start)}</span>
-                      <span class="cue-text">${this.renderCueText(line.text, this.transcriptSearchQuery)}</span>
+                      <span class="cue-text"
+                        >${this.renderCueText(line.text, this.transcriptSearchQuery)}</span
+                      >
                     </button>
                   `;
+                })
           }
-        )}
         </div>
       </section>
     `;
   }
 
   render() {
+    const languageToggleLabel =
+      this.activeLang === "am"
+        ? `${this.t("player.languageSwitchEn")} EN`
+        : `${this.t("player.languageSwitchAm")} አማ`;
     return html`
-      <div class="player-container ${this.isTranscriptOpen ? 'with-transcript' : ''}">
-        <div class="player" @click=${() => this.focus()}>
-        ${this.manifestLoadError && !this.src
-        ? html`
-              <div class="manifest-error-card" role="alert" aria-live="assertive">
-                <p class="error-msg">⚠️ ${this.t('player.errorManifestLoad')}</p>
+      <div class="player-container ${this.isTranscriptOpen ? "with-transcript" : ""}">
+        <div class="player" @click=${this.handlePlayerSurfaceClick}>
+          ${
+            this.manifestLoadError && !this.src
+              ? html`
+                  <div class="manifest-error-card" role="alert" aria-live="assertive">
+                    <p class="error-msg">⚠️ ${this.t("player.errorManifestLoad")}</p>
+                    <button
+                      type="button"
+                      class="btn-retry"
+                      @click=${() => this.fetchLessonManifest()}
+                      aria-label=${this.t("player.retry")}
+                    >
+                      🔄 ${this.t("player.retry")}
+                    </button>
+                  </div>
+                `
+              : ""
+          }
+          <video
+            src=${this.mediaRequested ? this.src || nothing : nothing}
+            crossorigin="anonymous"
+            preload=${this.lowDataMode && !this.mediaRequested ? "none" : "metadata"}
+            @loadstart=${this.handleMediaLoadStart}
+            @waiting=${this.handleMediaWaiting}
+            @canplay=${this.handleMediaReady}
+            @play=${this.handlePlay}
+            @pause=${this.handlePause}
+            @seeking=${this.handleSeek}
+            @timeupdate=${this.handleTimeUpdate}
+            @error=${this.handleError}
+            @loadeddata=${this.handleMediaReady}
+          >
+            ${this.manifestCaptions.map(
+              (c) => html`
+                <track
+                  kind="subtitles"
+                  srclang=${c.lang}
+                  src=${this.captionBlobUrls.get(c.lang) || c.url}
+                  label=${c.lang === "am" ? "Amharic" : "English"}
+                  ?default=${c.lang === this.lang}
+                />
+              `,
+            )}
+          </video>
+          ${
+            !this.mediaRequested && this.src
+              ? html`<div class="media-pending" aria-live="polite">
+                  <strong>${this.t("player.lowDataPending")}</strong
+                  ><span>${this.t("player.lowDataHelp")}</span>
+                </div>`
+              : this.mediaLoadError
+                ? html`<div class="media-pending media-error" role="alert">
+                    <strong>${this.t("player.errorMediaLoad")}</strong>
+                    <span>${this.t("player.mediaRetryHelp")}</span>
+                    <button type="button" class="media-retry" @click=${this.retryMedia}>
+                      ${this.t("player.retry")}
+                    </button>
+                  </div>`
+                : this.mediaLoading
+                  ? html`<div class="media-pending" role="status" aria-live="polite">
+                      <strong>${this.t("player.loadingVideo")}</strong>
+                    </div>`
+                : nothing
+          }
+
+          <div class="overlay">
+            <slot name="overlay"></slot>
+          </div>
+
+          <!-- Custom Accessible Captions Overlay (SRS FR-P3) -->
+          <div
+            class="caption-overlay pos-${this.captionPosition}"
+            ?hidden=${!this.captionsShowing || !this.currentCueText}
+            aria-hidden="true"
+          >
+            <div class="caption-cue" style=${this.computeCaptionStyle()}>
+              ${this.currentCueText}
+            </div>
+          </div>
+
+          <!-- Custom Native Accessible Controls Bar (SRS FR-P2) -->
+          <div
+            class="player-controls"
+            aria-label=${this.t("player.controlsLabel")}
+            lang=${this.activeLang}
+            @focusin=${this.handleControlFocus}
+          >
+            <!-- Play / Pause (Toggle) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-play"
+              @click=${this.togglePlay}
+              aria-label=${this.isPlaying ? this.t("player.pause") : this.t("player.play")}
+              aria-pressed=${this.isPlaying ? "true" : "false"}
+              title="${this.isPlaying ? this.t("player.pause") : this.t("player.play")} (K)"
+            >
+              ${
+                this.isPlaying
+                  ? html`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                      <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                    </svg>`
+                  : html`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>`
+              }
+            </button>
+
+            <!-- Rewind 10s (Action) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-back10"
+              @click=${() => this.seekBy(-10)}
+              aria-label="${this.t("player.back10")} 10s"
+              title="${this.t("player.back10")} (J)"
+            >
+              <svg
+                aria-hidden="true"
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                style="margin-right: 2px;"
+              >
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <polyline points="3 3 3 8 8 8"></polyline>
+              </svg>
+              <span style="font-size: 0.8rem; font-weight: 700;">10s</span>
+            </button>
+
+            <button
+              type="button"
+              class="ctrl-btn btn-low-data"
+              @click=${this.toggleLowDataMode}
+              aria-pressed=${this.lowDataMode ? "true" : "false"}
+                aria-label=${this.lowDataMode ? this.t("player.lowDataOn") : this.t("player.lowDataOff")}
+              title=${this.t("player.lowDataHelp")}
+            >
+              ${this.lowDataMode ? this.t("player.lowDataOn") : this.t("player.lowDataOff")}
+            </button>
+
+            <button
+              type="button"
+              class="ctrl-btn btn-language"
+              @click=${this.toggleLearningLanguage}
+              aria-label=${languageToggleLabel}
+              title=${languageToggleLabel}
+            >
+              ${this.activeLang === "am" ? this.t("player.languageEnShort") : this.t("player.languageAmShort")}
+            </button>
+
+            <!-- Position Slider -->
+            <input
+              type="range"
+              class="ctrl-slider slider-seek"
+              min="0"
+              max=${Number.isFinite(this.duration) && this.duration > 0 ? this.duration : 100}
+              step="0.1"
+              .value=${String(this.currentTime)}
+              ?disabled=${!this.mediaRequested}
+              @input=${this.handleSeekInput}
+              aria-label=${this.t("player.seekSlider")}
+              aria-valuetext=${this.positionValueText}
+            />
+
+            <!-- Elapsed / Total time display -->
+            <span class="time-display" aria-hidden="true">
+              ${this.formatTime(this.currentTime)} / ${this.formatTime(this.duration)}
+            </span>
+
+            <!-- Mute Toggle -->
+            <button
+              type="button"
+              class="ctrl-btn btn-mute"
+              @click=${this.toggleMute}
+              aria-label=${this.t("player.mute")}
+              aria-pressed=${this.isMuted || (this.media ? this.media.muted : false) ? "true" : "false"}
+              title="${this.t("player.mute")} (M)"
+            >
+              ${
+                this.isMuted || this.volume === 0
+                  ? html`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polygon
+                        points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"
+                        fill="currentColor"
+                      ></polygon>
+                      <line x1="23" y1="9" x2="17" y2="15"></line>
+                      <line x1="17" y1="9" x2="23" y2="15"></line>
+                    </svg>`
+                  : html`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polygon
+                        points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"
+                        fill="currentColor"
+                      ></polygon>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>`
+              }
+            </button>
+
+            <!-- Volume Slider -->
+            <input
+              type="range"
+              class="ctrl-slider slider-volume"
+              min="0"
+              max="100"
+              step="1"
+              .value=${String(this.isMuted ? 0 : Math.round(this.volume * 100))}
+              @input=${this.handleVolumeInput}
+              aria-label=${this.t("player.volumeSlider")}
+              aria-valuetext=${this.volumeValueText}
+            />
+
+            <!-- Playback Speed Menu (SRS FR-P9 & Stable Popover Buttons) -->
+            <div class="speed-menu-container">
+              <button
+                type="button"
+                class="ctrl-btn btn-speed ${this.isSpeedMenuOpen ? "active" : ""}"
+                @click=${this.toggleSpeedMenu}
+                aria-haspopup="menu"
+                aria-controls="speed-menu"
+                aria-expanded=${this.isSpeedMenuOpen ? "true" : "false"}
+                aria-label="${this.t("player.speed")}: ${this.playbackRate === 1 ? "1.0x" : this.playbackRate + "x"}"
+                title="${this.t("player.speed")}"
+              >
+                ${this.playbackRate === 1 ? "1.0x" : this.playbackRate + "x"}
+              </button>
+              ${
+                this.isSpeedMenuOpen
+                  ? html`
+                      <div
+                        id="speed-menu"
+                        class="speed-popover"
+                        role="menu"
+                        aria-label=${this.t("player.speed")}
+                        @keydown=${this.handleSpeedMenuKeydown}
+                      >
+                        ${[0.5, 0.75, 1, 1.25, 1.5, 2].map(
+                          (rate) => html`
+                            <button
+                              type="button"
+                              role="menuitemradio"
+                              class="speed-opt-btn ${this.playbackRate === rate ? "is-selected" : ""}"
+                              aria-checked=${this.playbackRate === rate ? "true" : "false"}
+                              @click=${() => this.setPlaybackRate(rate)}
+                            >
+                              ${rate === 1 ? `1.0x (${this.t("player.speedNormal")})` : `${rate}x`}
+                            </button>
+                          `,
+                        )}
+                      </div>
+                    `
+                  : ""
+              }
+            </div>
+
+            <!-- Captions Toggle -->
+            <button
+              type="button"
+              class="ctrl-btn btn-captions ${this.captionsShowing ? "active" : ""}"
+              @click=${this.toggleCaptions}
+              aria-label="${this.t("player.captions")} CC"
+              aria-pressed=${this.captionsShowing ? "true" : "false"}
+              aria-expanded=${this.captionsShowing ? "true" : "false"}
+              title="${this.t("player.captions")} (C)"
+              style="position: relative;"
+            >
+              <span
+                style="font-weight: 800; font-size: 0.85rem; border: 1.5px solid currentColor; border-radius: 3px; padding: 1px 4px; line-height: 1;"
+                >CC</span
+              >
+              ${this.captionsShowing ? html`<span style="position: absolute; bottom: 4px; left: 10px; right: 10px; height: 2px; background: #e11d48; border-radius: 1px;"></span>` : ""}
+            </button>
+
+            <!-- Preferences / Caption Settings Dialog Trigger (SRS FR-P3, FR-P3a, Contract C3/C4) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-preferences btn-captions-settings ${this.showPreferencesDialog ? "active" : ""}"
+              @click=${() => this.togglePreferences("general")}
+              aria-label=${this.t("player.captionsSettings")}
+              aria-haspopup="dialog"
+              aria-expanded=${this.showPreferencesDialog ? "true" : "false"}
+              title="${this.t("player.captionsSettings")} (P)"
+            >
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3"></circle>
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                ></path>
+              </svg>
+            </button>
+
+            <!-- Interactive Transcript Toggle Button (SRS FR-P8) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-transcript ${this.isTranscriptOpen ? "active" : ""}"
+              @click=${this.toggleTranscript}
+              aria-label="${this.t("player.transcript")} 📝"
+              aria-expanded=${this.isTranscriptOpen ? "true" : "false"}
+              aria-controls="transcript-panel"
+              aria-pressed=${this.isTranscriptOpen ? "true" : "false"}
+              title="${this.t("player.transcript")} (T)"
+            >
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </button>
+
+            <!-- Sign Language Window Toggle (Step 6 Null-Safe) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-sign ${this.hasSignTrack && this.showSignWindow ? "active" : ""} ${!this.hasSignTrack ? "is-disabled" : ""}"
+              @click=${this.toggleSignWindow}
+              aria-label=${
+                this.hasSignTrack
+                  ? `${this.manifestData?.sign?.languageName || this.t("player.sign")} SIG`
+                  : `${this.t("player.sign")} SIG ${this.t("player.notAvailableSuffix")}`.trim()
+              }
+              aria-disabled=${!this.hasSignTrack ? "true" : "false"}
+              aria-expanded=${this.hasSignTrack && this.showSignWindow ? "true" : "false"}
+              aria-pressed=${this.hasSignTrack && this.showSignWindow ? "true" : "false"}
+              title="${this.manifestData?.sign?.languageName || this.t("player.sign")} (S)${!this.hasSignTrack ? " " + this.t("player.notAvailableSuffix") : ""}"
+            >
+              <span
+                style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;"
+                >SIG</span
+              >
+            </button>
+
+            <!-- Audio Description Toggle (Step 6 Null-Safe) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-ad ${!this.hasAdTrack ? "is-disabled" : ""} ${this.hasAdTrack && this.audioDescriptionEnabled ? "active" : ""}"
+              @click=${this.toggleAudioDescription}
+              aria-label=${
+                this.hasAdTrack
+                  ? `${this.t("player.audioDescription")} AD`
+                  : `${this.t("player.audioDescription")} AD ${this.t("player.notAvailableSuffix")}`.trim()
+              }
+              aria-disabled=${!this.hasAdTrack ? "true" : "false"}
+              aria-expanded=${this.hasAdTrack && this.audioDescriptionEnabled ? "true" : "false"}
+              aria-pressed=${this.hasAdTrack && this.audioDescriptionEnabled ? "true" : "false"}
+              title="${this.t("player.audioDescription")} (D)${!this.hasAdTrack ? " " + this.t("player.notAvailableSuffix") : ""}"
+            >
+              <span
+                style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;"
+                >AD</span
+              >
+            </button>
+
+            <!-- Fullscreen Toggle -->
+            <button
+              type="button"
+              class="ctrl-btn btn-fullscreen"
+              @click=${this.toggleFullscreen}
+              aria-label=${this.t("player.fullscreen")}
+              aria-pressed=${this.isFullscreen ? "true" : "false"}
+              title="${this.t("player.fullscreen")} (F)"
+            >
+              ${
+                this.isFullscreen
+                  ? html`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"
+                      ></path>
+                    </svg>`
+                  : html`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
+                      ></path>
+                    </svg>`
+              }
+            </button>
+
+            <!-- Keyboard Shortcuts Help (Step 7) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-help ${this.showHelpDialog ? "active" : ""}"
+              @click=${this.toggleShortcutsHelp}
+              aria-label=${this.t("player.help")}
+              aria-haspopup="dialog"
+              aria-expanded=${this.showHelpDialog ? "true" : "false"}
+              title="${this.t("player.help")} (?)"
+            >
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Step 5: Persistent Polite Live Region (Screen Reader Only) -->
+          <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+            ${this.liveRegionMessage}
+          </div>
+
+          <!-- Step 5: Visual On-Screen HUD Notification (aria-hidden) -->
+          ${
+            this.statusToast
+              ? html`<div class="status-toast" aria-hidden="true">${this.statusToast}</div>`
+              : ""
+          }
+
+          <!-- Step 7: Native Accessible Keyboard Shortcuts Dialog Modal -->
+          <dialog
+            class="shortcuts-dialog"
+            aria-labelledby="shortcuts-dialog-title"
+            @close=${this.handleDialogClose}
+            @click=${this.handleDialogClick}
+          >
+            <div class="shortcuts-header">
+              <h2 id="shortcuts-dialog-title">${this.t("player.helpTitle")}</h2>
+              <button
+                type="button"
+                class="close-help-btn"
+                @click=${this.closeShortcutsDialog}
+                aria-label=${this.t("player.closeHelp")}
+              >
+                ${this.t("player.closeHelp")} (Esc)
+              </button>
+            </div>
+            <table class="shortcuts-table">
+              <thead>
+                <tr>
+                  <th scope="col">${this.t("player.helpHeaderKey")}</th>
+                  <th scope="col">${this.t("player.helpHeaderAction")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><kbd>Space</kbd> / <kbd>K</kbd></td>
+                  <td>${this.t("player.shortcutPlayPause")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>←</kbd> / <kbd>→</kbd></td>
+                  <td>${this.t("player.shortcutSeek5")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>J</kbd> / <kbd>L</kbd></td>
+                  <td>${this.t("player.shortcutSeek10")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>↑</kbd> / <kbd>↓</kbd></td>
+                  <td>${this.t("player.shortcutVolume")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>M</kbd></td>
+                  <td>${this.t("player.shortcutMute")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>C</kbd></td>
+                  <td>${this.t("player.shortcutCaptions")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>S</kbd></td>
+                  <td>${this.t("player.shortcutSign")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>D</kbd></td>
+                  <td>${this.t("player.shortcutAudioDescription")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>T</kbd></td>
+                  <td>${this.t("player.shortcutTranscript")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>F</kbd></td>
+                  <td>${this.t("player.shortcutFullscreen")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>P</kbd></td>
+                  <td>${this.t("player.shortcutPreferences")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>?</kbd></td>
+                  <td>${this.t("player.shortcutHelp")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>Home</kbd> / <kbd>End</kbd></td>
+                  <td>${this.t("player.shortcutStartEnd")}</td>
+                </tr>
+              </tbody>
+            </table>
+          </dialog>
+
+          <!-- Preferences Modal Dialog (Contract C3/C4, Task 1.6 & SRS FR-P9) -->
+          <dialog
+            class="prefs-dialog captions-dialog"
+            aria-labelledby="prefs-dialog-title"
+            @close=${this.handlePrefsDialogClose}
+            @click=${this.handlePrefsDialogClick}
+          >
+            <div class="prefs-header captions-header">
+              <h2 id="prefs-dialog-title">${this.t("player.preferencesTitle")}</h2>
+              <button
+                type="button"
+                class="close-prefs-btn close-captions-btn"
+                @click=${this.closePreferencesDialog}
+                aria-label="${this.t("player.closePreferences")} (Esc)"
+              >
+                ${this.t("player.closePreferences")} (Esc)
+              </button>
+            </div>
+
+            <!-- Tab list -->
+            <div class="prefs-tab-bar" role="tablist" aria-label=${this.t("player.preferences")}>
+              <button
+                type="button"
+                role="tab"
+                id="tab-general"
+                aria-controls="panel-general"
+                aria-selected=${this.activePrefsTab === "general" ? "true" : "false"}
+                class="prefs-tab-btn ${this.activePrefsTab === "general" ? "is-active-tab" : ""}"
+                @click=${() => {
+                  this.activePrefsTab = "general";
+                }}
+              >
+                ${this.t("player.prefSectionGeneral")}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="tab-captions"
+                aria-controls="panel-captions"
+                aria-selected=${this.activePrefsTab === "captions" ? "true" : "false"}
+                class="prefs-tab-btn ${this.activePrefsTab === "captions" ? "is-active-tab" : ""}"
+                @click=${() => {
+                  this.activePrefsTab = "captions";
+                }}
+              >
+                ${this.t("player.prefSectionCaptions")}
+              </button>
+            </div>
+
+            <!-- General Preferences Panel -->
+            <div
+              id="panel-general"
+              role="tabpanel"
+              aria-labelledby="tab-general"
+              class="prefs-settings-body"
+              ?hidden=${this.activePrefsTab !== "general"}
+            >
+              <!-- Language Selection (Contract C4) -->
+              <div class="setting-row">
+                <label for="pref-lang-select">${this.t("player.prefLanguage")}:</label>
+                <select
+                  id="pref-lang-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefLangChange}
+                >
+                  <option value="en" ?selected=${this.activeLang === "en"}>
+                    ${this.t("player.prefLanguageEn")}
+                  </option>
+                  <option value="am" ?selected=${this.activeLang === "am"}>
+                    ${this.t("player.prefLanguageAm")}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Playback Speed -->
+              <div class="setting-row">
+                <label for="pref-speed-select">${this.t("player.prefSpeed")}:</label>
+                <select
+                  id="pref-speed-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefSpeedChange}
+                >
+                  <option value="0.5" ?selected=${this.playbackRate === 0.5}>0.5x</option>
+                  <option value="0.75" ?selected=${this.playbackRate === 0.75}>0.75x</option>
+                  <option value="1" ?selected=${this.playbackRate === 1}>
+                    1.0x (${this.t("player.speedNormal")})
+                  </option>
+                  <option value="1.25" ?selected=${this.playbackRate === 1.25}>1.25x</option>
+                  <option value="1.5" ?selected=${this.playbackRate === 1.5}>1.5x</option>
+                  <option value="2" ?selected=${this.playbackRate === 2}>2.0x</option>
+                </select>
+              </div>
+
+              <!-- Display Theme (Contract C3/C5) -->
+              <div class="setting-row">
+                <label for="pref-theme-select">${this.t("player.prefTheme")}:</label>
+                <select
+                  id="pref-theme-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefThemeChange}
+                >
+                  <option value="dark" ?selected=${this.playerTheme === "dark"}>
+                    ${this.t("player.prefThemeDark")}
+                  </option>
+                  <option value="light" ?selected=${this.playerTheme === "light"}>
+                    ${this.t("player.prefThemeLight")}
+                  </option>
+                  <option value="high-contrast" ?selected=${this.playerTheme === "high-contrast"}>
+                    ${this.t("player.prefThemeHighContrast")}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Keyboard Shortcuts Toggle -->
+              <div class="setting-row">
+                <label for="pref-shortcuts-select">${this.t("player.prefShortcuts")}:</label>
+                <select
+                  id="pref-shortcuts-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefShortcutsChange}
+                >
+                  <option value="true" ?selected=${!this.disableShortcuts}>
+                    ${this.t("player.prefShortcutsOn")}
+                  </option>
+                  <option value="false" ?selected=${this.disableShortcuts}>
+                    ${this.t("player.prefShortcutsOff")}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Sign Language Window (SRS FR-P9) -->
+              <div class="setting-row">
+                <label for="pref-sign-select">${this.t("player.prefSignWindow")}:</label>
+                <select
+                  id="pref-sign-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefSignChange}
+                  ?disabled=${!this.hasSignTrack}
+                >
+                  <option value="true" ?selected=${this.hasSignTrack && this.showSignWindow}>
+                    ${this.t("player.prefEnabled")}
+                  </option>
+                  <option value="false" ?selected=${!this.hasSignTrack || !this.showSignWindow}>
+                    ${this.t("player.prefDisabled")}
+                    ${!this.hasSignTrack ? `(${this.t("player.notAvailableSuffix")})` : ""}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Audio Description (SRS FR-P9) -->
+              <div class="setting-row">
+                <label for="pref-ad-select">${this.t("player.prefAudioDescription")}:</label>
+                <select
+                  id="pref-ad-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefAdChange}
+                  ?disabled=${!this.hasAdTrack}
+                >
+                  <option value="true" ?selected=${this.hasAdTrack && this.audioDescriptionEnabled}>
+                    ${this.t("player.prefEnabled")}
+                  </option>
+                  <option
+                    value="false"
+                    ?selected=${!this.hasAdTrack || !this.audioDescriptionEnabled}
+                  >
+                    ${this.t("player.prefDisabled")}
+                    ${!this.hasAdTrack ? `(${this.t("player.notAvailableSuffix")})` : ""}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Reset, Download, Delete Buttons (FR-A4) -->
+              <div
+                class="setting-row"
+                style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem;"
+              >
                 <button
                   type="button"
-                  class="btn-retry"
-                  @click=${() => this.fetchLessonManifest()}
-                  aria-label=${this.t('player.retry')}
+                  class="btn-reset-prefs"
+                  @click=${this.resetPreferences}
+                  aria-label=${this.t("player.prefReset")}
                 >
-                  🔄 ${this.t('player.retry')}
+                  🔄 ${this.t("player.prefReset")}
+                </button>
+                <button
+                  type="button"
+                  class="btn-reset-prefs"
+                  @click=${this.downloadMySettings}
+                  aria-label=${this.t("player.prefDownload")}
+                >
+                  💾 ${this.t("player.prefDownload")}
+                </button>
+                <button
+                  type="button"
+                  class="btn-reset-prefs"
+                  @click=${this.deleteMySettings}
+                  aria-label=${this.t("player.prefDelete")}
+                >
+                  🗑️ ${this.t("player.prefDelete")}
                 </button>
               </div>
-            `
-        : ''}
-        <video
-          src=${this.src || nothing}
-          @play=${this.handlePlay}
-          @pause=${this.handlePause}
-          @seeking=${this.handleSeek}
-          @timeupdate=${this.handleTimeUpdate}
-          @error=${this.handleError}
-        >
-          ${this.manifestCaptions.map(
-          (c) => html`
-              <track
-                kind="subtitles"
-                srclang=${c.lang}
-                src=${this.captionBlobUrls.get(c.lang) || c.url}
-                label=${c.lang === 'am' ? 'Amharic' : 'English'}
-                ?default=${c.lang === this.lang}
-              />
-            `
-        )}
-        </video>
+            </div>
 
-        <div class="overlay">
-          <slot name="overlay"></slot>
-        </div>
-
-        <!-- Custom Accessible Captions Overlay (SRS FR-P3) -->
-        <div
-          class="caption-overlay pos-${this.captionPosition}"
-          ?hidden=${!this.captionsShowing || !this.currentCueText}
-          aria-hidden="true"
-        >
-          <div
-            class="caption-cue"
-            style=${this.computeCaptionStyle()}
-          >
-            ${this.currentCueText}
-          </div>
-        </div>
-
-        <!-- Custom Native Accessible Controls Bar (SRS FR-P2) -->
-        <div
-          class="player-controls"
-          aria-label=${this.t('player.controlsLabel')}
-          lang=${this.activeLang}
-          @focusin=${this.handleControlFocus}
-        >
-          <!-- Play / Pause (Toggle) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-play"
-            @click=${this.togglePlay}
-            aria-label=${this.isPlaying ? this.t('player.pause') : this.t('player.play')}
-            aria-pressed=${this.isPlaying ? 'true' : 'false'}
-            title="${this.isPlaying ? this.t('player.pause') : this.t('player.play')} (K)"
-          >
-            ${this.isPlaying
-              ? html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16" rx="1"></rect>
-                  <rect x="14" y="4" width="4" height="16" rx="1"></rect>
-                </svg>`
-              : html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>`
-            }
-          </button>
-
-          <!-- Rewind 10s (Action) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-back10"
-            @click=${() => this.seekBy(-10)}
-            aria-label="${this.t('player.back10')} 10s"
-            title="${this.t('player.back10')} (J)"
-          >
-            <svg
-              aria-hidden="true"
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              style="margin-right: 2px;"
+            <!-- Captions Preferences Panel -->
+            <div
+              id="panel-captions"
+              role="tabpanel"
+              aria-labelledby="tab-captions"
+              class="captions-settings-body"
+              ?hidden=${this.activePrefsTab !== "captions"}
             >
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-              <polyline points="3 3 3 8 8 8"></polyline>
-            </svg>
-            <span style="font-size: 0.8rem; font-weight: 700;">10s</span>
-          </button>
-
-          <!-- Position Slider -->
-          <input
-            type="range"
-            class="ctrl-slider slider-seek"
-            min="0"
-            max=${Number.isFinite(this.duration) && this.duration > 0 ? this.duration : 100}
-            step="0.1"
-            .value=${String(this.currentTime)}
-            @input=${this.handleSeekInput}
-            aria-label=${this.t('player.seekSlider')}
-            aria-valuetext=${this.positionValueText}
-          />
-
-          <!-- Elapsed / Total time display -->
-          <span class="time-display" aria-hidden="true">
-            ${this.formatTime(this.currentTime)} / ${this.formatTime(this.duration)}
-          </span>
-
-          <!-- Mute Toggle -->
-          <button
-            type="button"
-            class="ctrl-btn btn-mute"
-            @click=${this.toggleMute}
-            aria-label=${this.t('player.mute')}
-            aria-pressed=${this.isMuted || (this.media ? this.media.muted : false) ? 'true' : 'false'}
-            title="${this.t('player.mute')} (M)"
-          >
-            ${this.isMuted || this.volume === 0
-              ? html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
-                  <line x1="23" y1="9" x2="17" y2="15"></line>
-                  <line x1="17" y1="9" x2="23" y2="15"></line>
-                </svg>`
-              : html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
-                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                </svg>`
-            }
-          </button>
-
-          <!-- Volume Slider -->
-          <input
-            type="range"
-            class="ctrl-slider slider-volume"
-            min="0"
-            max="100"
-            step="1"
-            .value=${String(this.isMuted ? 0 : Math.round(this.volume * 100))}
-            @input=${this.handleVolumeInput}
-            aria-label=${this.t('player.volumeSlider')}
-            aria-valuetext=${this.volumeValueText}
-          />
-
-          <!-- Playback Speed Menu (SRS FR-P9 & Stable Popover Buttons) -->
-          <div class="speed-menu-container">
-            <button
-              type="button"
-              class="ctrl-btn btn-speed ${this.isSpeedMenuOpen ? 'active' : ''}"
-              @click=${this.toggleSpeedMenu}
-              aria-haspopup="menu"
-              aria-expanded=${this.isSpeedMenuOpen ? 'true' : 'false'}
-              aria-label="${this.t('player.speed')}: ${this.playbackRate === 1 ? '1.0x' : this.playbackRate + 'x'}"
-              title="${this.t('player.speed')}"
-            >
-              ${this.playbackRate === 1 ? '1.0x' : this.playbackRate + 'x'}
-            </button>
-            ${this.isSpeedMenuOpen
-        ? html`
-                  <div
-                    class="speed-popover"
-                    role="menu"
-                    aria-label=${this.t('player.speed')}
+              <!-- Language Track Selection -->
+              <div class="setting-row">
+                <label for="cap-track-select">${this.t("player.captionsTrack")}:</label>
+                <select
+                  id="cap-track-select"
+                  class="ctrl-select"
+                  @change=${this.handleCaptionTrackSelect}
+                >
+                  <option
+                    value="off"
+                    ?selected=${!this.captionsShowing || this.selectedCaptionLang === "off"}
                   >
-                    ${[0.5, 0.75, 1, 1.25, 1.5, 2].map(
-          (rate) => html`
-                        <button
-                          type="button"
-                          role="menuitemradio"
-                          class="speed-opt-btn ${this.playbackRate === rate ? 'is-selected' : ''}"
-                          aria-checked=${this.playbackRate === rate ? 'true' : 'false'}
-                          @click=${() => this.setPlaybackRate(rate)}
-                        >
-                          ${rate === 1 ? `1.0x (${this.t('player.speedNormal')})` : `${rate}x`}
-                        </button>
-                      `
-        )}
+                    ${this.t("player.captionsTrackOff")}
+                  </option>
+                  <option
+                    value="en"
+                    ?selected=${this.captionsShowing && this.selectedCaptionLang === "en"}
+                  >
+                    ${this.t("player.captionsTrackEn")}
+                  </option>
+                  <option
+                    value="am"
+                    ?selected=${this.captionsShowing && this.selectedCaptionLang === "am"}
+                  >
+                    ${this.t("player.captionsTrackAm")}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Font Size (100% to 300%) -->
+              <div class="setting-row">
+                <label for="cap-size-select">${this.t("player.captionsSize")}:</label>
+                <select
+                  id="cap-size-select"
+                  class="ctrl-select"
+                  @change=${this.handleCaptionSizeSelect}
+                >
+                  <option value="100" ?selected=${this.captionFontSize === 100}>
+                    100% (Standard)
+                  </option>
+                  <option value="150" ?selected=${this.captionFontSize === 150}>
+                    150% (Medium)
+                  </option>
+                  <option value="200" ?selected=${this.captionFontSize === 200}>
+                    200% (Large)
+                  </option>
+                  <option value="300" ?selected=${this.captionFontSize === 300}>
+                    300% (Extra Large)
+                  </option>
+                </select>
+              </div>
+
+              <!-- Color Presets (>= 7:1 Contrast) -->
+              <div class="setting-row">
+                <label for="cap-preset-select">${this.t("player.captionsColor")}:</label>
+                <select
+                  id="cap-preset-select"
+                  class="ctrl-select"
+                  @change=${this.handleCaptionPresetSelect}
+                >
+                  <option value="white-black" ?selected=${this.captionPreset === "white-black"}>
+                    ${this.t("player.captionsPresetWhiteBlack")} (21:1)
+                  </option>
+                  <option value="yellow-black" ?selected=${this.captionPreset === "yellow-black"}>
+                    ${this.t("player.captionsPresetYellowBlack")} (19.5:1)
+                  </option>
+                  <option value="black-white" ?selected=${this.captionPreset === "black-white"}>
+                    ${this.t("player.captionsPresetBlackWhite")} (21:1)
+                  </option>
+                  <option value="custom" ?selected=${this.captionPreset === "custom"}>
+                    ${this.t("player.captionsPresetCustom")}
+                  </option>
+                </select>
+              </div>
+
+              ${
+                this.captionPreset === "custom"
+                  ? html`
+                      <div class="setting-row custom-colors-row">
+                        <label for="cap-custom-text">${this.t("player.captionsTextColor")}:</label>
+                        <input
+                          id="cap-custom-text"
+                          type="color"
+                          class="color-picker-input"
+                          .value=${this.captionTextColor}
+                          @input=${this.handleCaptionTextColorChange}
+                          aria-label=${this.t("player.captionsTextColor")}
+                        />
+                        <label for="cap-custom-bg">${this.t("player.captionsBgColor")}:</label>
+                        <input
+                          id="cap-custom-bg"
+                          type="color"
+                          class="color-picker-input"
+                          .value=${this.captionBgColor}
+                          @input=${this.handleCaptionBgColorChange}
+                          aria-label=${this.t("player.captionsBgColor")}
+                        />
+                      </div>
+                    `
+                  : ""
+              }
+
+              <!-- Background Opacity -->
+              <div class="setting-row">
+                <label for="cap-opacity-select">${this.t("player.captionsOpacity")}:</label>
+                <select
+                  id="cap-opacity-select"
+                  class="ctrl-select"
+                  @change=${this.handleCaptionOpacitySelect}
+                >
+                  <option value="100" ?selected=${this.captionBgOpacity === 100}>100%</option>
+                  <option value="75" ?selected=${this.captionBgOpacity === 75}>75%</option>
+                  <option value="50" ?selected=${this.captionBgOpacity === 50}>50%</option>
+                  <option value="0" ?selected=${this.captionBgOpacity === 0}>
+                    0% (Transparent)
+                  </option>
+                </select>
+              </div>
+
+              <!-- Position (Bottom / Top) -->
+              <div class="setting-row">
+                <label for="cap-pos-select">${this.t("player.captionsPosition")}:</label>
+                <select
+                  id="cap-pos-select"
+                  class="ctrl-select"
+                  @change=${this.handleCaptionPositionSelect}
+                >
+                  <option value="bottom" ?selected=${this.captionPosition === "bottom"}>
+                    ${this.t("player.captionsPositionBottom")}
+                  </option>
+                  <option value="top" ?selected=${this.captionPosition === "top"}>
+                    ${this.t("player.captionsPositionTop")}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Live Preview -->
+              <div class="preview-container">
+                <span class="preview-label">${this.t("player.captionsPreview")}:</span>
+                <div class="preview-stage">
+                  <div class="caption-cue" style=${this.computeCaptionStyle()}>
+                    ${
+                      this.selectedCaptionLang === "am"
+                        ? "ወደ ትምህርቱ እንኳን በደህና መጡ።"
+                        : "Welcome to the lesson."
+                    }
                   </div>
-                `
-        : ''}
-          </div>
-
-          <!-- Captions Toggle -->
-          <button
-            type="button"
-            class="ctrl-btn btn-captions ${this.captionsShowing ? 'active' : ''}"
-            @click=${this.toggleCaptions}
-            aria-label="${this.t('player.captions')} CC"
-            aria-pressed=${this.captionsShowing ? 'true' : 'false'}
-            aria-expanded=${this.captionsShowing ? 'true' : 'false'}
-            title="${this.t('player.captions')} (C)"
-            style="position: relative;"
-          >
-            <span style="font-weight: 800; font-size: 0.85rem; border: 1.5px solid currentColor; border-radius: 3px; padding: 1px 4px; line-height: 1;">CC</span>
-            ${this.captionsShowing ? html`<span style="position: absolute; bottom: 4px; left: 10px; right: 10px; height: 2px; background: #e11d48; border-radius: 1px;"></span>` : ''}
-          </button>
-
-          <!-- Preferences / Caption Settings Dialog Trigger (SRS FR-P3, FR-P3a, Contract C3/C4) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-preferences btn-captions-settings ${this.showPreferencesDialog ? 'active' : ''}"
-            @click=${() => this.togglePreferences('general')}
-            aria-label=${this.t('player.captionsSettings')}
-            aria-haspopup="dialog"
-            aria-expanded=${this.showPreferencesDialog ? 'true' : 'false'}
-            title="${this.t('player.captionsSettings')} (P)"
-          >
-            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-          </button>
-
-          <!-- Interactive Transcript Toggle Button (SRS FR-P8) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-transcript ${this.isTranscriptOpen ? 'active' : ''}"
-            @click=${this.toggleTranscript}
-            aria-label="${this.t('player.transcript')} 📝"
-            aria-expanded=${this.isTranscriptOpen ? 'true' : 'false'}
-            aria-controls="transcript-panel"
-            aria-pressed=${this.isTranscriptOpen ? 'true' : 'false'}
-            title="${this.t('player.transcript')} (T)"
-          >
-            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-            </svg>
-          </button>
-
-          <!-- Sign Language Window Toggle (Step 6 Null-Safe) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-sign ${!this.hasSignTrack ? 'is-disabled' : ''} ${this.hasSignTrack && this.showSignWindow ? 'active' : ''}"
-            @click=${this.toggleSignWindow}
-            aria-label=${this.hasSignTrack
-        ? `${this.t('player.sign')} ESL`
-        : `${this.t('player.sign')} ESL ${this.t('player.notAvailableSuffix')}`.trim()}
-            aria-disabled=${!this.hasSignTrack ? 'true' : 'false'}
-            aria-expanded=${this.hasSignTrack && this.showSignWindow ? 'true' : 'false'}
-            aria-pressed=${this.hasSignTrack && this.showSignWindow ? 'true' : 'false'}
-            title="${this.t('player.sign')} (S)${!this.hasSignTrack ? ' ' + this.t('player.notAvailableSuffix') : ''}"
-          >
-            <span style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;">ESL</span>
-          </button>
-
-          <!-- Audio Description Toggle (Step 6 Null-Safe) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-ad ${!this.hasAdTrack ? 'is-disabled' : ''} ${this.hasAdTrack && this.audioDescriptionEnabled ? 'active' : ''}"
-            @click=${this.toggleAudioDescription}
-            aria-label=${this.hasAdTrack
-        ? `${this.t('player.audioDescription')} AD`
-        : `${this.t('player.audioDescription')} AD ${this.t('player.notAvailableSuffix')}`.trim()}
-            aria-disabled=${!this.hasAdTrack ? 'true' : 'false'}
-            aria-expanded=${this.hasAdTrack && this.audioDescriptionEnabled ? 'true' : 'false'}
-            aria-pressed=${this.hasAdTrack && this.audioDescriptionEnabled ? 'true' : 'false'}
-            title="${this.t('player.audioDescription')} (D)${!this.hasAdTrack ? ' ' + this.t('player.notAvailableSuffix') : ''}"
-          >
-            <span style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;">AD</span>
-          </button>
-
-          <!-- Fullscreen Toggle -->
-          <button
-            type="button"
-            class="ctrl-btn btn-fullscreen"
-            @click=${this.toggleFullscreen}
-            aria-label=${this.t('player.fullscreen')}
-            aria-pressed=${this.isFullscreen ? 'true' : 'false'}
-            title="${this.t('player.fullscreen')} (F)"
-          >
-            ${this.isFullscreen
-              ? html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-                </svg>`
-              : html`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                </svg>`
-            }
-          </button>
-
-          <!-- Keyboard Shortcuts Help (Step 7) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-help ${this.showHelpDialog ? 'active' : ''}"
-            @click=${this.toggleShortcutsHelp}
-            aria-label=${this.t('player.help')}
-            aria-haspopup="dialog"
-            aria-expanded=${this.showHelpDialog ? 'true' : 'false'}
-            title="${this.t('player.help')} (?)"
-          >
-            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-          </button>
-        </div>
-
-        <section class="accessibility-modules" aria-label="Additional accessibility controls">
-          <slot></slot>
-        </section>
-
-        <!-- Step 5: Persistent Polite Live Region (Screen Reader Only) -->
-        <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
-          ${this.liveRegionMessage}
-        </div>
-
-        <!-- Step 5: Visual On-Screen HUD Notification (aria-hidden) -->
-        ${this.statusToast
-        ? html`<div class="status-toast" aria-hidden="true">${this.statusToast}</div>`
-        : ''}
-
-        <!-- Step 7: Native Accessible Keyboard Shortcuts Dialog Modal -->
-        <dialog
-          class="shortcuts-dialog"
-          aria-labelledby="shortcuts-dialog-title"
-          @close=${this.handleDialogClose}
-          @click=${this.handleDialogClick}
-        >
-          <div class="shortcuts-header">
-            <h2 id="shortcuts-dialog-title">${this.t('player.helpTitle')}</h2>
-            <button
-              type="button"
-              class="close-help-btn"
-              @click=${this.closeShortcutsDialog}
-              aria-label=${this.t('player.closeHelp')}
-            >
-              ${this.t('player.closeHelp')} (Esc)
-            </button>
-          </div>
-          <table class="shortcuts-table">
-            <thead>
-              <tr>
-                <th scope="col">${this.t('player.helpHeaderKey')}</th>
-                <th scope="col">${this.t('player.helpHeaderAction')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><kbd>Space</kbd> / <kbd>K</kbd></td>
-                <td>${this.t('player.shortcutPlayPause')}</td>
-              </tr>
-              <tr>
-                <td><kbd>←</kbd> / <kbd>→</kbd></td>
-                <td>${this.t('player.shortcutSeek5')}</td>
-              </tr>
-              <tr>
-                <td><kbd>J</kbd> / <kbd>L</kbd></td>
-                <td>${this.t('player.shortcutSeek10')}</td>
-              </tr>
-              <tr>
-                <td><kbd>↑</kbd> / <kbd>↓</kbd></td>
-                <td>${this.t('player.shortcutVolume')}</td>
-              </tr>
-              <tr>
-                <td><kbd>M</kbd></td>
-                <td>${this.t('player.shortcutMute')}</td>
-              </tr>
-              <tr>
-                <td><kbd>C</kbd></td>
-                <td>${this.t('player.shortcutCaptions')}</td>
-              </tr>
-              <tr>
-                <td><kbd>S</kbd></td>
-                <td>${this.t('player.shortcutSign')}</td>
-              </tr>
-              <tr>
-                <td><kbd>D</kbd></td>
-                <td>${this.t('player.shortcutAudioDescription')}</td>
-              </tr>
-              <tr>
-                <td><kbd>T</kbd></td>
-                <td>${this.t('player.shortcutTranscript')}</td>
-              </tr>
-              <tr>
-                <td><kbd>F</kbd></td>
-                <td>${this.t('player.shortcutFullscreen')}</td>
-              </tr>
-              <tr>
-                <td><kbd>P</kbd></td>
-                <td>${this.t('player.shortcutPreferences')}</td>
-              </tr>
-              <tr>
-                <td><kbd>?</kbd></td>
-                <td>${this.t('player.shortcutHelp')}</td>
-              </tr>
-              <tr>
-                <td><kbd>Home</kbd> / <kbd>End</kbd></td>
-                <td>${this.t('player.shortcutStartEnd')}</td>
-              </tr>
-            </tbody>
-          </table>
-        </dialog>
-
-        <!-- Preferences Modal Dialog (Contract C3/C4, Task 1.6 & SRS FR-P9) -->
-        <dialog
-          class="prefs-dialog captions-dialog"
-          aria-labelledby="prefs-dialog-title"
-          @close=${this.handlePrefsDialogClose}
-          @click=${this.handlePrefsDialogClick}
-        >
-          <div class="prefs-header captions-header">
-            <h2 id="prefs-dialog-title">${this.t('player.preferencesTitle')}</h2>
-            <button
-              type="button"
-              class="close-prefs-btn close-captions-btn"
-              @click=${this.closePreferencesDialog}
-              aria-label="${this.t('player.closePreferences')} (Esc)"
-            >
-              ${this.t('player.closePreferences')} (Esc)
-            </button>
-          </div>
-
-          <!-- Tab list -->
-          <div class="prefs-tab-bar" role="tablist" aria-label=${this.t('player.preferences')}>
-            <button
-              type="button"
-              role="tab"
-              id="tab-general"
-              aria-controls="panel-general"
-              aria-selected=${this.activePrefsTab === 'general' ? 'true' : 'false'}
-              class="prefs-tab-btn ${this.activePrefsTab === 'general' ? 'is-active-tab' : ''}"
-              @click=${() => { this.activePrefsTab = 'general'; }}
-            >
-              ${this.t('player.prefSectionGeneral')}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              id="tab-captions"
-              aria-controls="panel-captions"
-              aria-selected=${this.activePrefsTab === 'captions' ? 'true' : 'false'}
-              class="prefs-tab-btn ${this.activePrefsTab === 'captions' ? 'is-active-tab' : ''}"
-              @click=${() => { this.activePrefsTab = 'captions'; }}
-            >
-              ${this.t('player.prefSectionCaptions')}
-            </button>
-          </div>
-
-          <!-- General Preferences Panel -->
-          <div
-            id="panel-general"
-            role="tabpanel"
-            aria-labelledby="tab-general"
-            class="prefs-settings-body"
-            ?hidden=${this.activePrefsTab !== 'general'}
-          >
-            <!-- Language Selection (Contract C4) -->
-            <div class="setting-row">
-              <label for="pref-lang-select">${this.t('player.prefLanguage')}:</label>
-              <select
-                id="pref-lang-select"
-                class="ctrl-select"
-                @change=${this.handlePrefLangChange}
-              >
-                <option value="en" ?selected=${this.activeLang === 'en'}>
-                  ${this.t('player.prefLanguageEn')}
-                </option>
-                <option value="am" ?selected=${this.activeLang === 'am'}>
-                  ${this.t('player.prefLanguageAm')}
-                </option>
-              </select>
-            </div>
-
-            <!-- Playback Speed -->
-            <div class="setting-row">
-              <label for="pref-speed-select">${this.t('player.prefSpeed')}:</label>
-              <select
-                id="pref-speed-select"
-                class="ctrl-select"
-                @change=${this.handlePrefSpeedChange}
-              >
-                <option value="0.5" ?selected=${this.playbackRate === 0.5}>0.5x</option>
-                <option value="0.75" ?selected=${this.playbackRate === 0.75}>0.75x</option>
-                <option value="1" ?selected=${this.playbackRate === 1}>1.0x (${this.t('player.speedNormal')})</option>
-                <option value="1.25" ?selected=${this.playbackRate === 1.25}>1.25x</option>
-                <option value="1.5" ?selected=${this.playbackRate === 1.5}>1.5x</option>
-                <option value="2" ?selected=${this.playbackRate === 2}>2.0x</option>
-              </select>
-            </div>
-
-            <!-- Display Theme (Contract C3/C5) -->
-            <div class="setting-row">
-              <label for="pref-theme-select">${this.t('player.prefTheme')}:</label>
-              <select
-                id="pref-theme-select"
-                class="ctrl-select"
-                @change=${this.handlePrefThemeChange}
-              >
-                <option value="dark" ?selected=${this.playerTheme === 'dark'}>
-                  ${this.t('player.prefThemeDark')}
-                </option>
-                <option value="light" ?selected=${this.playerTheme === 'light'}>
-                  ${this.t('player.prefThemeLight')}
-                </option>
-                <option value="high-contrast" ?selected=${this.playerTheme === 'high-contrast'}>
-                  ${this.t('player.prefThemeHighContrast')}
-                </option>
-              </select>
-            </div>
-
-            <!-- Keyboard Shortcuts Toggle -->
-            <div class="setting-row">
-              <label for="pref-shortcuts-select">${this.t('player.prefShortcuts')}:</label>
-              <select
-                id="pref-shortcuts-select"
-                class="ctrl-select"
-                @change=${this.handlePrefShortcutsChange}
-              >
-                <option value="true" ?selected=${!this.disableShortcuts}>
-                  ${this.t('player.prefShortcutsOn')}
-                </option>
-                <option value="false" ?selected=${this.disableShortcuts}>
-                  ${this.t('player.prefShortcutsOff')}
-                </option>
-              </select>
-            </div>
-
-            <!-- Sign Language Window (SRS FR-P9) -->
-            <div class="setting-row">
-              <label for="pref-sign-select">${this.t('player.prefSignWindow')}:</label>
-              <select
-                id="pref-sign-select"
-                class="ctrl-select"
-                @change=${this.handlePrefSignChange}
-                ?disabled=${!this.hasSignTrack}
-              >
-                <option value="true" ?selected=${this.hasSignTrack && this.showSignWindow}>
-                  ${this.t('player.prefEnabled')}
-                </option>
-                <option value="false" ?selected=${!this.hasSignTrack || !this.showSignWindow}>
-                  ${this.t('player.prefDisabled')} ${!this.hasSignTrack ? `(${this.t('player.notAvailableSuffix')})` : ''}
-                </option>
-              </select>
-            </div>
-
-            <!-- Audio Description (SRS FR-P9) -->
-            <div class="setting-row">
-              <label for="pref-ad-select">${this.t('player.prefAudioDescription')}:</label>
-              <select
-                id="pref-ad-select"
-                class="ctrl-select"
-                @change=${this.handlePrefAdChange}
-                ?disabled=${!this.hasAdTrack}
-              >
-                <option value="true" ?selected=${this.hasAdTrack && this.audioDescriptionEnabled}>
-                  ${this.t('player.prefEnabled')}
-                </option>
-                <option value="false" ?selected=${!this.hasAdTrack || !this.audioDescriptionEnabled}>
-                  ${this.t('player.prefDisabled')} ${!this.hasAdTrack ? `(${this.t('player.notAvailableSuffix')})` : ''}
-                </option>
-              </select>
-            </div>
-
-            <!-- Reset, Download, Delete Buttons (FR-A4) -->
-            <div class="setting-row" style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
-              <button
-                type="button"
-                class="btn-reset-prefs"
-                @click=${this.resetPreferences}
-                aria-label=${this.t('player.prefReset')}
-              >
-                🔄 ${this.t('player.prefReset')}
-              </button>
-              <button
-                type="button"
-                class="btn-reset-prefs"
-                @click=${this.downloadMySettings}
-                aria-label=${this.t('player.prefDownload')}
-              >
-                💾 ${this.t('player.prefDownload')}
-              </button>
-              <button
-                type="button"
-                class="btn-reset-prefs"
-                @click=${this.deleteMySettings}
-                aria-label=${this.t('player.prefDelete')}
-              >
-                🗑️ ${this.t('player.prefDelete')}
-              </button>
-            </div>
-          </div>
-
-          <!-- Captions Preferences Panel -->
-          <div
-            id="panel-captions"
-            role="tabpanel"
-            aria-labelledby="tab-captions"
-            class="captions-settings-body"
-            ?hidden=${this.activePrefsTab !== 'captions'}
-          >
-            <!-- Language Track Selection -->
-            <div class="setting-row">
-              <label for="cap-track-select">${this.t('player.captionsTrack')}:</label>
-              <select
-                id="cap-track-select"
-                class="ctrl-select"
-                @change=${this.handleCaptionTrackSelect}
-              >
-                <option value="off" ?selected=${!this.captionsShowing || this.selectedCaptionLang === 'off'}>
-                  ${this.t('player.captionsTrackOff')}
-                </option>
-                <option value="en" ?selected=${this.captionsShowing && this.selectedCaptionLang === 'en'}>
-                  ${this.t('player.captionsTrackEn')}
-                </option>
-                <option value="am" ?selected=${this.captionsShowing && this.selectedCaptionLang === 'am'}>
-                  ${this.t('player.captionsTrackAm')}
-                </option>
-              </select>
-            </div>
-
-            <!-- Font Size (100% to 300%) -->
-            <div class="setting-row">
-              <label for="cap-size-select">${this.t('player.captionsSize')}:</label>
-              <select
-                id="cap-size-select"
-                class="ctrl-select"
-                @change=${this.handleCaptionSizeSelect}
-              >
-                <option value="100" ?selected=${this.captionFontSize === 100}>100% (Standard)</option>
-                <option value="150" ?selected=${this.captionFontSize === 150}>150% (Medium)</option>
-                <option value="200" ?selected=${this.captionFontSize === 200}>200% (Large)</option>
-                <option value="300" ?selected=${this.captionFontSize === 300}>300% (Extra Large)</option>
-              </select>
-            </div>
-
-            <!-- Color Presets (>= 7:1 Contrast) -->
-            <div class="setting-row">
-              <label for="cap-preset-select">${this.t('player.captionsColor')}:</label>
-              <select
-                id="cap-preset-select"
-                class="ctrl-select"
-                @change=${this.handleCaptionPresetSelect}
-              >
-                <option value="white-black" ?selected=${this.captionPreset === 'white-black'}>
-                  ${this.t('player.captionsPresetWhiteBlack')} (21:1)
-                </option>
-                <option value="yellow-black" ?selected=${this.captionPreset === 'yellow-black'}>
-                  ${this.t('player.captionsPresetYellowBlack')} (19.5:1)
-                </option>
-                <option value="black-white" ?selected=${this.captionPreset === 'black-white'}>
-                  ${this.t('player.captionsPresetBlackWhite')} (21:1)
-                </option>
-                <option value="custom" ?selected=${this.captionPreset === 'custom'}>
-                  ${this.t('player.captionsPresetCustom')}
-                </option>
-              </select>
-            </div>
-
-            ${this.captionPreset === 'custom'
-        ? html`
-                  <div class="setting-row custom-colors-row">
-                    <label for="cap-custom-text">${this.t('player.captionsTextColor')}:</label>
-                    <input
-                      id="cap-custom-text"
-                      type="color"
-                      class="color-picker-input"
-                      .value=${this.captionTextColor}
-                      @input=${this.handleCaptionTextColorChange}
-                      aria-label=${this.t('player.captionsTextColor')}
-                    />
-                    <label for="cap-custom-bg">${this.t('player.captionsBgColor')}:</label>
-                    <input
-                      id="cap-custom-bg"
-                      type="color"
-                      class="color-picker-input"
-                      .value=${this.captionBgColor}
-                      @input=${this.handleCaptionBgColorChange}
-                      aria-label=${this.t('player.captionsBgColor')}
-                    />
-                  </div>
-                `
-        : ''}
-
-            <!-- Background Opacity -->
-            <div class="setting-row">
-              <label for="cap-opacity-select">${this.t('player.captionsOpacity')}:</label>
-              <select
-                id="cap-opacity-select"
-                class="ctrl-select"
-                @change=${this.handleCaptionOpacitySelect}
-              >
-                <option value="100" ?selected=${this.captionBgOpacity === 100}>100%</option>
-                <option value="75" ?selected=${this.captionBgOpacity === 75}>75%</option>
-                <option value="50" ?selected=${this.captionBgOpacity === 50}>50%</option>
-                <option value="0" ?selected=${this.captionBgOpacity === 0}>0% (Transparent)</option>
-              </select>
-            </div>
-
-            <!-- Position (Bottom / Top) -->
-            <div class="setting-row">
-              <label for="cap-pos-select">${this.t('player.captionsPosition')}:</label>
-              <select
-                id="cap-pos-select"
-                class="ctrl-select"
-                @change=${this.handleCaptionPositionSelect}
-              >
-                <option value="bottom" ?selected=${this.captionPosition === 'bottom'}>
-                  ${this.t('player.captionsPositionBottom')}
-                </option>
-                <option value="top" ?selected=${this.captionPosition === 'top'}>
-                  ${this.t('player.captionsPositionTop')}
-                </option>
-              </select>
-            </div>
-
-            <!-- Live Preview -->
-            <div class="preview-container">
-              <span class="preview-label">${this.t('player.captionsPreview')}:</span>
-              <div class="preview-stage">
-                <div class="caption-cue" style=${this.computeCaptionStyle()}>
-                  ${this.selectedCaptionLang === 'am'
-        ? 'ወደ ትምህርቱ እንኳን በደህና መጡ።'
-        : 'Welcome to the lesson.'}
                 </div>
               </div>
             </div>
-          </div>
-        </dialog>
-      </div>
+          </dialog>
+        </div>
 
-      ${this.renderTranscriptPanel()}
-    </div>
+        ${this.renderTranscriptPanel()} ${this.renderLessonQuestionPanel()}
+        <slot></slot>
+      </div>
     `;
   }
 }

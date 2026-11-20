@@ -111,11 +111,13 @@
     <main>
       <h1>✓ Member 2: Media Access - Test Page</h1>
       <p>
-        This is a simplified test page for Member 2 components. Use this to verify components work.
+        UI test harness only. The sign window below contains no footage; no verified Ethiopian Sign Language recording
+        is supplied. The AD buttons and status are simulated; no synchronized audio-description recording or cue track
+        is loaded, and this page does not demonstrate approved lesson media.
       </p>
 
       <div class="info">
-        <strong>ℹ Info:</strong> Make sure mock API is running: <code>npm run mock</code>
+          <strong>ℹ Test data:</strong> Offline status is simulated here. Optional access-track recordings are not supplied.
       </div>
 
       <!-- SECTION 1: SIGN WINDOW -->
@@ -131,6 +133,7 @@
           />
           Video not supported
         </video>
+        <p>Generic Big Buck Bunny sample used only to exercise the window controls. It is not an Enkopa lesson and contains no sign interpretation.</p>
 
         <p><strong>Controls:</strong></p>
         <ul>
@@ -185,41 +188,42 @@
           />
           Video not supported
         </video>
+        <p>Generic Big Buck Bunny sample only; it is not an Enkopa lesson and has no synchronized audio-description track or cues.</p>
 
         <p><strong>Controls:</strong></p>
         <ul>
-          <li><strong>Mouse:</strong> Click "Play description" button</li>
-          <li><strong>Keyboard:</strong> Press <code>D</code> key to toggle (anywhere on page)</li>
-          <li><strong>Checkbox:</strong> "Extended AD" pauses main video</li>
+          <li><strong>Mouse:</strong> Click the button to change simulated status text</li>
+          <li><strong>Keyboard:</strong> Press <code>D</code> to change simulated status text</li>
+          <li><strong>Checkbox:</strong> UI only; no audio track is played and no lesson is paused</li>
         </ul>
 
         <div id="ad-controls">
           <label>
             <strong>Mode:</strong>
             <select id="ad-mode">
-              <option value="audio">Recorded Audio</option>
-              <option value="text">Text Descriptions</option>
+              <option value="audio">Simulated audio state</option>
+              <option value="text">Simulated text state</option>
             </select>
           </label>
 
           <div>
-            <button onclick="testADPlay()">▶ Play Description</button>
-            <button onclick="testADStop()">⏹ Stop</button>
+            <button onclick="testADPlay()">Simulate description status</button>
+            <button onclick="testADStop()">Reset simulated status</button>
           </div>
 
           <label>
             <input type="checkbox" id="extended-ad" />
-            Extended AD (pauses main video)
+            Extended AD option (UI only; does not pause the video)
           </label>
         </div>
 
-        <div class="status" id="ad-status">Status: Waiting to test...</div>
+        <div class="status" id="ad-status" role="status">Simulation only: no audio-description recording is loaded.</div>
 
         <p><strong>Try this:</strong></p>
         <ol>
-          <li>Click "Play description" - should show status</li>
-          <li>Press <code>D</code> key - should toggle on/off</li>
-          <li>Check "Extended AD" - should pause video when AD plays</li>
+          <li>Click a control to see simulated status text</li>
+          <li>Press <code>D</code> to toggle the simulated status</li>
+          <li>The demo does not play AD or pause the lesson video</li>
         </ol>
       </div>
 
@@ -285,7 +289,7 @@
           <li><strong>Arrow Keys:</strong> Move sign window</li>
           <li><strong>Shift + Arrows:</strong> Move sign window farther</li>
           <li><strong>Alt + Arrows:</strong> Resize sign window</li>
-          <li><strong>D:</strong> Toggle audio description on/off</li>
+          <li><strong>D:</strong> Audio description is unavailable in this test page because no track is loaded.</li>
           <li><strong>Enter/Space:</strong> Click focused button</li>
         </ul>
 
@@ -297,23 +301,23 @@
 
       <!-- SCREEN READER TEST SECTION -->
       <div class="card">
-        <h2>🔊 Screen Reader Test</h2>
+        <h2>🔊 Screen Reader Manual Check</h2>
 
-        <p><strong>Testing with NVDA, JAWS, or TalkBack:</strong></p>
+        <p><strong>Use NVDA, JAWS, or TalkBack and verify manually:</strong></p>
         <ul>
           <li>All buttons should have clear labels</li>
           <li>Status messages should be announced</li>
           <li>Progress should be announced as percentage</li>
         </ul>
 
-        <button id="sr-test">Test Screen Reader</button>
+        <button id="sr-test">Announce sample status (not a screen-reader test)</button>
         <div
           role="status"
           aria-live="polite"
           id="sr-status"
           style="background: #e8f4f8; padding: 12px; margin: 10px 0; border-radius: 8px"
         >
-          Screen reader test status will appear here
+          Sample status will appear here. This page cannot determine whether assistive technology announced it.
         </div>
       </div>
 
@@ -321,16 +325,14 @@
       <div class="card" style="background: #fffef5; border-color: #f0e6a0">
         <h2>📋 What to Test Next</h2>
 
-        <p><strong>1. Run Automated Tests</strong></p>
-        <code>npm test</code>
-        <p>Expected: 40 tests passing ✓</p>
+        <p><strong>1. Run the current automated suites</strong></p>
+        <p>From the repository root, use the commands in the project package scripts. This UI page does not run tests or assert a fixed test count.</p>
 
-        <p><strong>2. Saturday User Testing</strong></p>
-        <p>Read: <code>docs/MEMBER2_SATURDAY_TEST.md</code></p>
-        <p>Test with a real person using a screen reader or keyboard-only</p>
+        <p><strong>2. Human assistive-technology review</strong></p>
+        <p>Have a learner use the actual player with a screen reader or keyboard only. Record the browser, assistive technology, task, and result separately; do not use this mock as evidence.</p>
 
-        <p><strong>3. Integration Testing (Friday)</strong></p>
-        <p>Integrate with other members' components and test together</p>
+        <p><strong>3. Integration review</strong></p>
+        <p>Test the integrated lesson player and report its observed behavior. This harness does not establish production media availability.</p>
       </div>
     </main>
 
@@ -377,7 +379,7 @@
                         style="width: 30px; height: 30px; padding: 0; margin: 0;">✕</button>
             </div>
             <div style="background: #111; width: 100%; height: 150px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #666;">
-                Sign video (placeholder)
+                No Ethiopian Sign Language recording supplied
             </div>
         `;
 
@@ -429,12 +431,12 @@
       function testADPlay() {
         const status = document.getElementById("ad-status");
         const mode = document.getElementById("ad-mode").value;
-        status.textContent = `▶ Audio description playing (${mode} mode)`;
+        status.textContent = `Simulation only: ${mode} audio-description status toggled; no recording is playing.`;
       }
 
       function testADStop() {
         const status = document.getElementById("ad-status");
-        status.textContent = "⏹ Audio description stopped";
+        status.textContent = "Simulation only: audio-description status stopped; no recording was playing.";
       }
 
       // Keyboard D key listener
@@ -496,11 +498,10 @@
         progress.style.display = "none";
       }
 
-      // Screen reader test
+      // Sample live-region update only; this does not test assistive technology.
       document.getElementById("sr-test").addEventListener("click", () => {
         const srStatus = document.getElementById("sr-status");
-        srStatus.textContent =
-          "Screen reader test: All components have accessible names and status updates are announced.";
+        srStatus.textContent = "Sample status updated. Check manually whether your assistive technology announces it.";
       });
 
       // Initialize

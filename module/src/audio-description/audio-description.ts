@@ -42,7 +42,7 @@ const COPY = {
     text: 'Text descriptions',
     play: 'Play description',
     stop: 'Stop',
-    extended: 'Extended description (pause lesson)',
+    extended: 'Extended AD (pause the lesson video)',
   },
   am: {
     on: 'የድምፅ መግለጫ በርቷል።',
@@ -62,7 +62,7 @@ const COPY = {
     text: 'የጽሑፍ መግለጫዎች',
     play: 'መግለጫውን አጫውት',
     stop: 'አቁም',
-    extended: 'የተራዘመ መግለጫ (ትምህርቱን አቁም)',
+    extended: 'የተራዘመ የድምፅ መግለጫ (የትምህርቱን ቪዲዮ ያቆማል)',
   },
 } as const;
 
@@ -94,6 +94,10 @@ export class SavannaAudioDescription extends LitElement {
       display: block;
       color: inherit;
       font: 16px/1.5 system-ui, sans-serif;
+    }
+
+    :host([hidden]) {
+      display: none !important;
     }
 
     .controls {
@@ -152,6 +156,33 @@ export class SavannaAudioDescription extends LitElement {
       clip: rect(0, 0, 0, 0);
       white-space: nowrap;
       border: 0;
+    }
+
+    @media (forced-colors: active) {
+      :host {
+        color: CanvasText;
+      }
+
+      button,
+      select {
+        forced-color-adjust: auto;
+        border-color: ButtonText;
+        background: ButtonFace;
+        color: ButtonText;
+      }
+
+      .ad-badge,
+      .ad-badge-off {
+        border: 1px solid ButtonText;
+        background: Canvas;
+        color: CanvasText;
+      }
+
+      button:focus-visible,
+      select:focus-visible,
+      input:focus-visible {
+        outline-color: Highlight;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {

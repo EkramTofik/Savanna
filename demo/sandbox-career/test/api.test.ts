@@ -10,7 +10,7 @@ let child: ChildProcess | undefined;
 
 async function json(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
-  if (!headers.has("X-Savanna-Key")) headers.set("X-Savanna-Key", "pk_live_demo");
+  if (!headers.has("X-Savanna-Key")) headers.set("X-Savanna-Key", "pk_demo_local");
   const res = await fetch(`${BASE}${path}`, { ...init, headers });
   const body = await res.json();
   return { res, body };
@@ -55,7 +55,7 @@ test("issue, fetch and revoke a credential", async () => {
   const issued = await json("/v1/credentials", {
     method: "POST",
     headers: {
-      "X-Savanna-Key": "sk_live_demo",
+      "X-Savanna-Key": "sk_demo_local",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -75,7 +75,7 @@ test("issue, fetch and revoke a credential", async () => {
 
   const revoked = await json(`/v1/credentials/${id}/revoke`, {
     method: "POST",
-    headers: { "X-Savanna-Key": "sk_live_demo" },
+    headers: { "X-Savanna-Key": "sk_demo_local" },
   });
   assert.equal(revoked.body.status, "revoked");
 

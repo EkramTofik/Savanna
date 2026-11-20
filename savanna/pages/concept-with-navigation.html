@@ -63,7 +63,7 @@
           <div class="hamburger mb-0 p-2 color-primary" style="cursor: pointer; font-size: 24px">
             <i class="fa-solid fa-fas fa-bars"></i>
           </div>
-          <a class="logo-container p-1" href="#" rel="noreferrer" target=""
+          <a class="logo-container p-1 unavailable-demo-link" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local export"
             ><div
               class="logo mx-auto"
               style="background-image: url(&quot;../assets/img/holberton-logo-full-alx.png&quot;)"
@@ -81,51 +81,51 @@
       >
         <ul class="px-2">
           <li>
-            <a href="#" rel="noreferrer" target="_self"
+            <a class="unavailable-demo-link" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local export"
               ><div class="icon"><i aria-hidden="true" class="fa-solid fa-home"></i></div>
               <div class="ps-3 overflow-hidden text-nowrap" style="display: block">Home</div></a
             >
           </li>
           <li>
-            <a href="#" rel="noreferrer" target="_self"
+            <a class="unavailable-demo-link" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local export"
               ><div class="icon"><i aria-hidden="true" class="fa-solid fa-chalkboard-teacher"></i></div>
               <div class="ps-3 overflow-hidden text-nowrap" style="display: block">Access my learning</div></a
             >
           </li>
           <hr title="My resources" />
           <li>
-            <a href="#" rel="noreferrer" target="_self"
+            <a class="unavailable-demo-link" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local export"
               ><div class="icon"><i aria-hidden="true" class="fa-solid fa-graduation-cap"></i></div>
               <div class="ps-3 overflow-hidden text-nowrap" style="display: block">My courses</div></a
             >
           </li>
           <li id="sidebar-dashboards-video-rooms">
-            <a href="#" rel="noreferrer" target="_self"
+            <a class="unavailable-demo-link" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local export"
               ><div class="icon"><i aria-hidden="true" class="fa-solid fa-comments"></i></div>
               <div class="ps-3 overflow-hidden text-nowrap" style="display: block">Conference rooms</div></a
             >
           </li>
           <li>
-            <a href="#" rel="noreferrer" target="_self"
+            <a class="unavailable-demo-link" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local export"
               ><div class="icon"><i aria-hidden="true" class="fa-solid fa-server"></i></div>
               <div class="ps-3 overflow-hidden text-nowrap" style="display: block">Servers</div></a
             >
           </li>
           <li id="sidebar-dashboards-my-containers">
-            <a href="#" rel="noreferrer" target="_self"
+            <a class="unavailable-demo-link" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local export"
               ><div class="icon"><i aria-hidden="true" class="fa-solid fa-terminal"></i></div>
               <div class="ps-3 overflow-hidden text-nowrap" style="display: block">Sandboxes</div></a
             >
           </li>
           <li>
-            <a href="#" rel="noreferrer" target="_self"
+            <a class="unavailable-demo-link" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local export"
               ><div class="icon"><i aria-hidden="true" class="fa-solid fa-film"></i></div>
               <div class="ps-3 overflow-hidden text-nowrap" style="display: block">Video on demand</div></a
             >
           </li>
           <hr title="My Campus" />
           <li>
-            <a href="#" rel="noreferrer" target="_self"
+            <a class="unavailable-demo-link" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local export"
               ><div class="icon"><i aria-hidden="true" class="fa-solid fa-users"></i></div>
               <div class="ps-3 overflow-hidden text-nowrap" style="display: block">Peers</div></a
             >
@@ -134,7 +134,7 @@
             class="bg-white border-top border-end position-fixed p-2 bottom-0 start-0 mb-0"
             style="background-color: rgb(255, 255, 255); border-color: rgb(238, 238, 238)"
           >
-            <a href="#"
+            <a class="unavailable-demo-link" role="link" aria-disabled="true" tabindex="-1" title="Unavailable in this local export"
               ><div class="image"><i aria-hidden="true" class="fa-solid fa-user"></i></div>
               <div class="flex-grow-1 ps-3 overflow-hidden text-nowrap" style="display: block">My Profile</div></a
             >
@@ -153,8 +153,9 @@
         <div class="align-items-center d-flex px-5 py-3" id="student-current-curriculum">
           <div id="student-switch-curriculum">
             <div class="btn-group">
-              <div
-                class="align-items-center d-flex flex-shrink-0 gap-3"
+              <button
+                class="align-items-center d-flex flex-shrink-0 gap-3 border-0 bg-transparent text-start"
+                aria-label="Choose curriculum. Current curriculum: VA-1: VA Foundations and Professional Identity"
                 aria-expanded="false"
                 data-bs-auto-close="outside"
                 data-bs-toggle="dropdown"
@@ -176,7 +177,7 @@
                     <i aria-hidden="true" class="fa-solid fa-angle-down fa-fw"></i>
                   </span>
                 </div>
-              </div>
+              </button>
               <ul class="curriculum-switcher-menu p-3 dropdown-menu">
                 <div class="curriculum-switcher-mosaic">
                   <div class="curriculum-switcher-program">
@@ -209,29 +210,29 @@
                     </div>
 
                     <div class="px-2 pb-2">
-                      <a class="curriculum-switcher-tile align-items-center d-flex gap-3 p-2 rounded-2" href="#">
+                      <div
+                        class="curriculum-switcher-tile align-items-center d-flex gap-3 p-2 rounded-2"
+                        aria-disabled="true"
+                      >
                         <span class="flex-grow-1 min-width-0">
                           <span class="d-block text-truncate">AIFW-1: AI Foundations for Work and Everyday Life</span>
 
-                          <span class="align-items-center d-flex flex-wrap fs-sm gap-2 mt-1">
-                            <span class="text-muted">Average: <span class="fw-medium">0.0%</span></span>
-                            <span class="badge text-bg-success rounded-pill">Validated</span>
-                          </span>
+                          <span class="badge text-bg-secondary rounded-pill">Unavailable in this local export</span>
                         </span>
-                      </a>
+                      </div>
 
-                      <a class="curriculum-switcher-tile align-items-center d-flex gap-3 p-2 rounded-2" href="#">
+                      <div
+                        class="curriculum-switcher-tile align-items-center d-flex gap-3 p-2 rounded-2"
+                        aria-disabled="true"
+                      >
                         <span class="flex-grow-1 min-width-0">
                           <span class="d-block text-truncate"
                             >AIFW-2: Prompting and Working Effectively with AI Models</span
                           >
 
-                          <span class="align-items-center d-flex flex-wrap fs-sm gap-2 mt-1">
-                            <span class="text-muted">Average: <span class="fw-medium">0.0%</span></span>
-                            <span class="badge text-bg-secondary rounded-pill">In progress</span>
-                          </span>
+                          <span class="badge text-bg-secondary rounded-pill">Unavailable in this local export</span>
                         </span>
-                      </a>
+                      </div>
                     </div>
                   </div>
 
@@ -341,200 +342,42 @@
               aria-controls="curriculum_navigation_menu"
               aria-expanded="false"
             >
-              Module 2: What is a VA
+              Savanna demo lessons
               <i aria-hidden="true" class="fa-solid fa-bars ms-1"></i>
             </button>
           </div>
 
           <div class="collapse" id="curriculum_navigation_menu">
-            <div class="d-flex flex-column gap-3 p-3">
-              <div class="btn-group">
-                <button
-                  class="align-items-center d-flex justify-content-between text-start btn btn-default dropdown-toggle"
-                  style="font-size: 16px; line-height: 24px; white-space: normal"
-                  aria-expanded="false"
-                  data-bs-auto-close="outside"
-                  data-bs-toggle="dropdown"
-                  type="button"
-                >
-                  Module 2: What is a VA
-                </button>
-                <ul style="min-width: 100%; z-index: 4" class="dropdown-menu">
-                  <li><a class="py-3 dropdown-item" href="#"> Module 1: Karibu </a></li>
-                  <li><a class="py-3 active dropdown-item" href="#"> Module 2: What is a VA </a></li>
-                  <li><a class="py-3 dropdown-item" href="#"> Module 3: VA Skills and Mindsets </a></li>
-                </ul>
-              </div>
-              <div class="accordion" id="accordion-3ac2a35124d36c0517b44bddf497aa36">
-                <div class="accordion-item">
-                  <h2 class="accordion-header">
-                    <button
-                      aria-controls="accordion-3ac2a35124d36c0517b44bddf497aa36-item-7d4d82fcc504057482a35f094bbff318"
-                      aria-expanded="false"
-                      class="accordion-button"
-                      data-bs-target="#accordion-3ac2a35124d36c0517b44bddf497aa36-item-7d4d82fcc504057482a35f094bbff318"
-                      data-bs-toggle="collapse"
-                      type="button"
+            <section class="d-flex flex-column gap-3 p-3" aria-labelledby="demo-lesson-nav-heading">
+              <h2 class="h5" id="demo-lesson-nav-heading">Available Savanna lesson fixtures</h2>
+              <p class="mb-0">
+                The VA course activity routes are not included in this local export. These links open the published
+                lesson records in the player; L-102 and L-103 currently use the same source recording.
+              </p>
+              <nav aria-label="Available Savanna demo lessons">
+                <ul class="list-group" id="course-lesson-links">
+                  <li class="list-group-item p-0">
+                    <a
+                      class="list-group-item list-group-item-action"
+                      data-lesson-id="L-102"
+                      href="?lesson=L-102#lesson-player"
                     >
-                      <span class="">What is a VA</span>
-                    </button>
-                  </h2>
-                  <div
-                    class="accordion-collapse collapse show"
-                    id="accordion-3ac2a35124d36c0517b44bddf497aa36-item-7d4d82fcc504057482a35f094bbff318"
-                  >
-                    <div class="accordion-body accordion-body-flush">
-                      <div class="list-group list-group-flush">
-                        <a
-                          aria-current="false"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-regular fa-file-lines me-2 fa-fw"></i>
-                            <span>Module 2 Overview</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-solid fa-circle-check text-success fa-fw"></i>
-                        </a>
-                        <a
-                          aria-current="false"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-regular fa-file-lines me-2 fa-fw"></i>
-                            <span>Advice: Tackling the Recap Quiz</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-solid fa-circle-check text-success fa-fw"></i>
-                        </a>
-                        <a
-                          aria-current="false"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-regular fa-file-lines me-2 fa-fw"></i>
-                            <span>So, What Exactly Is a Virtual Assistant?</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-solid fa-circle-check text-success fa-fw"></i>
-                        </a>
-                        <a
-                          aria-current="false"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-regular fa-file-lines me-2 fa-fw"></i>
-                            <span>Defining the VA Role: Tasks and Specialisations</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-solid fa-circle-check text-success fa-fw"></i>
-                        </a>
-                        <a
-                          aria-current="false"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-regular fa-file-lines me-2 fa-fw"></i>
-                            <span>Where Do Virtual Assistants Work?</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-solid fa-circle-check text-success fa-fw"></i>
-                        </a>
-                        <a
-                          aria-current="false"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-regular fa-file-lines me-2 fa-fw"></i>
-                            <span>Evolution of the VA Role</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-regular fa-circle fa-fw"></i>
-                        </a>
-                        <a
-                          aria-current="true"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between active"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-regular fa-file-lines me-2 fa-fw"></i>
-                            <span>The Future of the VA Industry</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-regular fa-circle fa-fw"></i>
-                        </a>
-                        <a
-                          aria-current="false"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-regular fa-file-lines me-2 fa-fw"></i>
-                            <span>Why Become a VA?</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-regular fa-circle fa-fw"></i>
-                        </a>
-                        <a
-                          aria-current="false"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-regular fa-file-lines me-2 fa-fw"></i>
-                            <span>Reflection: Your Reasons to Become a VA</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-regular fa-circle fa-fw"></i>
-                        </a>
-                        <a
-                          aria-current="false"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-regular fa-file-lines me-2 fa-fw"></i>
-                            <span>Module 2 Wrap Up</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-regular fa-circle fa-fw"></i>
-                        </a>
-                        <a
-                          aria-current="false"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-solid fa-list-check me-2 fa-fw"></i>
-                            <span>End of Module 2 Check</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-solid fa-circle text-warning fa-fw"></i>
-                        </a>
-                        <a
-                          aria-current="false"
-                          class="list-group-item list-group-item-action d-flex align-items-baseline justify-content-between"
-                          href="#"
-                        >
-                          <div class="">
-                            <i aria-hidden="true" class="fa-regular fa-question me-2 fa-fw"></i>
-                            <span>Module 2 Recap Quiz</span>
-                          </div>
-
-                          <i aria-hidden="true" class="fa-regular fa-circle fa-fw"></i>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                      Learning through short videos <span class="text-muted">(L-102)</span>
+                    </a>
+                  </li>
+                  <li class="list-group-item p-0">
+                    <a
+                      class="list-group-item list-group-item-action"
+                      data-lesson-id="L-103"
+                      href="?lesson=L-103#lesson-player"
+                    >
+                      Learning through short videos <span class="text-muted">(L-103, same recording)</span>
+                    </a>
+                  </li>
+                </ul>
+              </nav>
+              <p id="course-lesson-nav-status" class="mb-0" role="status" aria-live="polite"></p>
+            </section>
           </div>
 
           <div class="flex-grow-1" id="curriculum_navigation_content">
@@ -596,7 +439,7 @@
                   <hr />
                   <h2>
                     <a
-                      href="#"
+                      href="#what-is-shaping-the-future-of-va-work"
                       aria-hidden="true"
                       class="anchor"
                       id="what-is-shaping-the-future-of-va-work"
@@ -679,7 +522,7 @@
                   <hr />
                   <h2>
                     <a
-                      href="#"
+                      href="#artificial-intelligence-and-the-future-of-va-work"
                       aria-hidden="true"
                       class="anchor"
                       id="artificial-intelligence-and-the-future-of-va-work"
@@ -744,7 +587,7 @@
                   <hr />
                   <h2>
                     <a
-                      href="#"
+                      href="#what-clients-are-likely-to-value-more-and-more"
                       aria-hidden="true"
                       class="anchor"
                       id="what-clients-are-likely-to-value-more-and-more"
@@ -784,7 +627,7 @@
                   <hr />
                   <h2>
                     <a
-                      href="#"
+                      href="#what-this-means-for-aspiring-virtual-assistants"
                       aria-hidden="true"
                       class="anchor"
                       id="what-this-means-for-aspiring-virtual-assistants"
@@ -817,7 +660,7 @@
                   <hr />
                   <h2>
                     <a
-                      href="#"
+                      href="#so-is-the-future-of-va-promising"
                       aria-hidden="true"
                       class="anchor"
                       id="so-is-the-future-of-va-promising"
@@ -841,7 +684,7 @@
 
                   <h2>
                     <a
-                      href="#"
+                      href="#optional-reads-and-market-signals"
                       aria-hidden="true"
                       class="anchor"
                       id="optional-reads-and-market-signals"
@@ -852,30 +695,23 @@
                     >Optional Reads and Market Signals
                   </h2>
                   <p>
-                    If you would like to explore the future of the VA industry further, start with these articles and
-                    reports:
+                    The source lesson text includes the following market claims, but its cited URLs are absent and the
+                    figures have not been independently verified. Treat them as unverified background, not current
+                    market statistics:
                   </p>
                   <ul>
                     <li>
                       <b
-                        ><a
-                          href="#"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="5 Things to Expect from the Virtual Assistant Industry in 2025"
-                          >5 Things to Expect from the Virtual Assistant Industry in 2025</a
+                        ><span title="Reference URL unavailable in this local export"
+                          >5 Things to Expect from the Virtual Assistant Industry in 2025</span
                         ></b
                       >: The global virtual assistant market is expanding at an annual rate of 16.3%, with over 32,000
                       companies employing approximately 1.7 million people worldwide.
                     </li>
                     <li>
                       <b
-                        ><a
-                          href="#"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Virtual Assistant Market Growth, Trends and Opportunities"
-                          >Virtual Assistant Market Growth, Trends and Opportunities</a
+                        ><span title="Reference URL unavailable in this local export"
+                          >Virtual Assistant Market Growth, Trends and Opportunities</span
                         ></b
                       >: The Virtual Assistant market is experiencing significant growth due to advancements in
                       artificial intelligence (AI), natural language processing (NLP), and the increasing demand for
@@ -883,12 +719,8 @@
                     </li>
                     <li>
                       <b
-                        ><a
-                          href="#"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Market Trends in the Virtual Assistant Industry"
-                          >Market Trends in the Virtual Assistant Industry</a
+                        ><span title="Reference URL unavailable in this local export"
+                          >Market Trends in the Virtual Assistant Industry</span
                         ></b
                       >: Whether in digital marketing, project management, or tech support, the demand for niche
                       expertise is rising. However, soft skills matter more than ever. So, although technical skills are
@@ -896,12 +728,8 @@
                     </li>
                     <li>
                       <b
-                        ><a
-                          href="#"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Virtual Assistant Market Report Overview"
-                          >Virtual Assistant Market Report Overview</a
+                        ><span title="Reference URL unavailable in this local export"
+                          >Virtual Assistant Market Report Overview</span
                         ></b
                       >: The global virtual assistant market size was estimated at USD 3.75 billion in 2024, but is set
                       to expand to USD 23.57 billion by 2033, growing at a Compound Annual Growth Rate (CAGR) of 22.3%
@@ -909,22 +737,18 @@
                     </li>
                     <li>
                       <b
-                        ><a
-                          href="#"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Human Virtual Assistant Services Market Size | Market Insights, Trends, and Development 2025–2032"
+                        ><span title="Reference URL unavailable in this local export"
                           >Human Virtual Assistant Services Market Size | Market Insights, Trends, and Development
-                          2025–2032</a
-                        ></b
-                      >: The Vitrual Assistant market expansion is attributed to key drivers like the rise in remote
+                          2025–2032</span
+                      ></b
+                      >: The Virtual Assistant market expansion is attributed to key drivers like the rise in remote
                       work, cost-effective solutions, and a growing preference for flexible, scalable workforce options.
                     </li>
                   </ul>
                   <hr />
                   <h2>
                     <a
-                      href="#"
+                      href="#up-next"
                       aria-hidden="true"
                       class="anchor"
                       id="up-next"
@@ -946,12 +770,9 @@
 
             <div class="container-xl ms-0 d-flex justify-content-between sm-gap">
               <div>
-                <a class="btn btn-default text-start white-space-wrap" href="#">
-                  <div class="d-flex align-items-baseline gap-3">
-                    <i aria-hidden="true" class="fa-solid fa-angles-left"></i>
-                    <span>Back</span>
-                  </div>
-                </a>
+                <button class="btn btn-default text-start white-space-wrap" type="button" disabled>
+                  Previous VA course page unavailable in this local export
+                </button>
               </div>
               <div>
                 <form class="button_to" method="post" action="#">
@@ -1046,9 +867,11 @@
               <p class="text-muted mb-0">You earned a new badge for VA-1: VA Foundations &amp; Professional Identity</p>
             </div>
             <div class="modal-footer border-0 justify-content-center gap-2 pb-4">
-              <a class="btn btn-outline-secondary" href="#">Continue this course</a
-              ><button class="btn btn-primary" disabled="" type="button">
-                <span aria-hidden="true" class="spinner-border spinner-border-sm me-2"></span>Go to the next course
+              <button class="btn btn-outline-secondary" type="button" disabled>
+                Next VA lesson unavailable in this local export
+              </button>
+              <button class="btn btn-primary" disabled="" type="button">
+                Next course unavailable in this local export
               </button>
             </div>
           </div>
@@ -1317,5 +1140,36 @@ alert(example);
     <script src="../assets/js/popper.js"></script>
     <script src="../assets/js/bootstrap.bundle.js"></script>
     <script src="../assets/js/static-page.js"></script>
+    <script>
+      (() => {
+        const availableLessons = new Set(["L-102", "L-103"]);
+        const applyLessonRoute = () => {
+          const requested = new URL(window.location.href).searchParams.get("lesson");
+          const lessonId = requested && availableLessons.has(requested) ? requested : "L-102";
+          const player = document.querySelector("savanna-player#lesson-player");
+          const offline = player?.querySelector("savanna-offline");
+          if (player) player.setAttribute("lesson", lessonId);
+          if (offline) offline.setAttribute("lesson-id", lessonId);
+
+          document.querySelectorAll("#course-lesson-links [data-lesson-id]").forEach((link) => {
+            const selected = link.getAttribute("data-lesson-id") === lessonId;
+            link.classList.toggle("active", selected);
+            if (selected) link.setAttribute("aria-current", "page");
+            else link.removeAttribute("aria-current");
+          });
+
+          const status = document.getElementById("course-lesson-nav-status");
+          if (status) {
+            status.textContent = requested && !availableLessons.has(requested)
+              ? `Lesson ${requested} is not available in this local export. Showing L-102.`
+              : "";
+          }
+        };
+
+        applyLessonRoute();
+        window.addEventListener("popstate", applyLessonRoute);
+        window.addEventListener("hashchange", applyLessonRoute);
+      })();
+    </script>
   </body>
 </html>

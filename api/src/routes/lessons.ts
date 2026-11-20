@@ -23,6 +23,21 @@ function hostedManifestUrl(url: string, origin: string): string {
   return url;
 }
 
+function redirectTarget(url: string, origin: string): string {
+  try {
+    const parsed = new URL(url, origin);
+    if (
+      parsed.origin === origin ||
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "[::1]"
+    ) return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    return parsed.href;
+  } catch {
+    return url;
+  }
+}
+
 function manifestForRequest(lesson: LessonRecord, origin: string, production: boolean) {
   const manifest = toManifest(lesson);
   if (!production) return manifest;
@@ -64,14 +79,16 @@ export function register(router: Router, ctx: Ctx) {
     const lesson = await ctx.store.getLesson(req.params.id);
     const cap = lesson && manifestForRequest(lesson, `${req.protocol}://${req.get("host")}`, ctx.config.production).captions.find((c) => c.lang === lang);
     if (!cap) throw new HttpError(404, "Not Found", `No ${lang} captions for lesson "${req.params.id}".`);
-    res.redirect(302, cap.url);
+    res.redirect(302, redirectTarget(cap.url, `${req.protocol}://${req.get("host")}`));
   });
 
   router.get("/lessons/:id/transcript", async (req, res) => {
     const { lang } = LangQuery.parse(req.query);
     const t = await ctx.store.getTranscript(req.params.id, lang);
     if (!t) throw new HttpError(404, "Not Found", `No ${lang} transcript for lesson "${req.params.id}".`);
-    res.json(t);
+    // Offline pack checksums cover transcript.json bytes. Use a stable wire
+    // representation so the browser can verify those same bytes after fetch.
+    res.type("application/json; charset=utf-8").send(`${JSON.stringify(t, null, 2)}\n`);
   });
 
   // POST /v1/lessons/:id/captions (FR-A2 caption upload and review gate)

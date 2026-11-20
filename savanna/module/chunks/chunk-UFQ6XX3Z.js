@@ -1,0 +1,7 @@
+function g(n){let[u,i,...s]=n.trim().split(".");if(!u||!i||s.length||!/^\d{3}$/.test(i))return Number.NaN;let o=u.split(":");if(o.some(t=>!/^\d+$/.test(t)))return Number.NaN;let e=o.map(Number);if(e.length===2){let[t,r]=e;return t===void 0||r===void 0||r>59?Number.NaN:t*60+r+ +`0.${i}`}if(e.length===3){let[t,r,c]=e;return t===void 0||r===void 0||c===void 0||r>59||c>59?Number.NaN:t*3600+r*60+c+ +`0.${i}`}return Number.NaN}function x(n){return n.replace(/<v(?:\.[^>]+|\s+[^>]+)?>/gi,"").replace(/<\/v>/gi,"").replace(/<[^>]+>/g,"").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").trim()}function V(n){if(!n||!n.includes("-->"))return[];let i=n.replace(/\r\n/g,`
+`).replace(/\r/g,`
+`).split(/\n\s*\n/),s=[];for(let o of i){let e=o.trim().split(`
+`).map(f=>f.trim()).filter(Boolean);if(e.length===0)continue;let t=e.findIndex(f=>f.includes("-->"));if(t===-1)continue;let r=e[t];if(!r)continue;let[c,...m]=r.split("-->");if(!c||m.length===0)continue;let d=m.join("-->").trim().split(/\s+/)[0];if(!d)continue;let a=g(c),l=g(d);if(Number.isNaN(a)||Number.isNaN(l)||l<=a)continue;let N=t>0?e[0]:void 0,b=e.slice(t+1).join(`
+`),p=x(b);p.length>0&&s.push({id:N,start:a,end:l,text:p})}return s.sort((o,e)=>o.start-e.start)}function C(n,u){if(!n||n.length===0)return"";let i=n.filter(s=>s.start<=u&&u<=s.end);return i.length===0?"":i.map(s=>s.text).join(`
+`)}export{V as a,C as b};
+//# sourceMappingURL=chunk-UFQ6XX3Z.js.map

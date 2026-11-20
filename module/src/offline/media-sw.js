@@ -67,7 +67,10 @@ self.addEventListener("fetch", (event) => {
     url.origin === self.location.origin &&
     !url.pathname.startsWith("/v1/") &&
     !url.pathname.startsWith("/api/v1/") &&
-    (request.mode === "navigate" || /\.(html?|m?js|css|woff2?|svg|png|jpe?g)$/i.test(url.pathname))
+    (request.mode === "navigate" ||
+      request.destination === "font" ||
+      request.destination === "image" ||
+      /\.(html?|m?js|css|woff2?|svg|png|jpe?g)$/i.test(url.pathname))
   ) {
     event.respondWith(
       (async () => {

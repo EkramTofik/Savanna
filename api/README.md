@@ -69,11 +69,11 @@ The API output and the fixtures are both checked against one Zod schema (`src/sc
 | Variable | Meaning | Dev default |
 |---|---|---|
 | `PARTNERS` | JSON array of `{name, key, origins[]}` publishable keys | key `pk_dev_local`, localhost origins |
-| `SECRET_KEY` | admin key (server to server) | `sk_dev_local_change_me_please` |
+| `SECRET_KEY` | admin key (server to server) | `sk_dev_local_only_not_secure` |
+| `PUBLIC_BASE_URL` | issuer/API origin used in absolute credential links and did:web | `http://localhost:4010` (production requires HTTPS origin; Render provides `RENDER_EXTERNAL_URL`) |
+| `ISSUER_PRIVATE_JWK` | server-only Ed25519 signing key as JWK JSON | unset; credentials are not signed until configured in production |
 | `STORE` | `memory` or `prisma` | `memory` (`prisma` in production) |
 | `RATE_LIMIT_PER_MIN` | per key (or IP) | 120 |
-| `MEDIA_ROOT` | local directory for public media files | fixture media directory in development |
-| `PACK_ROOT` | directory with per-lesson pack manifests and ZIPs | fixture lesson directory when unset |
-| `NODE_ENV=production` | requires `SECRET_KEY` and either `PARTNERS` or `PUBLIC_API_KEY` plus `PUBLIC_BASE_URL` (Render supplies `RENDER_EXTERNAL_URL`) | |
+| `NODE_ENV=production` | requires `SECRET_KEY`, `ISSUER_PRIVATE_JWK`, and either `PARTNERS` or `PUBLIC_API_KEY` with an HTTPS `PUBLIC_BASE_URL`; browser origins must match exactly | |
 
 Never put the secret key in browser code.

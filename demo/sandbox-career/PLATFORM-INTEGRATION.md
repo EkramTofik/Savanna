@@ -21,15 +21,15 @@ embed the secret key used to issue or revoke credentials.
 ```html
 <savanna-job-card
   job="J-9"
-  api="https://api.example.org"
-  api-key="pk_live_xxx"
+  api="http://localhost:4020"
+  api-key="pk_demo_local"
   lang="am"
 ></savanna-job-card>
 
 <savanna-credential
   id="C-7"
-  api="https://api.example.org"
-  api-key="pk_live_xxx"
+  api="http://localhost:4020"
+  api-key="pk_demo_local"
   lang="am"
 ></savanna-credential>
 ```
@@ -139,8 +139,8 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA } from "@angular/core";
 })
 export class CareersComponent {
   jobId = "J-9";
-  apiUrl = "https://api.example.org";
-  publicKey = "pk_live_xxx";
+  apiUrl = "http://localhost:4020";
+  publicKey = "pk_demo_local";
 }
 ```
 

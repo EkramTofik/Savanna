@@ -41,13 +41,35 @@ test('offline resource map only downloads files declared by the lesson and pack 
 
 test('offline resource map includes declared sign and audio-description media', async () => {
   const lesson = parseLessonManifest(await fixture('v1/lessons/L-103.json'), 'L-103');
-  const pack = parsePackManifest(await fixture('v1/lessons/L-103/pack.json'), 'L-103');
-  const resources = buildPackResources(lesson, pack, 'http://localhost:4010', '');
+  assert.equal(lesson.sign, null, 'the published fixture has no verified sign-language recording');
+  assert.equal(lesson.audioDescription, null, 'the published fixture has no approved lesson audio description');
+  const testLesson = parseLessonManifest({
+    ...lesson,
+    sign: {
+      url: 'http://localhost:4010/media/test-only-sign-window.mp4',
+      offsetMs: -250,
+      languageName: 'Test-only sign-window fixture',
+    },
+    audioDescription: {
+      audioUrl: 'http://localhost:4010/media/test-only-ad.opus',
+      vttUrl: 'http://localhost:4010/media/test-only-ad.vtt',
+      extended: true,
+      offsetMs: 400,
+    },
+  }, 'L-103');
+  const filePaths = ['lesson.opus', 'en.vtt', 'am.vtt', 'test-only-sign-window.mp4', 'ad.opus', 'ad.vtt'];
+  const pack = parsePackManifest({
+    id: 'L-103',
+    version: 1,
+    sizeBytes: filePaths.length,
+    files: filePaths.map((path) => ({ path, sizeBytes: 1, sha256: 'a'.repeat(64) })),
+  }, 'L-103');
+  const resources = buildPackResources(testLesson, pack, 'http://localhost:4010', '');
 
   assert.equal(resources.length, 6);
-  assert.ok(resources.some((item) => item.url.endsWith('/media/esl-placeholder.mp4')));
-  assert.ok(resources.some((item) => item.url.endsWith('/media/ad.opus')));
-  assert.ok(resources.some((item) => item.url.endsWith('/media/ad.vtt')));
+  assert.ok(resources.some((item) => item.url.endsWith('/media/test-only-sign-window.mp4')));
+  assert.ok(resources.some((item) => item.url.endsWith('/media/test-only-ad.opus')));
+  assert.ok(resources.some((item) => item.url.endsWith('/media/test-only-ad.vtt')));
   assert.ok(resources.every((item) => item.expectedBytes !== undefined && /^[a-f0-9]{64}$/.test(item.expectedSha256)));
 });
 

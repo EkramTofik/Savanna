@@ -2,8 +2,16 @@ import type { Lang, Transcript } from "../schemas/lesson";
 import type { Preferences } from "../schemas/preferences";
 
 export type AssetKind =
-  | "video" | "audio" | "vtt" | "sign" | "ad_audio" | "ad_vtt"
-  | "transcript_html" | "pdf" | "pack" | "brf";
+  | "video"
+  | "audio"
+  | "vtt"
+  | "sign"
+  | "ad_audio"
+  | "ad_vtt"
+  | "transcript_html"
+  | "pdf"
+  | "pack"
+  | "brf";
 
 export interface AssetRecord {
   kind: AssetKind;
@@ -18,6 +26,7 @@ export interface AssetRecord {
 export interface LessonRecord {
   id: string;
   title: { en: string; am: string };
+  summary?: { en: string; am: string };
   durationSec: number;
   assets: AssetRecord[];
 }
@@ -30,6 +39,11 @@ export interface Store {
   getPreferences(userHash: string): Promise<Preferences | null>;
   setPreferences(userHash: string, prefs: Preferences): Promise<void>;
   deletePreferences(userHash: string): Promise<void>;
-  saveCaption(lessonId: string, lang: Lang, vttContent: string, reviewed?: boolean): Promise<{ url: string; reviewed: boolean }>;
+  saveCaption(
+    lessonId: string,
+    lang: Lang,
+    vttContent: string,
+    reviewed?: boolean,
+  ): Promise<{ url: string; reviewed: boolean }>;
   getCaption?(lessonId: string, lang: Lang): Promise<string | null>;
 }

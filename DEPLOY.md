@@ -15,6 +15,14 @@ Render deploys from a connected Git repository. Connect the branch that contains
 
 Render sets `RENDER_EXTERNAL_URL` for the service. The app uses that URL to allow the hosted page's demo API key and to produce public credential links. Render also generates `SECRET_KEY`; keep it in the service environment and do not put it in a page or share it.
 
+Before applying the Blueprint, set `ISSUER_PRIVATE_JWK` in the Render service environment. Generate a server-side Ed25519 private JWK locally with:
+
+```powershell
+node -e "const { generateKeyPairSync } = require('node:crypto'); const { privateKey } = generateKeyPairSync('ed25519'); console.log(JSON.stringify(privateKey.export({ format: 'jwk' })))"
+```
+
+Copy the output directly into the Render secret field. Keep it out of Git and browser code. This configures credential signing; it does not mean any credential or lesson content has received external approval.
+
 ## 3. Share the project links
 
 Replace `<service-url>` below with the URL shown on the Render service page:

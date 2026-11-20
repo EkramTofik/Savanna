@@ -24,10 +24,11 @@ COPY docs ./docs
 
 WORKDIR /app/api
 RUN pnpm db:generate
+RUN pnpm typecheck
 
 ENV PORT=4010
-ENV NODE_ENV=development
-ENV STORE=memory
+ENV NODE_ENV=production
+ENV STORE=prisma
 
 EXPOSE 4010
 

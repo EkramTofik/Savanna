@@ -78,8 +78,8 @@ app.get("/apply/:id", (req, res) => {
 const store = await createStore();
 const ctx = {
   store,
-  publishableKeys: new Set(["pk_live_demo"]),
-  secretKeys: new Set(["sk_live_demo"]),
+  publishableKeys: new Set(["pk_demo_local"]),
+  secretKeys: new Set(["sk_demo_local"]),
   publicBaseUrl,
   issuerName: "የሳቫና ተደራሽነት ኪት",
   issuerDid: "did:web:localhost%3A4020",

@@ -140,6 +140,17 @@ paths:
                       - en
                       - am
                     additionalProperties: false
+                  summary:
+                    type: object
+                    properties:
+                      en:
+                        type: string
+                      am:
+                        type: string
+                    required:
+                      - en
+                      - am
+                    additionalProperties: false
                   durationSec:
                     type: integer
                     minimum: 0
@@ -148,11 +159,19 @@ paths:
                     type: object
                     properties:
                       video:
-                        type: string
-                        format: uri
+                        anyOf:
+                          - type: string
+                            format: uri
+                          - type: string
+                            format: starts_with
+                            pattern: ^\/media\/.*
                       audio:
-                        type: string
-                        format: uri
+                        anyOf:
+                          - type: string
+                            format: uri
+                          - type: string
+                            format: starts_with
+                            pattern: ^\/media\/.*
                     required:
                       - video
                       - audio
@@ -168,8 +187,12 @@ paths:
                             - en
                             - am
                         url:
-                          type: string
-                          format: uri
+                          anyOf:
+                            - type: string
+                              format: uri
+                            - type: string
+                              format: starts_with
+                              pattern: ^\/media\/.*
                       required:
                         - lang
                         - url
@@ -179,12 +202,19 @@ paths:
                       - type: object
                         properties:
                           url:
-                            type: string
-                            format: uri
+                            anyOf:
+                              - type: string
+                                format: uri
+                              - type: string
+                                format: starts_with
+                                pattern: ^\/media\/.*
                           offsetMs:
                             type: integer
-                            minimum: -9007199254740991
+                            minimum: 0
                             maximum: 9007199254740991
+                          languageName:
+                            type: string
+                            minLength: 1
                         required:
                           - url
                           - offsetMs
@@ -195,13 +225,25 @@ paths:
                       - type: object
                         properties:
                           audioUrl:
-                            type: string
-                            format: uri
+                            anyOf:
+                              - type: string
+                                format: uri
+                              - type: string
+                                format: starts_with
+                                pattern: ^\/media\/.*
                           vttUrl:
-                            type: string
-                            format: uri
+                            anyOf:
+                              - type: string
+                                format: uri
+                              - type: string
+                                format: starts_with
+                                pattern: ^\/media\/.*
                           extended:
                             type: boolean
+                          offsetMs:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
                         required:
                           - audioUrl
                           - vttUrl
@@ -519,6 +561,37 @@ paths:
                   type: string
                   format: date-time
                   pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+                i18n:
+                  type: object
+                  properties:
+                    achievement:
+                      type: object
+                      properties:
+                        en:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                        am:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                      required:
+                        - en
+                        - am
+                    recipientName:
+                      type: object
+                      properties:
+                        en:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                        am:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                      required:
+                        - en
+                        - am
               required:
                 - recipientRef
                 - achievement
@@ -615,6 +688,43 @@ paths:
                       - identifier
                       - achievement
                     additionalProperties: {}
+                  i18n:
+                    type: object
+                    properties:
+                      achievement:
+                        type: object
+                        properties:
+                          en:
+                            type: string
+                          am:
+                            type: string
+                        required:
+                          - en
+                          - am
+                        additionalProperties: false
+                      recipientName:
+                        type: object
+                        properties:
+                          en:
+                            type: string
+                          am:
+                            type: string
+                        required:
+                          - en
+                          - am
+                        additionalProperties: false
+                      issuerName:
+                        type: object
+                        properties:
+                          en:
+                            type: string
+                          am:
+                            type: string
+                        required:
+                          - en
+                          - am
+                        additionalProperties: false
+                    additionalProperties: false
                   proof:
                     type: object
                     properties:
@@ -766,6 +876,43 @@ paths:
                       - identifier
                       - achievement
                     additionalProperties: {}
+                  i18n:
+                    type: object
+                    properties:
+                      achievement:
+                        type: object
+                        properties:
+                          en:
+                            type: string
+                          am:
+                            type: string
+                        required:
+                          - en
+                          - am
+                        additionalProperties: false
+                      recipientName:
+                        type: object
+                        properties:
+                          en:
+                            type: string
+                          am:
+                            type: string
+                        required:
+                          - en
+                          - am
+                        additionalProperties: false
+                      issuerName:
+                        type: object
+                        properties:
+                          en:
+                            type: string
+                          am:
+                            type: string
+                        required:
+                          - en
+                          - am
+                        additionalProperties: false
+                    additionalProperties: false
                   proof:
                     type: object
                     properties:
@@ -999,6 +1146,54 @@ paths:
                     type: string
                   applyUrl:
                     type: string
+                  i18n:
+                    type: object
+                    properties:
+                      title:
+                        type: object
+                        properties:
+                          en:
+                            type: string
+                          am:
+                            type: string
+                        required:
+                          - en
+                          - am
+                        additionalProperties: false
+                      employer:
+                        type: object
+                        properties:
+                          en:
+                            type: string
+                          am:
+                            type: string
+                        required:
+                          - en
+                          - am
+                        additionalProperties: false
+                      location:
+                        type: object
+                        properties:
+                          en:
+                            type: string
+                          am:
+                            type: string
+                        required:
+                          - en
+                          - am
+                        additionalProperties: false
+                      payText:
+                        type: object
+                        properties:
+                          en:
+                            type: string
+                          am:
+                            type: string
+                        required:
+                          - en
+                          - am
+                        additionalProperties: false
+                    additionalProperties: false
                   description:
                     type: object
                     properties:
@@ -1347,14 +1542,45 @@ paths:
                 properties:
                   id:
                     type: string
+                    pattern: ^[A-Za-z0-9_-]{1,80}$
                   version:
-                    type: number
+                    type: integer
+                    exclusiveMinimum: 0
+                    maximum: 9007199254740991
                   sizeBytes:
-                    type: number
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  files:
+                    minItems: 1
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        path:
+                          type: string
+                          minLength: 1
+                          maxLength: 240
+                        sizeBytes:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        bytes:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        sha256:
+                          type: string
+                          pattern: ^[a-f0-9]{64}$
+                      required:
+                        - path
+                        - sha256
+                      additionalProperties: {}
                 required:
                   - id
                   - version
                   - sizeBytes
+                  - files
                 additionalProperties: {}
         "401":
           description: Missing or invalid X-Savanna-Key.

@@ -5,7 +5,7 @@ import type { paths } from "./schema";
 export type { paths, components } from "./schema";
 
 export interface SavannaClientOptions {
-  /** e.g. "https://api.example.org" (no trailing slash) */
+  /** HTTPS API origin without a trailing slash. */
   baseUrl: string;
   /** Publishable key (pk_...) in browsers, secret key (sk_...) only on a server. */
   apiKey: string;

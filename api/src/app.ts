@@ -26,7 +26,15 @@ export interface AppOptions {
 export async function createApp(opts: AppOptions = {}) {
   const config = opts.config ?? loadConfig();
   const created = opts.ctx?.store ? undefined : await createStore(config);
-  const ctx: Ctx = { prisma: created?.prisma, store: (opts.ctx?.store ?? created?.store)!, config, ...opts.ctx };
+  const ctx: Ctx = {
+    prisma: created?.prisma,
+    store: (opts.ctx?.store ?? created?.store)!,
+    config,
+    packRoot: opts.ctx?.packRoot ?? config.packRoot,
+    publicBaseUrl: opts.ctx?.publicBaseUrl ?? config.publicBaseUrl ?? `http://localhost:${config.port}`,
+    issuerPrivateJwk: opts.ctx?.issuerPrivateJwk ?? config.issuerPrivateJwk,
+    ...opts.ctx,
+  };
 
   const app = express();
   app.disable("x-powered-by");
@@ -35,6 +43,7 @@ export async function createApp(opts: AppOptions = {}) {
   const allOrigins = config.partners.flatMap((p) => p.origins);
   app.use(
     helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
       contentSecurityPolicy: {
         directives: {
           mediaSrc: ["'self'", "blob:"],
@@ -65,7 +74,10 @@ export async function createApp(opts: AppOptions = {}) {
   // OpenAPI 3.1 spec (assembled from every route file) and Swagger UI. Both are public.
   const spec = buildOpenApi(modules);
   app.locals.openapi = spec;
-  app.get(["/v1/openapi.json", "/api/v1/openapi.json"], (_req, res) => void res.json(spec));
+  app.get(["/v1/openapi.json", "/api/v1/openapi.json"], (_req, res) => {
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
+    res.json(spec);
+  });
   const swaggerDist = createRequire(import.meta.url)("swagger-ui-dist").getAbsoluteFSPath() as string;
   app.use("/docs/assets", express.static(swaggerDist, { index: false }));
   app.get("/docs/init.js", (_req, res) =>

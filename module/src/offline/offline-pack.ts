@@ -62,9 +62,18 @@ export function buildPackResources(manifest: LessonManifest, pack: PackManifest,
     if (/^(lesson|lesson-audio)\.opus$/.test(name)) url = manifest.media.audio || mediaUrl(file.path);
     else if (/^(en|captions-en)\.vtt$/.test(name)) url = manifest.captions.find((track) => track.lang === 'en')?.url ?? mediaUrl(file.path);
     else if (/^(am|captions-am)\.vtt$/.test(name)) url = manifest.captions.find((track) => track.lang === 'am')?.url ?? mediaUrl(file.path);
-    else if (name === 'ad.opus') url = manifest.audioDescription?.audioUrl ?? mediaUrl(file.path);
-    else if (name === 'ad.vtt') url = manifest.audioDescription?.vttUrl ?? mediaUrl(file.path);
-    else if (/^sign\.(mp4|webm)$/.test(name)) url = manifest.sign?.url ?? mediaUrl(file.path);
+    else if (name === 'ad.opus') {
+      if (!manifest.audioDescription) throw new Error(`The offline pack file “${file.path}” is not declared in the lesson manifest.`);
+      url = manifest.audioDescription.audioUrl;
+    }
+    else if (name === 'ad.vtt') {
+      if (!manifest.audioDescription) throw new Error(`The offline pack file “${file.path}” is not declared in the lesson manifest.`);
+      url = manifest.audioDescription.vttUrl;
+    }
+    else if (/^sign\.(mp4|webm)$/.test(name)) {
+      if (!manifest.sign) throw new Error(`The offline pack file “${file.path}” is not declared in the lesson manifest.`);
+      url = manifest.sign.url;
+    }
     else if (/^lesson-240p\.(mp4|webm)$/.test(name)) url = mediaUrl(file.path);
     else if (name === 'transcript.html') {
       // The component derives the interactive transcript from the cached VTT files.

@@ -1,3615 +1,31 @@
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __decorateClass = (decorators, target, key, kind) => {
-  var result = kind > 1 ? void 0 : kind ? __getOwnPropDesc(target, key) : target;
-  for (var i6 = decorators.length - 1, decorator; i6 >= 0; i6--)
-    if (decorator = decorators[i6])
-      result = (kind ? decorator(target, key, result) : decorator(result)) || result;
-  if (kind && result) __defProp(target, key, result);
-  return result;
-};
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/css-tag.js
-var t = globalThis;
-var e = t.ShadowRoot && (void 0 === t.ShadyCSS || t.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype;
-var s = /* @__PURE__ */ Symbol();
-var o = /* @__PURE__ */ new WeakMap();
-var n = class {
-  constructor(t6, e8, o8) {
-    if (this._$cssResult$ = true, o8 !== s) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
-    this.cssText = t6, this.t = e8;
-  }
-  get styleSheet() {
-    let t6 = this.o;
-    const s5 = this.t;
-    if (e && void 0 === t6) {
-      const e8 = void 0 !== s5 && 1 === s5.length;
-      e8 && (t6 = o.get(s5)), void 0 === t6 && ((this.o = t6 = new CSSStyleSheet()).replaceSync(this.cssText), e8 && o.set(s5, t6));
-    }
-    return t6;
-  }
-  toString() {
-    return this.cssText;
-  }
-};
-var r = (t6) => new n("string" == typeof t6 ? t6 : t6 + "", void 0, s);
-var i = (t6, ...e8) => {
-  const o8 = 1 === t6.length ? t6[0] : e8.reduce((e9, s5, o9) => e9 + ((t7) => {
-    if (true === t7._$cssResult$) return t7.cssText;
-    if ("number" == typeof t7) return t7;
-    throw Error("Value passed to 'css' function must be a 'css' function result: " + t7 + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
-  })(s5) + t6[o9 + 1], t6[0]);
-  return new n(o8, t6, s);
-};
-var S = (s5, o8) => {
-  if (e) s5.adoptedStyleSheets = o8.map((t6) => t6 instanceof CSSStyleSheet ? t6 : t6.styleSheet);
-  else for (const e8 of o8) {
-    const o9 = document.createElement("style"), n7 = t.litNonce;
-    void 0 !== n7 && o9.setAttribute("nonce", n7), o9.textContent = e8.cssText, s5.appendChild(o9);
-  }
-};
-var c = e ? (t6) => t6 : (t6) => t6 instanceof CSSStyleSheet ? ((t7) => {
-  let e8 = "";
-  for (const s5 of t7.cssRules) e8 += s5.cssText;
-  return r(e8);
-})(t6) : t6;
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/reactive-element.js
-var { is: i2, defineProperty: e2, getOwnPropertyDescriptor: h, getOwnPropertyNames: r2, getOwnPropertySymbols: o2, getPrototypeOf: n2 } = Object;
-var a = globalThis;
-var c2 = a.trustedTypes;
-var l = c2 ? c2.emptyScript : "";
-var p = a.reactiveElementPolyfillSupport;
-var d = (t6, s5) => t6;
-var u = { toAttribute(t6, s5) {
-  switch (s5) {
-    case Boolean:
-      t6 = t6 ? l : null;
-      break;
-    case Object:
-    case Array:
-      t6 = null == t6 ? t6 : JSON.stringify(t6);
-  }
-  return t6;
-}, fromAttribute(t6, s5) {
-  let i6 = t6;
-  switch (s5) {
-    case Boolean:
-      i6 = null !== t6;
-      break;
-    case Number:
-      i6 = null === t6 ? null : Number(t6);
-      break;
-    case Object:
-    case Array:
-      try {
-        i6 = JSON.parse(t6);
-      } catch (t7) {
-        i6 = null;
-      }
-  }
-  return i6;
-} };
-var f = (t6, s5) => !i2(t6, s5);
-var b = { attribute: true, type: String, converter: u, reflect: false, useDefault: false, hasChanged: f };
-Symbol.metadata ??= /* @__PURE__ */ Symbol("metadata"), a.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
-var y = class extends HTMLElement {
-  static addInitializer(t6) {
-    this._$Ei(), (this.l ??= []).push(t6);
-  }
-  static get observedAttributes() {
-    return this.finalize(), this._$Eh && [...this._$Eh.keys()];
-  }
-  static createProperty(t6, s5 = b) {
-    if (s5.state && (s5.attribute = false), this._$Ei(), this.prototype.hasOwnProperty(t6) && ((s5 = Object.create(s5)).wrapped = true), this.elementProperties.set(t6, s5), !s5.noAccessor) {
-      const i6 = /* @__PURE__ */ Symbol(), h5 = this.getPropertyDescriptor(t6, i6, s5);
-      void 0 !== h5 && e2(this.prototype, t6, h5);
-    }
-  }
-  static getPropertyDescriptor(t6, s5, i6) {
-    const { get: e8, set: r8 } = h(this.prototype, t6) ?? { get() {
-      return this[s5];
-    }, set(t7) {
-      this[s5] = t7;
-    } };
-    return { get: e8, set(s6) {
-      const h5 = e8?.call(this);
-      r8?.call(this, s6), this.requestUpdate(t6, h5, i6);
-    }, configurable: true, enumerable: true };
-  }
-  static getPropertyOptions(t6) {
-    return this.elementProperties.get(t6) ?? b;
-  }
-  static _$Ei() {
-    if (this.hasOwnProperty(d("elementProperties"))) return;
-    const t6 = n2(this);
-    t6.finalize(), void 0 !== t6.l && (this.l = [...t6.l]), this.elementProperties = new Map(t6.elementProperties);
-  }
-  static finalize() {
-    if (this.hasOwnProperty(d("finalized"))) return;
-    if (this.finalized = true, this._$Ei(), this.hasOwnProperty(d("properties"))) {
-      const t7 = this.properties, s5 = [...r2(t7), ...o2(t7)];
-      for (const i6 of s5) this.createProperty(i6, t7[i6]);
-    }
-    const t6 = this[Symbol.metadata];
-    if (null !== t6) {
-      const s5 = litPropertyMetadata.get(t6);
-      if (void 0 !== s5) for (const [t7, i6] of s5) this.elementProperties.set(t7, i6);
-    }
-    this._$Eh = /* @__PURE__ */ new Map();
-    for (const [t7, s5] of this.elementProperties) {
-      const i6 = this._$Eu(t7, s5);
-      void 0 !== i6 && this._$Eh.set(i6, t7);
-    }
-    this.elementStyles = this.finalizeStyles(this.styles);
-  }
-  static finalizeStyles(s5) {
-    const i6 = [];
-    if (Array.isArray(s5)) {
-      const e8 = new Set(s5.flat(1 / 0).reverse());
-      for (const s6 of e8) i6.unshift(c(s6));
-    } else void 0 !== s5 && i6.push(c(s5));
-    return i6;
-  }
-  static _$Eu(t6, s5) {
-    const i6 = s5.attribute;
-    return false === i6 ? void 0 : "string" == typeof i6 ? i6 : "string" == typeof t6 ? t6.toLowerCase() : void 0;
-  }
-  constructor() {
-    super(), this._$Ep = void 0, this.isUpdatePending = false, this.hasUpdated = false, this._$Em = null, this._$Ev();
-  }
-  _$Ev() {
-    this._$ES = new Promise((t6) => this.enableUpdating = t6), this._$AL = /* @__PURE__ */ new Map(), this._$E_(), this.requestUpdate(), this.constructor.l?.forEach((t6) => t6(this));
-  }
-  addController(t6) {
-    (this._$EO ??= /* @__PURE__ */ new Set()).add(t6), void 0 !== this.renderRoot && this.isConnected && t6.hostConnected?.();
-  }
-  removeController(t6) {
-    this._$EO?.delete(t6);
-  }
-  _$E_() {
-    const t6 = /* @__PURE__ */ new Map(), s5 = this.constructor.elementProperties;
-    for (const i6 of s5.keys()) this.hasOwnProperty(i6) && (t6.set(i6, this[i6]), delete this[i6]);
-    t6.size > 0 && (this._$Ep = t6);
-  }
-  createRenderRoot() {
-    const t6 = this.shadowRoot ?? this.attachShadow(this.constructor.shadowRootOptions);
-    return S(t6, this.constructor.elementStyles), t6;
-  }
-  connectedCallback() {
-    this.renderRoot ??= this.createRenderRoot(), this.enableUpdating(true), this._$EO?.forEach((t6) => t6.hostConnected?.());
-  }
-  enableUpdating(t6) {
-  }
-  disconnectedCallback() {
-    this._$EO?.forEach((t6) => t6.hostDisconnected?.());
-  }
-  attributeChangedCallback(t6, s5, i6) {
-    this._$AK(t6, i6);
-  }
-  _$ET(t6, s5) {
-    const i6 = this.constructor.elementProperties.get(t6), e8 = this.constructor._$Eu(t6, i6);
-    if (void 0 !== e8 && true === i6.reflect) {
-      const h5 = (void 0 !== i6.converter?.toAttribute ? i6.converter : u).toAttribute(s5, i6.type);
-      this._$Em = t6, null == h5 ? this.removeAttribute(e8) : this.setAttribute(e8, h5), this._$Em = null;
-    }
-  }
-  _$AK(t6, s5) {
-    const i6 = this.constructor, e8 = i6._$Eh.get(t6);
-    if (void 0 !== e8 && this._$Em !== e8) {
-      const t7 = i6.getPropertyOptions(e8), h5 = "function" == typeof t7.converter ? { fromAttribute: t7.converter } : void 0 !== t7.converter?.fromAttribute ? t7.converter : u;
-      this._$Em = e8;
-      const r8 = h5.fromAttribute(s5, t7.type);
-      this[e8] = r8 ?? this._$Ej?.get(e8) ?? r8, this._$Em = null;
-    }
-  }
-  requestUpdate(t6, s5, i6, e8 = false, h5) {
-    if (void 0 !== t6) {
-      const r8 = this.constructor;
-      if (false === e8 && (h5 = this[t6]), i6 ??= r8.getPropertyOptions(t6), !((i6.hasChanged ?? f)(h5, s5) || i6.useDefault && i6.reflect && h5 === this._$Ej?.get(t6) && !this.hasAttribute(r8._$Eu(t6, i6)))) return;
-      this.C(t6, s5, i6);
-    }
-    false === this.isUpdatePending && (this._$ES = this._$EP());
-  }
-  C(t6, s5, { useDefault: i6, reflect: e8, wrapped: h5 }, r8) {
-    i6 && !(this._$Ej ??= /* @__PURE__ */ new Map()).has(t6) && (this._$Ej.set(t6, r8 ?? s5 ?? this[t6]), true !== h5 || void 0 !== r8) || (this._$AL.has(t6) || (this.hasUpdated || i6 || (s5 = void 0), this._$AL.set(t6, s5)), true === e8 && this._$Em !== t6 && (this._$Eq ??= /* @__PURE__ */ new Set()).add(t6));
-  }
-  async _$EP() {
-    this.isUpdatePending = true;
-    try {
-      await this._$ES;
-    } catch (t7) {
-      Promise.reject(t7);
-    }
-    const t6 = this.scheduleUpdate();
-    return null != t6 && await t6, !this.isUpdatePending;
-  }
-  scheduleUpdate() {
-    return this.performUpdate();
-  }
-  performUpdate() {
-    if (!this.isUpdatePending) return;
-    if (!this.hasUpdated) {
-      if (this.renderRoot ??= this.createRenderRoot(), this._$Ep) {
-        for (const [t8, s6] of this._$Ep) this[t8] = s6;
-        this._$Ep = void 0;
-      }
-      const t7 = this.constructor.elementProperties;
-      if (t7.size > 0) for (const [s6, i6] of t7) {
-        const { wrapped: t8 } = i6, e8 = this[s6];
-        true !== t8 || this._$AL.has(s6) || void 0 === e8 || this.C(s6, void 0, i6, e8);
-      }
-    }
-    let t6 = false;
-    const s5 = this._$AL;
-    try {
-      t6 = this.shouldUpdate(s5), t6 ? (this.willUpdate(s5), this._$EO?.forEach((t7) => t7.hostUpdate?.()), this.update(s5)) : this._$EM();
-    } catch (s6) {
-      throw t6 = false, this._$EM(), s6;
-    }
-    t6 && this._$AE(s5);
-  }
-  willUpdate(t6) {
-  }
-  _$AE(t6) {
-    this._$EO?.forEach((t7) => t7.hostUpdated?.()), this.hasUpdated || (this.hasUpdated = true, this.firstUpdated(t6)), this.updated(t6);
-  }
-  _$EM() {
-    this._$AL = /* @__PURE__ */ new Map(), this.isUpdatePending = false;
-  }
-  get updateComplete() {
-    return this.getUpdateComplete();
-  }
-  getUpdateComplete() {
-    return this._$ES;
-  }
-  shouldUpdate(t6) {
-    return true;
-  }
-  update(t6) {
-    this._$Eq &&= this._$Eq.forEach((t7) => this._$ET(t7, this[t7])), this._$EM();
-  }
-  updated(t6) {
-  }
-  firstUpdated(t6) {
-  }
-};
-y.elementStyles = [], y.shadowRootOptions = { mode: "open" }, y[d("elementProperties")] = /* @__PURE__ */ new Map(), y[d("finalized")] = /* @__PURE__ */ new Map(), p?.({ ReactiveElement: y }), (a.reactiveElementVersions ??= []).push("2.1.2");
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/lit-html.js
-var t2 = globalThis;
-var i3 = (t6) => t6;
-var s2 = t2.trustedTypes;
-var e3 = s2 ? s2.createPolicy("lit-html", { createHTML: (t6) => t6 }) : void 0;
-var h2 = "$lit$";
-var o3 = `lit$${Math.random().toFixed(9).slice(2)}$`;
-var n3 = "?" + o3;
-var r3 = `<${n3}>`;
-var l2 = document;
-var c3 = () => l2.createComment("");
-var a2 = (t6) => null === t6 || "object" != typeof t6 && "function" != typeof t6;
-var u2 = Array.isArray;
-var d2 = (t6) => u2(t6) || "function" == typeof t6?.[Symbol.iterator];
-var f2 = "[ 	\n\f\r]";
-var v = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g;
-var _ = /-->/g;
-var m = />/g;
-var p2 = RegExp(`>|${f2}(?:([^\\s"'>=/]+)(${f2}*=${f2}*(?:[^ 	
-\f\r"'\`<>=]|("|')|))|$)`, "g");
-var g = /'/g;
-var $ = /"/g;
-var y2 = /^(?:script|style|textarea|title)$/i;
-var x = (t6) => (i6, ...s5) => ({ _$litType$: t6, strings: i6, values: s5 });
-var b2 = x(1);
-var w = x(2);
-var T = x(3);
-var E = /* @__PURE__ */ Symbol.for("lit-noChange");
-var A = /* @__PURE__ */ Symbol.for("lit-nothing");
-var C = /* @__PURE__ */ new WeakMap();
-var P = l2.createTreeWalker(l2, 129);
-function V(t6, i6) {
-  if (!u2(t6) || !t6.hasOwnProperty("raw")) throw Error("invalid template strings array");
-  return void 0 !== e3 ? e3.createHTML(i6) : i6;
-}
-var N = (t6, i6) => {
-  const s5 = t6.length - 1, e8 = [];
-  let n7, l3 = 2 === i6 ? "<svg>" : 3 === i6 ? "<math>" : "", c5 = v;
-  for (let i7 = 0; i7 < s5; i7++) {
-    const s6 = t6[i7];
-    let a3, u3, d3 = -1, f4 = 0;
-    for (; f4 < s6.length && (c5.lastIndex = f4, u3 = c5.exec(s6), null !== u3); ) f4 = c5.lastIndex, c5 === v ? "!--" === u3[1] ? c5 = _ : void 0 !== u3[1] ? c5 = m : void 0 !== u3[2] ? (y2.test(u3[2]) && (n7 = RegExp("</" + u3[2], "g")), c5 = p2) : void 0 !== u3[3] && (c5 = p2) : c5 === p2 ? ">" === u3[0] ? (c5 = n7 ?? v, d3 = -1) : void 0 === u3[1] ? d3 = -2 : (d3 = c5.lastIndex - u3[2].length, a3 = u3[1], c5 = void 0 === u3[3] ? p2 : '"' === u3[3] ? $ : g) : c5 === $ || c5 === g ? c5 = p2 : c5 === _ || c5 === m ? c5 = v : (c5 = p2, n7 = void 0);
-    const x2 = c5 === p2 && t6[i7 + 1].startsWith("/>") ? " " : "";
-    l3 += c5 === v ? s6 + r3 : d3 >= 0 ? (e8.push(a3), s6.slice(0, d3) + h2 + s6.slice(d3) + o3 + x2) : s6 + o3 + (-2 === d3 ? i7 : x2);
-  }
-  return [V(t6, l3 + (t6[s5] || "<?>") + (2 === i6 ? "</svg>" : 3 === i6 ? "</math>" : "")), e8];
-};
-var S2 = class _S {
-  constructor({ strings: t6, _$litType$: i6 }, e8) {
-    let r8;
-    this.parts = [];
-    let l3 = 0, a3 = 0;
-    const u3 = t6.length - 1, d3 = this.parts, [f4, v2] = N(t6, i6);
-    if (this.el = _S.createElement(f4, e8), P.currentNode = this.el.content, 2 === i6 || 3 === i6) {
-      const t7 = this.el.content.firstChild;
-      t7.replaceWith(...t7.childNodes);
-    }
-    for (; null !== (r8 = P.nextNode()) && d3.length < u3; ) {
-      if (1 === r8.nodeType) {
-        if (r8.hasAttributes()) for (const t7 of r8.getAttributeNames()) if (t7.endsWith(h2)) {
-          const i7 = v2[a3++], s5 = r8.getAttribute(t7).split(o3), e9 = /([.?@])?(.*)/.exec(i7);
-          d3.push({ type: 1, index: l3, name: e9[2], strings: s5, ctor: "." === e9[1] ? I : "?" === e9[1] ? L : "@" === e9[1] ? z : H }), r8.removeAttribute(t7);
-        } else t7.startsWith(o3) && (d3.push({ type: 6, index: l3 }), r8.removeAttribute(t7));
-        if (y2.test(r8.tagName)) {
-          const t7 = r8.textContent.split(o3), i7 = t7.length - 1;
-          if (i7 > 0) {
-            r8.textContent = s2 ? s2.emptyScript : "";
-            for (let s5 = 0; s5 < i7; s5++) r8.append(t7[s5], c3()), P.nextNode(), d3.push({ type: 2, index: ++l3 });
-            r8.append(t7[i7], c3());
-          }
-        }
-      } else if (8 === r8.nodeType) if (r8.data === n3) d3.push({ type: 2, index: l3 });
-      else {
-        let t7 = -1;
-        for (; -1 !== (t7 = r8.data.indexOf(o3, t7 + 1)); ) d3.push({ type: 7, index: l3 }), t7 += o3.length - 1;
-      }
-      l3++;
-    }
-  }
-  static createElement(t6, i6) {
-    const s5 = l2.createElement("template");
-    return s5.innerHTML = t6, s5;
-  }
-};
-function M(t6, i6, s5 = t6, e8) {
-  if (i6 === E) return i6;
-  let h5 = void 0 !== e8 ? s5._$Co?.[e8] : s5._$Cl;
-  const o8 = a2(i6) ? void 0 : i6._$litDirective$;
-  return h5?.constructor !== o8 && (h5?._$AO?.(false), void 0 === o8 ? h5 = void 0 : (h5 = new o8(t6), h5._$AT(t6, s5, e8)), void 0 !== e8 ? (s5._$Co ??= [])[e8] = h5 : s5._$Cl = h5), void 0 !== h5 && (i6 = M(t6, h5._$AS(t6, i6.values), h5, e8)), i6;
-}
-var R = class {
-  constructor(t6, i6) {
-    this._$AV = [], this._$AN = void 0, this._$AD = t6, this._$AM = i6;
-  }
-  get parentNode() {
-    return this._$AM.parentNode;
-  }
-  get _$AU() {
-    return this._$AM._$AU;
-  }
-  u(t6) {
-    const { el: { content: i6 }, parts: s5 } = this._$AD, e8 = (t6?.creationScope ?? l2).importNode(i6, true);
-    P.currentNode = e8;
-    let h5 = P.nextNode(), o8 = 0, n7 = 0, r8 = s5[0];
-    for (; void 0 !== r8; ) {
-      if (o8 === r8.index) {
-        let i7;
-        2 === r8.type ? i7 = new k(h5, h5.nextSibling, this, t6) : 1 === r8.type ? i7 = new r8.ctor(h5, r8.name, r8.strings, this, t6) : 6 === r8.type && (i7 = new Z(h5, this, t6)), this._$AV.push(i7), r8 = s5[++n7];
-      }
-      o8 !== r8?.index && (h5 = P.nextNode(), o8++);
-    }
-    return P.currentNode = l2, e8;
-  }
-  p(t6) {
-    let i6 = 0;
-    for (const s5 of this._$AV) void 0 !== s5 && (void 0 !== s5.strings ? (s5._$AI(t6, s5, i6), i6 += s5.strings.length - 2) : s5._$AI(t6[i6])), i6++;
-  }
-};
-var k = class _k {
-  get _$AU() {
-    return this._$AM?._$AU ?? this._$Cv;
-  }
-  constructor(t6, i6, s5, e8) {
-    this.type = 2, this._$AH = A, this._$AN = void 0, this._$AA = t6, this._$AB = i6, this._$AM = s5, this.options = e8, this._$Cv = e8?.isConnected ?? true;
-  }
-  get parentNode() {
-    let t6 = this._$AA.parentNode;
-    const i6 = this._$AM;
-    return void 0 !== i6 && 11 === t6?.nodeType && (t6 = i6.parentNode), t6;
-  }
-  get startNode() {
-    return this._$AA;
-  }
-  get endNode() {
-    return this._$AB;
-  }
-  _$AI(t6, i6 = this) {
-    t6 = M(this, t6, i6), a2(t6) ? t6 === A || null == t6 || "" === t6 ? (this._$AH !== A && this._$AR(), this._$AH = A) : t6 !== this._$AH && t6 !== E && this._(t6) : void 0 !== t6._$litType$ ? this.$(t6) : void 0 !== t6.nodeType ? this.T(t6) : d2(t6) ? this.k(t6) : this._(t6);
-  }
-  O(t6) {
-    return this._$AA.parentNode.insertBefore(t6, this._$AB);
-  }
-  T(t6) {
-    this._$AH !== t6 && (this._$AR(), this._$AH = this.O(t6));
-  }
-  _(t6) {
-    this._$AH !== A && a2(this._$AH) ? this._$AA.nextSibling.data = t6 : this.T(l2.createTextNode(t6)), this._$AH = t6;
-  }
-  $(t6) {
-    const { values: i6, _$litType$: s5 } = t6, e8 = "number" == typeof s5 ? this._$AC(t6) : (void 0 === s5.el && (s5.el = S2.createElement(V(s5.h, s5.h[0]), this.options)), s5);
-    if (this._$AH?._$AD === e8) this._$AH.p(i6);
-    else {
-      const t7 = new R(e8, this), s6 = t7.u(this.options);
-      t7.p(i6), this.T(s6), this._$AH = t7;
-    }
-  }
-  _$AC(t6) {
-    let i6 = C.get(t6.strings);
-    return void 0 === i6 && C.set(t6.strings, i6 = new S2(t6)), i6;
-  }
-  k(t6) {
-    u2(this._$AH) || (this._$AH = [], this._$AR());
-    const i6 = this._$AH;
-    let s5, e8 = 0;
-    for (const h5 of t6) e8 === i6.length ? i6.push(s5 = new _k(this.O(c3()), this.O(c3()), this, this.options)) : s5 = i6[e8], s5._$AI(h5), e8++;
-    e8 < i6.length && (this._$AR(s5 && s5._$AB.nextSibling, e8), i6.length = e8);
-  }
-  _$AR(t6 = this._$AA.nextSibling, s5) {
-    for (this._$AP?.(false, true, s5); t6 !== this._$AB; ) {
-      const s6 = i3(t6).nextSibling;
-      i3(t6).remove(), t6 = s6;
-    }
-  }
-  setConnected(t6) {
-    void 0 === this._$AM && (this._$Cv = t6, this._$AP?.(t6));
-  }
-};
-var H = class {
-  get tagName() {
-    return this.element.tagName;
-  }
-  get _$AU() {
-    return this._$AM._$AU;
-  }
-  constructor(t6, i6, s5, e8, h5) {
-    this.type = 1, this._$AH = A, this._$AN = void 0, this.element = t6, this.name = i6, this._$AM = e8, this.options = h5, s5.length > 2 || "" !== s5[0] || "" !== s5[1] ? (this._$AH = Array(s5.length - 1).fill(new String()), this.strings = s5) : this._$AH = A;
-  }
-  _$AI(t6, i6 = this, s5, e8) {
-    const h5 = this.strings;
-    let o8 = false;
-    if (void 0 === h5) t6 = M(this, t6, i6, 0), o8 = !a2(t6) || t6 !== this._$AH && t6 !== E, o8 && (this._$AH = t6);
-    else {
-      const e9 = t6;
-      let n7, r8;
-      for (t6 = h5[0], n7 = 0; n7 < h5.length - 1; n7++) r8 = M(this, e9[s5 + n7], i6, n7), r8 === E && (r8 = this._$AH[n7]), o8 ||= !a2(r8) || r8 !== this._$AH[n7], r8 === A ? t6 = A : t6 !== A && (t6 += (r8 ?? "") + h5[n7 + 1]), this._$AH[n7] = r8;
-    }
-    o8 && !e8 && this.j(t6);
-  }
-  j(t6) {
-    t6 === A ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t6 ?? "");
-  }
-};
-var I = class extends H {
-  constructor() {
-    super(...arguments), this.type = 3;
-  }
-  j(t6) {
-    this.element[this.name] = t6 === A ? void 0 : t6;
-  }
-};
-var L = class extends H {
-  constructor() {
-    super(...arguments), this.type = 4;
-  }
-  j(t6) {
-    this.element.toggleAttribute(this.name, !!t6 && t6 !== A);
-  }
-};
-var z = class extends H {
-  constructor(t6, i6, s5, e8, h5) {
-    super(t6, i6, s5, e8, h5), this.type = 5;
-  }
-  _$AI(t6, i6 = this) {
-    if ((t6 = M(this, t6, i6, 0) ?? A) === E) return;
-    const s5 = this._$AH, e8 = t6 === A && s5 !== A || t6.capture !== s5.capture || t6.once !== s5.once || t6.passive !== s5.passive, h5 = t6 !== A && (s5 === A || e8);
-    e8 && this.element.removeEventListener(this.name, this, s5), h5 && this.element.addEventListener(this.name, this, t6), this._$AH = t6;
-  }
-  handleEvent(t6) {
-    "function" == typeof this._$AH ? this._$AH.call(this.options?.host ?? this.element, t6) : this._$AH.handleEvent(t6);
-  }
-};
-var Z = class {
-  constructor(t6, i6, s5) {
-    this.element = t6, this.type = 6, this._$AN = void 0, this._$AM = i6, this.options = s5;
-  }
-  get _$AU() {
-    return this._$AM._$AU;
-  }
-  _$AI(t6) {
-    M(this, t6);
-  }
-};
-var j = { M: h2, P: o3, A: n3, C: 1, L: N, R, D: d2, V: M, I: k, H, N: L, U: z, B: I, F: Z };
-var B = t2.litHtmlPolyfillSupport;
-B?.(S2, k), (t2.litHtmlVersions ??= []).push("3.3.3");
-var D = (t6, i6, s5) => {
-  const e8 = s5?.renderBefore ?? i6;
-  let h5 = e8._$litPart$;
-  if (void 0 === h5) {
-    const t7 = s5?.renderBefore ?? null;
-    e8._$litPart$ = h5 = new k(i6.insertBefore(c3(), t7), t7, void 0, s5 ?? {});
-  }
-  return h5._$AI(t6), h5;
-};
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-element@4.2.2/node_modules/lit-element/lit-element.js
-var s3 = globalThis;
-var i4 = class extends y {
-  constructor() {
-    super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
-  }
-  createRenderRoot() {
-    const t6 = super.createRenderRoot();
-    return this.renderOptions.renderBefore ??= t6.firstChild, t6;
-  }
-  update(t6) {
-    const r8 = this.render();
-    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t6), this._$Do = D(r8, this.renderRoot, this.renderOptions);
-  }
-  connectedCallback() {
-    super.connectedCallback(), this._$Do?.setConnected(true);
-  }
-  disconnectedCallback() {
-    super.disconnectedCallback(), this._$Do?.setConnected(false);
-  }
-  render() {
-    return E;
-  }
-};
-i4._$litElement$ = true, i4["finalized"] = true, s3.litElementHydrateSupport?.({ LitElement: i4 });
-var o4 = s3.litElementPolyfillSupport;
-o4?.({ LitElement: i4 });
-(s3.litElementVersions ??= []).push("4.2.2");
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/custom-element.js
-var t3 = (t6) => (e8, o8) => {
-  void 0 !== o8 ? o8.addInitializer(() => {
-    customElements.define(t6, e8);
-  }) : customElements.define(t6, e8);
-};
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/property.js
-var o5 = { attribute: true, type: String, converter: u, reflect: false, hasChanged: f };
-var r4 = (t6 = o5, e8, r8) => {
-  const { kind: n7, metadata: i6 } = r8;
-  let s5 = globalThis.litPropertyMetadata.get(i6);
-  if (void 0 === s5 && globalThis.litPropertyMetadata.set(i6, s5 = /* @__PURE__ */ new Map()), "setter" === n7 && ((t6 = Object.create(t6)).wrapped = true), s5.set(r8.name, t6), "accessor" === n7) {
-    const { name: o8 } = r8;
-    return { set(r9) {
-      const n8 = e8.get.call(this);
-      e8.set.call(this, r9), this.requestUpdate(o8, n8, t6, true, r9);
-    }, init(e9) {
-      return void 0 !== e9 && this.C(o8, void 0, t6, e9), e9;
-    } };
-  }
-  if ("setter" === n7) {
-    const { name: o8 } = r8;
-    return function(r9) {
-      const n8 = this[o8];
-      e8.call(this, r9), this.requestUpdate(o8, n8, t6, true, r9);
-    };
-  }
-  throw Error("Unsupported decorator location: " + n7);
-};
-function n4(t6) {
-  return (e8, o8) => "object" == typeof o8 ? r4(t6, e8, o8) : ((t7, e9, o9) => {
-    const r8 = e9.hasOwnProperty(o9);
-    return e9.constructor.createProperty(o9, t7), r8 ? Object.getOwnPropertyDescriptor(e9, o9) : void 0;
-  })(t6, e8, o8);
-}
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/state.js
-function r5(r8) {
-  return n4({ ...r8, state: true, attribute: false });
-}
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/base.js
-var e4 = (e8, t6, c5) => (c5.configurable = true, c5.enumerable = true, Reflect.decorate && "object" != typeof t6 && Object.defineProperty(e8, t6, c5), c5);
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/query.js
-function e5(e8, r8) {
-  return (n7, s5, i6) => {
-    const o8 = (t6) => t6.renderRoot?.querySelector(e8) ?? null;
-    if (r8) {
-      const { get: e9, set: r9 } = "object" == typeof s5 ? n7 : i6 ?? /* @__PURE__ */ (() => {
-        const t6 = /* @__PURE__ */ Symbol();
-        return { get() {
-          return this[t6];
-        }, set(e10) {
-          this[t6] = e10;
-        } };
-      })();
-      return e4(n7, s5, { get() {
-        let t6 = e9.call(this);
-        return void 0 === t6 && (t6 = o8(this), (null !== t6 || this.hasUpdated) && r9.call(this, t6)), t6;
-      } });
-    }
-    return e4(n7, s5, { get() {
-      return o8(this);
-    } });
-  };
-}
-
-// module/src/player/i18n/en.json
-var en_default = {
-  "player.controlsLabel": "Player controls",
-  "player.play": "Play",
-  "player.back10": "Rewind 10 seconds",
-  "player.seekSlider": "Video position",
-  "player.positionValueTextSeconds": "Position {curSec} {secUnit} of {totalSec} {totalSecUnit}",
-  "player.positionValueText": "Position {curMin} {minUnit} {curSec} of {totalMin} {totalMinUnit}",
-  "player.minuteSingular": "minute",
-  "player.minutePlural": "minutes",
-  "player.secondSingular": "second",
-  "player.secondPlural": "seconds",
-  "player.volumeSlider": "Volume level",
-  "player.volumeValueText": "Volume {percent} percent",
-  "player.mute": "Mute audio",
-  "player.speed": "Playback speed",
-  "player.speedNormal": "Normal (1x)",
-  "player.captions": "Closed captions",
-  "player.captionsUnavailable": "No captions track available in this lesson",
-  "player.sign": "Sign language window",
-  "player.signUnavailable": "Sign language is not available for this lesson",
-  "player.audioDescription": "Audio description",
-  "player.adUnavailable": "Audio description is not available for this lesson",
-  "player.fullscreen": "Full screen",
-  "player.help": "Keyboard shortcuts help",
-  "player.closeHelp": "Close shortcuts help dialog",
-  "player.notAvailableSuffix": "(Not available for this lesson)",
-  "player.helpTitle": "Keyboard Shortcuts",
-  "player.helpHeaderKey": "Key",
-  "player.helpHeaderAction": "Action",
-  "player.shortcutPlayPause": "Play or pause video",
-  "player.shortcutSeek5": "Seek backward or forward 5 seconds",
-  "player.shortcutSeek10": "Seek backward or forward 10 seconds",
-  "player.shortcutVolume": "Increase or decrease volume",
-  "player.shortcutMute": "Mute or unmute audio",
-  "player.shortcutCaptions": "Toggle closed captions",
-  "player.shortcutSign": "Show or hide sign language window",
-  "player.shortcutAudioDescription": "Toggle audio description",
-  "player.shortcutFullscreen": "Toggle full screen",
-  "player.shortcutHelp": "Show or hide keyboard shortcuts help",
-  "player.shortcutStartEnd": "Seek to start or end of lesson",
-  "player.statusPlay": "Playing",
-  "player.statusPause": "Paused",
-  "player.statusVolume": "Volume {percent} percent",
-  "player.statusMuted": "Audio muted",
-  "player.statusUnmuted": "Audio unmuted",
-  "player.statusSeek": "Seeked to {time}",
-  "player.statusSpeed": "Playback speed {speed}x",
-  "player.statusCaptionsOn": "Captions turned on",
-  "player.statusCaptionsOff": "Captions turned off",
-  "player.statusSignOn": "Sign language window visible",
-  "player.statusSignOff": "Sign language window hidden",
-  "player.statusAdOn": "Audio description enabled",
-  "player.statusAdOff": "Audio description disabled",
-  "player.statusFullscreenOn": "Entered full screen",
-  "player.statusFullscreenOff": "Exited full screen",
-  "player.statusTranscriptOpen": "Interactive transcript opened",
-  "player.statusTranscriptClosed": "Interactive transcript closed",
-  "player.captionsSettings": "Caption settings",
-  "player.closeCaptionsSettings": "Close caption settings dialog",
-  "player.captionsTrack": "Captions track",
-  "player.captionsTrackOff": "Off",
-  "player.captionsTrackEn": "English",
-  "player.captionsTrackAm": "Amharic (\u12A0\u121B\u122D\u129B)",
-  "player.captionsSize": "Font size",
-  "player.captionsColor": "Color theme",
-  "player.captionsPresetWhiteBlack": "White on Black",
-  "player.captionsPresetYellowBlack": "Yellow on Black",
-  "player.captionsPresetBlackWhite": "Black on White",
-  "player.captionsPresetCustom": "Custom",
-  "player.captionsTextColor": "Text color",
-  "player.captionsBgColor": "Background color",
-  "player.captionsOpacity": "Background opacity",
-  "player.captionsPosition": "Position",
-  "player.captionsPositionBottom": "Bottom",
-  "player.captionsPositionTop": "Top",
-  "player.captionsPreview": "Captions preview",
-  "player.captionsPreviewText": "This is how captions will look.",
-  "player.transcript": "Transcript",
-  "player.transcriptToggle": "Toggle transcript panel",
-  "player.transcriptTitle": "Interactive Transcript",
-  "player.transcriptSearch": "Search transcript",
-  "player.transcriptSearchPlaceholder": "Search transcript...",
-  "player.transcriptClearSearch": "Clear search",
-  "player.transcriptMatches": "{count} matches found",
-  "player.transcriptNoMatches": "No matching transcript lines found",
-  "player.transcriptDownload": "Download transcript (.txt)",
-  "player.transcriptDownloadBraille": "Download Braille (.brf)",
-  "player.transcriptSummaryTitle": "Plain-Language Summary",
-  "player.transcriptAutoScroll": "Auto-scroll with video",
-  "player.transcriptClose": "Close transcript panel",
-  "player.transcriptDownloaded": "Transcript downloaded",
-  "player.statusBrailleDownloaded": "Braille file (.brf) downloaded",
-  "player.errorManifestLoad": "Unable to load lesson. Please check your network connection.",
-  "player.retry": "Retry",
-  "player.statusOfflineManifest": "Loaded offline cached lesson manifest",
-  "player.shortcutTranscript": "Toggle transcript panel",
-  "player.shortcutPreferences": "Toggle preferences dialog",
-  "player.defaultSummary": "This lesson introduces foundational concepts with accessible learning materials and structured examples.",
-  "player.preferences": "Preferences",
-  "player.preferencesTitle": "Player Preferences",
-  "player.closePreferences": "Close preferences dialog",
-  "player.prefSectionGeneral": "General",
-  "player.prefSectionCaptions": "Captions",
-  "player.prefLanguage": "Interface Language",
-  "player.prefLanguageEn": "English",
-  "player.prefLanguageAm": "Amharic (\u12A0\u121B\u122D\u129B)",
-  "player.prefSpeed": "Default Playback Speed",
-  "player.prefTheme": "Display Theme",
-  "player.prefThemeDark": "Dark (Default)",
-  "player.prefThemeLight": "Light",
-  "player.prefThemeHighContrast": "High Contrast (AAA)",
-  "player.prefShortcuts": "Keyboard Shortcuts",
-  "player.prefShortcutsOn": "Enabled (K, J, L, C, S, D, F, T)",
-  "player.prefShortcutsOff": "Disabled",
-  "player.prefSignWindow": "Sign Language Window",
-  "player.prefAudioDescription": "Audio Description (AD)",
-  "player.prefEnabled": "Enabled",
-  "player.prefDisabled": "Disabled",
-  "player.prefReset": "Reset to Defaults",
-  "player.prefDownload": "Download my settings",
-  "player.prefDelete": "Delete my settings",
-  "player.statusPrefsSaved": "Preferences saved",
-  "player.statusLangChanged": "Language changed to {lang}"
-};
-
-// module/src/player/i18n/am.json
-var am_default = {
-  _comment: "DRAFT - Amharic translations for Savanna Player controls and announcements. Must be reviewed by a native Amharic speaker.",
-  "player.controlsLabel": "\u12E8\u121B\u132B\u12C8\u127B \u1218\u1246\u1323\u1320\u122A\u12EB\u12CE\u127D",
-  "player.play": "\u12A0\u132B\u12CD\u1275",
-  "player.back10": "10 \u1230\u12A8\u1295\u12F5 \u12C8\u12F0 \u128B\u120B \u1218\u120D\u1235",
-  "player.seekSlider": "\u12E8\u126A\u12F2\u12EE \u1266\u1273",
-  "player.positionValueTextSeconds": "\u1266\u1273 {curSec} {secUnit} \u12A8 {totalSec} {totalSecUnit}",
-  "player.positionValueText": "\u1266\u1273 {curMin} {minUnit} {curSec} \u12A8 {totalMin} {totalMinUnit}",
-  "player.minuteSingular": "\u12F0\u1242\u1243",
-  "player.minutePlural": "\u12F0\u1242\u1243",
-  "player.secondSingular": "\u1230\u12A8\u1295\u12F5",
-  "player.secondPlural": "\u1230\u12A8\u1295\u12F5",
-  "player.volumeSlider": "\u12E8\u12F5\u121D\u133D \u1218\u1320\u1295",
-  "player.volumeValueText": "\u12F5\u121D\u133D {percent} \u1260\u1218\u1276",
-  "player.mute": "\u12F5\u121D\u133D \u12A0\u1325\u134B",
-  "player.speed": "\u12E8\u121B\u132B\u12C8\u127B \u134D\u1325\u1290\u1275",
-  "player.speedNormal": "\u1218\u12F0\u1260\u129B (1x)",
-  "player.captions": "\u12E8\u130D\u122D\u130C \u133D\u1211\u134D",
-  "player.captionsUnavailable": "\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u121D\u1295\u121D \u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u12E8\u1208\u121D",
-  "player.sign": "\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u1218\u1235\u12AE\u1275",
-  "player.signUnavailable": "\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u12E8\u1208\u121D",
-  "player.audioDescription": "\u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB",
-  "player.adUnavailable": "\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB \u12E8\u1208\u121D",
-  "player.fullscreen": "\u1219\u1209 \u121B\u12EB",
-  "player.help": "\u12E8\u1241\u120D\u134D \u1230\u120C\u12F3 \u12A0\u124B\u122B\u132E\u127D \u12A5\u1308\u12DB",
-  "player.closeHelp": "\u12E8\u12A5\u1308\u12DB \u1218\u1235\u12AE\u1271\u1295 \u12DD\u130B",
-  "player.notAvailableSuffix": "(\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u1208\u121D)",
-  "player.helpTitle": "\u12E8\u1241\u120D\u134D \u1230\u120C\u12F3 \u12A0\u124B\u122B\u132E\u127D",
-  "player.helpHeaderKey": "\u1241\u120D\u134D",
-  "player.helpHeaderAction": "\u1270\u130D\u1263\u122D",
-  "player.shortcutPlayPause": "\u126A\u12F2\u12EE\u12CD\u1295 \u12A0\u132B\u12CD\u1275 \u12C8\u12ED\u121D \u12A0\u1241\u121D",
-  "player.shortcutSeek5": "5 \u1230\u12A8\u1295\u12F5 \u12C8\u12F0 \u128B\u120B \u12C8\u12ED\u121D \u12C8\u12F0 \u134A\u1275 \u12DD\u1208\u120D",
-  "player.shortcutSeek10": "10 \u1230\u12A8\u1295\u12F5 \u12C8\u12F0 \u128B\u120B \u12C8\u12ED\u121D \u12C8\u12F0 \u134A\u1275 \u12DD\u1208\u120D",
-  "player.shortcutVolume": "\u12E8\u12F5\u121D\u133D \u1218\u1320\u1295 \u1328\u121D\u122D \u12C8\u12ED\u121D \u1240\u1295\u1235",
-  "player.shortcutMute": "\u12F5\u121D\u133D \u12A0\u1325\u134B \u12C8\u12ED\u121D \u12AD\u1348\u1275",
-  "player.shortcutCaptions": "\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u12A0\u1265\u122B \u12C8\u12ED\u121D \u12A0\u1325\u134B",
-  "player.shortcutSign": "\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u1218\u1235\u12AE\u1275 \u12A0\u1233\u12ED \u12C8\u12ED\u121D \u12F0\u1265\u1245",
-  "player.shortcutAudioDescription": "\u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB \u12A0\u1265\u122B \u12C8\u12ED\u121D \u12A0\u1325\u134B",
-  "player.shortcutFullscreen": "\u1219\u1209 \u121B\u12EB \u12A0\u1265\u122B \u12C8\u12ED\u121D \u12A0\u1325\u134B",
-  "player.shortcutHelp": "\u12E8\u1241\u120D\u134D \u1230\u120C\u12F3 \u12A0\u124B\u122B\u132E\u127D \u12A5\u1308\u12DB\u1295 \u12A0\u1233\u12ED \u12C8\u12ED\u121D \u12F0\u1265\u1245",
-  "player.shortcutStartEnd": "\u12C8\u12F0 \u1275\u121D\u1205\u122D\u1271 \u1218\u1300\u1218\u122A\u12EB \u12C8\u12ED\u121D \u1218\u1328\u1228\u123B \u12DD\u1208\u120D",
-  "player.statusPlay": "\u12A5\u12E8\u1270\u132B\u12C8\u1270 \u1290\u12CD",
-  "player.statusPause": "\u1246\u121F\u120D",
-  "player.statusVolume": "\u12F5\u121D\u133D {percent} \u1260\u1218\u1276",
-  "player.statusMuted": "\u12F5\u121D\u133D \u1320\u134D\u1277\u120D",
-  "player.statusUnmuted": "\u12F5\u121D\u133D \u1270\u12A8\u134D\u1277\u120D",
-  "player.statusSeek": "\u12C8\u12F0 {time} \u1270\u12D8\u120F\u120D",
-  "player.statusSpeed": "\u12E8\u121B\u132B\u12C8\u127B \u134D\u1325\u1290\u1275 \u12C8\u12F0 {speed}x \u1270\u1240\u12ED\u122F\u120D",
-  "player.statusCaptionsOn": "\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1260\u122D\u1277\u120D",
-  "player.statusCaptionsOff": "\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1320\u134D\u1277\u120D",
-  "player.statusSignOn": "\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u1218\u1235\u12AE\u1275 \u12ED\u1273\u12EB\u120D",
-  "player.statusSignOff": "\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u1218\u1235\u12AE\u1275 \u1270\u12F0\u1265\u124B\u120D",
-  "player.statusAdOn": "\u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB \u1260\u122D\u1277\u120D",
-  "player.statusAdOff": "\u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB \u1320\u134D\u1277\u120D",
-  "player.statusFullscreenOn": "\u12C8\u12F0 \u1219\u1209 \u121B\u12EB \u1308\u1265\u1277\u120D",
-  "player.statusFullscreenOff": "\u12A8\u1219\u1209 \u121B\u12EB \u12C8\u1325\u1277\u120D",
-  "player.statusTranscriptOpen": "\u1270\u130D\u1263\u122B\u12CA \u130D\u120D\u1260\u1323 \u133D\u1211\u134D \u1270\u12A8\u134D\u1277\u120D",
-  "player.statusTranscriptClosed": "\u1270\u130D\u1263\u122B\u12CA \u130D\u120D\u1260\u1323 \u133D\u1211\u134D \u1270\u12D8\u130D\u1277\u120D",
-  "player.captionsSettings": "\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1245\u1295\u1265\u122E\u127D",
-  "player.closeCaptionsSettings": "\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1245\u1295\u1265\u122E\u127D \u1218\u1235\u12AE\u1275\u1295 \u12DD\u130B",
-  "player.captionsTrack": "\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u124B\u1295\u124B",
-  "player.captionsTrackOff": "\u1320\u134D\u1277\u120D",
-  "player.captionsTrackEn": "\u12A5\u1295\u130D\u120A\u12DD\u129B (English)",
-  "player.captionsTrackAm": "\u12A0\u121B\u122D\u129B",
-  "player.captionsSize": "\u12E8\u134A\u12F0\u120D \u1218\u1320\u1295",
-  "player.captionsColor": "\u12E8\u1240\u1208\u121D \u1308\u133D\u1273",
-  "player.captionsPresetWhiteBlack": "\u1290\u132D \u1260\u1325\u1241\u122D \u120B\u12ED",
-  "player.captionsPresetYellowBlack": "\u1262\u132B \u1260\u1325\u1241\u122D \u120B\u12ED",
-  "player.captionsPresetBlackWhite": "\u1325\u1241\u122D \u1260\u1290\u132D \u120B\u12ED",
-  "player.captionsPresetCustom": "\u1265\u1301",
-  "player.captionsTextColor": "\u12E8\u133D\u1211\u134D \u1240\u1208\u121D",
-  "player.captionsBgColor": "\u12E8\u1300\u122D\u1263 \u1240\u1208\u121D",
-  "player.captionsOpacity": "\u12E8\u1300\u122D\u1263 \u130D\u120D\u133D\u1290\u1275",
-  "player.captionsPosition": "\u1266\u1273",
-  "player.captionsPositionBottom": "\u12A8\u1273\u127D",
-  "player.captionsPositionTop": "\u12A8\u120B\u12ED",
-  "player.captionsPreview": "\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1245\u12F5\u1218-\u12D5\u12ED\u1273",
-  "player.captionsPreviewText": "\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1260\u12DA\u1205 \u1218\u120D\u12AD \u12ED\u1273\u12EB\u120D\u1362",
-  "player.transcript": "\u130D\u120D\u1260\u1323 \u133D\u1211\u134D",
-  "player.transcriptToggle": "\u12E8\u130D\u120D\u1260\u1323 \u133D\u1211\u134D \u1218\u1235\u12AE\u1275 \u12AD\u1348\u1275/\u12DD\u130B",
-  "player.transcriptTitle": "\u1270\u130D\u1263\u122B\u12CA \u130D\u120D\u1260\u1323 \u133D\u1211\u134D",
-  "player.transcriptSearch": "\u1260\u133D\u1211\u1349 \u12CD\u1235\u1325 \u12ED\u1348\u120D\u1309",
-  "player.transcriptSearchPlaceholder": "\u12E8\u133D\u1211\u134D \u1218\u1235\u1218\u122E\u127D\u1295 \u12ED\u1348\u120D\u1309...",
-  "player.transcriptClearSearch": "\u134D\u1208\u130B\u1295 \u12A0\u133D\u12F3",
-  "player.transcriptMatches": "{count} \u12CD\u1324\u1276\u127D \u1270\u1308\u129D\u1270\u12CB\u120D",
-  "player.transcriptNoMatches": "\u121D\u1295\u121D \u12E8\u1270\u1308\u1298 \u12E8\u133D\u1211\u134D \u1218\u1235\u1218\u122D \u12E8\u1208\u121D",
-  "player.transcriptDownload": "\u133D\u1211\u1349\u1295 \u12A0\u12CD\u122D\u12F5 (.txt)",
-  "player.transcriptDownloadBraille": "\u1265\u122C\u12ED\u120D \u12A0\u12CD\u122D\u12F5 (.brf)",
-  "player.transcriptSummaryTitle": "\u12E8\u1275\u121D\u1205\u122D\u1271 \u121B\u1320\u1243\u1208\u12EB",
-  "player.transcriptAutoScroll": "\u12A8\u126A\u12F2\u12EE\u12CD \u130B\u122D \u12A0\u1265\u122E \u121B\u1295\u1238\u122B\u1270\u1275",
-  "player.transcriptClose": "\u12E8\u130D\u120D\u1260\u1323 \u133D\u1211\u134D \u1218\u1235\u12AE\u1275\u1295 \u12DD\u130B",
-  "player.transcriptDownloaded": "\u12E8\u126A\u12F2\u12EE\u12CD \u133D\u1211\u134D \u12C8\u122D\u12F7\u120D",
-  "player.statusBrailleDownloaded": "\u12E8\u1265\u122C\u12ED\u120D \u134B\u12ED\u120D (.brf) \u12C8\u122D\u12F7\u120D",
-  "player.errorManifestLoad": "\u12E8\u1275\u121D\u1205\u122D\u1275 \u1218\u1228\u1303\u1295 \u1218\u132B\u1295 \u12A0\u120D\u1270\u127B\u1208\u121D\u1362 \u12A5\u1263\u12AD\u12CE \u12E8\u1260\u12ED\u1290\u1218\u1228\u1265 \u130D\u1295\u1299\u1290\u1275\u12CE\u1295 \u12EB\u1228\u130B\u130D\u1321\u1362",
-  "player.retry": "\u12F3\u130D\u121D \u121E\u12AD\u122D",
-  "player.statusOfflineManifest": "\u12A8\u1218\u1235\u1218\u122D \u12CD\u132D \u12E8\u1270\u1240\u1218\u1320 \u1218\u1228\u1303 \u1270\u132D\u1297\u120D",
-  "player.shortcutTranscript": "\u12E8\u130D\u120D\u1260\u1323 \u133D\u1211\u134D \u1218\u1235\u12AE\u1275 \u12AD\u1348\u1275/\u12DD\u130B",
-  "player.shortcutPreferences": "\u12E8\u1245\u1295\u1265\u122E\u127D \u1218\u1235\u12AE\u1275\u1295 \u12AD\u1348\u1275/\u12DD\u130B",
-  "player.defaultSummary": "\u12ED\u1205 \u1275\u121D\u1205\u122D\u1275 \u1218\u1220\u1228\u1273\u12CA \u133D\u1295\u1230-\u1200\u1233\u1266\u127D\u1295 \u1270\u12F0\u122B\u123D \u1260\u1206\u1290 \u12E8\u1275\u121D\u1205\u122D\u1275 \u1241\u1233\u1241\u1235 \u12A5\u1293 \u121D\u1233\u120C\u12CE\u127D \u12EB\u1235\u1270\u121D\u122B\u120D\u1362",
-  "player.preferences": "\u1245\u1295\u1265\u122E\u127D",
-  "player.preferencesTitle": "\u12E8\u121B\u132B\u12C8\u127B\u12CD \u1245\u1295\u1265\u122E\u127D",
-  "player.closePreferences": "\u12E8\u1245\u1295\u1265\u122E\u127D \u1218\u1235\u12AE\u1275\u1295 \u12DD\u130B",
-  "player.prefSectionGeneral": "\u12A0\u1320\u1243\u120B\u12ED",
-  "player.prefSectionCaptions": "\u12E8\u130D\u122D\u130C \u133D\u1211\u134D",
-  "player.prefLanguage": "\u124B\u1295\u124B",
-  "player.prefLanguageEn": "\u12A5\u1295\u130D\u120A\u12DD\u129B (English)",
-  "player.prefLanguageAm": "\u12A0\u121B\u122D\u129B (Amharic)",
-  "player.prefSpeed": "\u12E8\u121B\u132B\u12C8\u127B \u134D\u1325\u1290\u1275",
-  "player.prefTheme": "\u1308\u133D\u1273",
-  "player.prefThemeDark": "\u1325\u1241\u122D (\u1218\u12F0\u1260\u129B)",
-  "player.prefThemeLight": "\u1290\u132D",
-  "player.prefThemeHighContrast": "\u12A8\u134D\u1270\u129B \u1295\u1345\u1345\u122D (AAA)",
-  "player.prefShortcuts": "\u12E8\u1241\u120D\u134D \u1230\u120C\u12F3 \u12A0\u124B\u122B\u132E\u127D",
-  "player.prefShortcutsOn": "\u12E8\u1290\u1243 (K, J, L, C, S, D, F, T)",
-  "player.prefShortcutsOff": "\u12E8\u1266\u12D8\u1290",
-  "player.prefSignWindow": "\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u1218\u1235\u12AE\u1275",
-  "player.prefAudioDescription": "\u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB (AD)",
-  "player.prefEnabled": "\u12E8\u1290\u1243",
-  "player.prefDisabled": "\u12E8\u1266\u12D8\u1290",
-  "player.prefReset": "\u12C8\u12F0 \u1290\u1263\u122A \u1218\u120D\u1235",
-  "player.prefDownload": "\u12E8\u12A5\u1294\u1295 \u121D\u122D\u132B\u12CE\u127D \u12A0\u12CD\u122D\u12F5",
-  "player.prefDelete": "\u12E8\u12A5\u1294\u1295 \u121D\u122D\u132B\u12CE\u127D \u1230\u122D\u12DD",
-  "player.statusPrefsSaved": "\u1245\u1295\u1265\u122E\u127D \u1270\u1240\u121D\u1320\u12CB\u120D",
-  "player.statusLangChanged": "\u124B\u1295\u124B \u12C8\u12F0 {lang} \u1270\u1240\u12ED\u122F\u120D"
-};
-
-// module/src/player/vtt-parser.ts
-function parseTimestamp(ts) {
-  const parts = ts.trim().split(":");
-  if (parts.length === 2 && parts[0] !== void 0 && parts[1] !== void 0) {
-    const min = parseFloat(parts[0]);
-    const sec = parseFloat(parts[1]);
-    return min * 60 + sec;
-  }
-  if (parts.length === 3 && parts[0] !== void 0 && parts[1] !== void 0 && parts[2] !== void 0) {
-    const hr = parseFloat(parts[0]);
-    const min = parseFloat(parts[1]);
-    const sec = parseFloat(parts[2]);
-    return hr * 3600 + min * 60 + sec;
-  }
-  return 0;
-}
-function sanitizeCueText(raw) {
-  return raw.replace(/<v(?:\.[^>]+|\s+[^>]+)?>/gi, "").replace(/<\/v>/gi, "").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
-}
-function parseWebVtt(vttContent) {
-  if (!vttContent || !vttContent.includes("-->")) {
-    return [];
-  }
-  const normalized = vttContent.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  const blocks = normalized.split(/\n\s*\n/);
-  const cues = [];
-  for (const block of blocks) {
-    const lines = block.trim().split("\n").map((l3) => l3.trim()).filter(Boolean);
-    if (lines.length === 0) continue;
-    const timingIndex = lines.findIndex((l3) => l3.includes("-->"));
-    if (timingIndex === -1) continue;
-    const timingLine = lines[timingIndex];
-    if (!timingLine) continue;
-    const [startRaw, ...rest] = timingLine.split("-->");
-    if (!startRaw || rest.length === 0) continue;
-    const endPart = rest.join("-->").trim().split(/\s+/)[0];
-    if (!endPart) continue;
-    const startSec = parseTimestamp(startRaw);
-    const endSec = parseTimestamp(endPart);
-    if (Number.isNaN(startSec) || Number.isNaN(endSec) || endSec <= startSec) {
-      continue;
-    }
-    const id = timingIndex > 0 ? lines[0] : void 0;
-    const textLines = lines.slice(timingIndex + 1);
-    const rawText = textLines.join("\n");
-    const cleanText = sanitizeCueText(rawText);
-    if (cleanText.length > 0) {
-      cues.push({
-        id,
-        start: startSec,
-        end: endSec,
-        text: cleanText
-      });
-    }
-  }
-  return cues.sort((a3, b3) => a3.start - b3.start);
-}
-function getActiveCueText(cues, currentTime) {
-  if (!cues || cues.length === 0) return "";
-  const active = cues.filter((c5) => c5.start <= currentTime && currentTime <= c5.end);
-  if (active.length === 0) return "";
-  return active.map((c5) => c5.text).join("\n");
-}
-
-// module/src/player/transcript-manager.ts
-function filterTranscriptLines(lines, query) {
-  if (!lines || lines.length === 0) return [];
-  const q = query.trim().toLowerCase();
-  if (!q) {
-    return lines.map((line, originalIndex) => ({ line, originalIndex }));
-  }
-  const results = [];
-  for (let i6 = 0; i6 < lines.length; i6++) {
-    const line = lines[i6];
-    if (line && line.text.toLowerCase().includes(q)) {
-      results.push({ line, originalIndex: i6 });
-    }
-  }
-  return results;
-}
-function findActiveTranscriptLineIndex(lines, currentTime) {
-  if (!lines || lines.length === 0 || !Number.isFinite(currentTime)) return -1;
-  return lines.findIndex(
-    (line) => currentTime >= line.start && currentTime < line.end
-  );
-}
-function splitTextByMatch(text, query) {
-  if (!text) return [];
-  const q = query.trim();
-  if (!q) {
-    return [{ text, isMatch: false }];
-  }
-  const escapedQuery = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(`(${escapedQuery})`, "gi");
-  const parts = text.split(regex);
-  return parts.filter((part) => part.length > 0).map((part) => ({
-    text: part,
-    isMatch: part.toLowerCase() === q.toLowerCase()
-  }));
-}
-function formatTranscriptForDownload(lessonTitle, lang, summary, lines, formatTimeFn) {
-  const headerLine = "=".repeat(60);
-  const langLabel = lang === "am" ? "Amharic (\u12A0\u121B\u122D\u129B)" : "English";
-  let out = `${lessonTitle || "Lesson"} - Transcript (${langLabel})
-`;
-  out += `${headerLine}
-
-`;
-  if (summary && summary.trim().length > 0) {
-    out += `PLAIN-LANGUAGE SUMMARY:
-`;
-    out += `${summary.trim()}
-
-`;
-    out += `${"-".repeat(60)}
-
-`;
-  }
-  out += `TIMED TRANSCRIPT:
-
-`;
-  for (const line of lines) {
-    const timeFormatted = formatTimeFn(line.start);
-    out += `[${timeFormatted}] ${line.text}
-`;
-  }
-  return out;
-}
-
-// module/src/player/braille-formatter.ts
-var BRF_LINE_WIDTH = 40;
-var BRF_PAGE_HEIGHT = 25;
-var FORM_FEED = "\f";
-var EN_BRAILLE_MAP = {
-  a: "a",
-  b: "b",
-  c: "c",
-  d: "d",
-  e: "e",
-  f: "f",
-  g: "g",
-  h: "h",
-  i: "i",
-  j: "j",
-  k: "k",
-  l: "l",
-  m: "m",
-  n: "n",
-  o: "o",
-  p: "p",
-  q: "q",
-  r: "r",
-  s: "s",
-  t: "t",
-  u: "u",
-  v: "v",
-  w: "w",
-  x: "x",
-  y: "y",
-  z: "z",
-  ",": "1",
-  ";": "2",
-  ":": "3",
-  ".": "4",
-  "!": "6",
-  "(": "7",
-  ")": "7",
-  "?": "8",
-  '"': "8",
-  "'": "'",
-  "-": "-",
-  "/": "/",
-  " ": " "
-};
-var BRAILLE_DIGITS = {
-  "1": "a",
-  "2": "b",
-  "3": "c",
-  "4": "d",
-  "5": "e",
-  "6": "f",
-  "7": "g",
-  "8": "h",
-  "9": "i",
-  "0": "j"
-};
-var ETHIOPIC_BRAILLE_MAP = {
-  // ሀ (ha) orders
-  "\u1200": "h",
-  "\u1201": "hu",
-  "\u1202": "hi",
-  "\u1203": "ha",
-  "\u1204": "he",
-  "\u1205": "h",
-  "\u1206": "ho",
-  // ለ (la) orders
-  "\u1208": "l",
-  "\u1209": "lu",
-  "\u120A": "li",
-  "\u120B": "la",
-  "\u120C": "le",
-  "\u120D": "l",
-  "\u120E": "lo",
-  // ሐ (hha) orders
-  "\u1210": "h",
-  "\u1211": "hu",
-  "\u1212": "hi",
-  "\u1213": "ha",
-  "\u1214": "he",
-  "\u1215": "h",
-  "\u1216": "ho",
-  // መ (ma) orders
-  "\u1218": "m",
-  "\u1219": "mu",
-  "\u121A": "mi",
-  "\u121B": "ma",
-  "\u121C": "me",
-  "\u121D": "m",
-  "\u121E": "mo",
-  // ሠ (sza) orders
-  "\u1220": "s",
-  "\u1221": "su",
-  "\u1222": "si",
-  "\u1223": "sa",
-  "\u1224": "se",
-  "\u1225": "s",
-  "\u1226": "so",
-  // ረ (ra) orders
-  "\u1228": "r",
-  "\u1229": "ru",
-  "\u122A": "ri",
-  "\u122B": "ra",
-  "\u122C": "re",
-  "\u122D": "r",
-  "\u122E": "ro",
-  // ሰ (sa) orders
-  "\u1230": "s",
-  "\u1231": "su",
-  "\u1232": "si",
-  "\u1233": "sa",
-  "\u1234": "se",
-  "\u1235": "s",
-  "\u1236": "so",
-  // ሸ (sha) orders
-  "\u1238": "sh",
-  "\u1239": "shu",
-  "\u123A": "shi",
-  "\u123B": "sha",
-  "\u123C": "she",
-  "\u123D": "sh",
-  "\u123E": "sho",
-  // ቀ (qa) orders
-  "\u1240": "q",
-  "\u1241": "qu",
-  "\u1242": "qi",
-  "\u1243": "qa",
-  "\u1244": "qe",
-  "\u1245": "q",
-  "\u1246": "qo",
-  // በ (ba) orders
-  "\u1260": "b",
-  "\u1261": "bu",
-  "\u1262": "bi",
-  "\u1263": "ba",
-  "\u1264": "be",
-  "\u1265": "b",
-  "\u1266": "bo",
-  // ተ (ta) orders
-  "\u1270": "t",
-  "\u1271": "tu",
-  "\u1272": "ti",
-  "\u1273": "ta",
-  "\u1274": "te",
-  "\u1275": "t",
-  "\u1276": "to",
-  // ቸ (cha) orders
-  "\u1278": "ch",
-  "\u1279": "chu",
-  "\u127A": "chi",
-  "\u127B": "cha",
-  "\u127C": "che",
-  "\u127D": "ch",
-  "\u127E": "cho",
-  // ኀ (xha) orders
-  "\u1280": "h",
-  "\u1281": "hu",
-  "\u1282": "hi",
-  "\u1283": "ha",
-  "\u1284": "he",
-  "\u1285": "h",
-  "\u1286": "ho",
-  // ነ (na) orders
-  "\u1290": "n",
-  "\u1291": "nu",
-  "\u1292": "ni",
-  "\u1293": "na",
-  "\u1294": "ne",
-  "\u1295": "n",
-  "\u1296": "no",
-  // ኘ (nya) orders
-  "\u1298": "gn",
-  "\u1299": "gnu",
-  "\u129A": "gni",
-  "\u129B": "gna",
-  "\u129C": "gne",
-  "\u129D": "gn",
-  "\u129E": "gno",
-  // አ (a) orders
-  "\u12A0": "a",
-  "\u12A1": "u",
-  "\u12A2": "i",
-  "\u12A3": "a",
-  "\u12A4": "e",
-  "\u12A5": "y",
-  "\u12A6": "o",
-  // ከ (ka) orders
-  "\u12A8": "k",
-  "\u12A9": "ku",
-  "\u12AA": "ki",
-  "\u12AB": "ka",
-  "\u12AC": "ke",
-  "\u12AD": "k",
-  "\u12AE": "ko",
-  // ኸ (hxa) orders
-  "\u12B8": "k",
-  "\u12B9": "ku",
-  "\u12BA": "ki",
-  "\u12BB": "ka",
-  "\u12BC": "ke",
-  "\u12BD": "k",
-  "\u12BE": "ko",
-  // ወ (wa) orders
-  "\u12C8": "w",
-  "\u12C9": "wu",
-  "\u12CA": "wi",
-  "\u12CB": "wa",
-  "\u12CC": "we",
-  "\u12CD": "w",
-  "\u12CE": "wo",
-  // ዐ (ain) orders
-  "\u12D0": "a",
-  "\u12D1": "u",
-  "\u12D2": "i",
-  "\u12D3": "a",
-  "\u12D4": "e",
-  "\u12D5": "y",
-  "\u12D6": "o",
-  // ዘ (za) orders
-  "\u12D8": "z",
-  "\u12D9": "zu",
-  "\u12DA": "zi",
-  "\u12DB": "za",
-  "\u12DC": "ze",
-  "\u12DD": "z",
-  "\u12DE": "zo",
-  // ዠ (zha) orders
-  "\u12E0": "zh",
-  "\u12E1": "zhu",
-  "\u12E2": "zhi",
-  "\u12E3": "zha",
-  "\u12E4": "zhe",
-  "\u12E5": "zh",
-  "\u12E6": "zho",
-  // የ (ya) orders
-  "\u12E8": "y",
-  "\u12E9": "yu",
-  "\u12EA": "yi",
-  "\u12EB": "ya",
-  "\u12EC": "ye",
-  "\u12ED": "y",
-  "\u12EE": "yo",
-  // ደ (da) orders
-  "\u12F0": "d",
-  "\u12F1": "du",
-  "\u12F2": "di",
-  "\u12F3": "da",
-  "\u12F4": "de",
-  "\u12F5": "d",
-  "\u12F6": "do",
-  // ጀ (ja) orders
-  "\u1300": "j",
-  "\u1301": "ju",
-  "\u1302": "ji",
-  "\u1303": "ja",
-  "\u1304": "je",
-  "\u1305": "j",
-  "\u1306": "jo",
-  // ገ (ga) orders
-  "\u1308": "g",
-  "\u1309": "gu",
-  "\u130A": "gi",
-  "\u130B": "ga",
-  "\u130C": "ge",
-  "\u130D": "g",
-  "\u130E": "go",
-  // ጠ (t'a) orders
-  "\u1320": "t",
-  "\u1321": "tu",
-  "\u1322": "ti",
-  "\u1323": "ta",
-  "\u1324": "te",
-  "\u1325": "t",
-  "\u1326": "to",
-  // ጨ (ch'a) orders
-  "\u1328": "ch",
-  "\u1329": "chu",
-  "\u132A": "chi",
-  "\u132B": "cha",
-  "\u132C": "che",
-  "\u132D": "ch",
-  "\u132E": "cho",
-  // ጰ (p'a) orders
-  "\u1330": "p",
-  "\u1331": "pu",
-  "\u1332": "pi",
-  "\u1333": "pa",
-  "\u1334": "pe",
-  "\u1335": "p",
-  "\u1336": "po",
-  // ጸ (ts'a) orders
-  "\u1338": "ts",
-  "\u1339": "tsu",
-  "\u133A": "tsi",
-  "\u133B": "tsa",
-  "\u133C": "tse",
-  "\u133D": "ts",
-  "\u133E": "tso",
-  // ፀ (tz'a) orders
-  "\u1340": "ts",
-  "\u1341": "tsu",
-  "\u1342": "tsi",
-  "\u1343": "tsa",
-  "\u1344": "tse",
-  "\u1345": "ts",
-  "\u1346": "tso",
-  // ፈ (fa) orders
-  "\u1348": "f",
-  "\u1349": "fu",
-  "\u134A": "fi",
-  "\u134B": "fa",
-  "\u134C": "fe",
-  "\u134D": "f",
-  "\u134E": "fo",
-  // ፐ (pa) orders
-  "\u1350": "p",
-  "\u1351": "pu",
-  "\u1352": "pi",
-  "\u1353": "pa",
-  "\u1354": "pe",
-  "\u1355": "p",
-  "\u1356": "po",
-  // Labialized variants
-  "\u120F": "lwa",
-  "\u121F": "mwa",
-  "\u122F": "rwa",
-  "\u1237": "swa",
-  "\u123F": "shwa",
-  "\u124B": "qwa",
-  "\u1267": "bwa",
-  "\u1277": "twa",
-  "\u127F": "chwa",
-  "\u128B": "hwa",
-  "\u1297": "nwa",
-  "\u129F": "gnwa",
-  "\u12B3": "kwa",
-  "\u12DF": "zwa",
-  "\u12E7": "zhwa",
-  "\u12F7": "dwa",
-  "\u1307": "jwa",
-  "\u1313": "gwa",
-  "\u1327": "twa",
-  "\u132F": "chwa",
-  "\u1337": "pwa",
-  "\u133F": "tswa",
-  "\u134F": "fwa",
-  // Ethiopic punctuation
-  "\u1361": " ",
-  // word separator -> space
-  "\u1362": "4",
-  // full stop -> ASCII Braille 4
-  "\u1363": "1",
-  // comma -> ASCII Braille 1
-  "\u1364": "2",
-  // semicolon -> ASCII Braille 2
-  "\u1365": "3",
-  // colon -> ASCII Braille 3
-  "\u1366": "3-",
-  // preface colon
-  "\u1367": "8",
-  // question mark
-  "\u1368": "-",
-  // section mark
-  // Ethiopic digits
-  "\u1369": "#a",
-  "\u136A": "#b",
-  "\u136B": "#c",
-  "\u136C": "#d",
-  "\u136D": "#e",
-  "\u136E": "#f",
-  "\u136F": "#g",
-  "\u1370": "#h",
-  "\u1371": "#i",
-  "\u1372": "#aj"
-};
-function translateEnglishToBraille(text) {
-  let result = "";
-  let inNumber = false;
-  for (const ch of text) {
-    if (/[0-9]/.test(ch)) {
-      if (!inNumber) {
-        result += "#";
-        inNumber = true;
-      }
-      result += BRAILLE_DIGITS[ch] ?? ch;
-      continue;
-    }
-    inNumber = false;
-    if (/[A-Z]/.test(ch)) {
-      result += "," + ch.toLowerCase();
-      continue;
-    }
-    const mapped = EN_BRAILLE_MAP[ch];
-    if (mapped) {
-      result += mapped;
-    } else {
-      result += ch;
-    }
-  }
-  return result;
-}
-function translateAmharicToBraille(text) {
-  let result = "";
-  for (const ch of text) {
-    const etMapped = ETHIOPIC_BRAILLE_MAP[ch];
-    if (etMapped) {
-      result += etMapped;
-    } else if (/[0-9]/.test(ch)) {
-      result += "#" + (BRAILLE_DIGITS[ch] ?? ch);
-    } else {
-      const enMapped = EN_BRAILLE_MAP[ch.toLowerCase()];
-      if (enMapped) {
-        result += enMapped;
-      } else {
-        result += ch;
-      }
-    }
-  }
-  return result;
-}
-function wrapBrailleLine(line, maxWidth = BRF_LINE_WIDTH) {
-  if (!line || line.length === 0) return [""];
-  if (line.length <= maxWidth) return [line];
-  const words = line.split(" ");
-  const lines = [];
-  let current = "";
-  for (const word of words) {
-    if (!current) {
-      if (word.length <= maxWidth) {
-        current = word;
-      } else {
-        for (let i6 = 0; i6 < word.length; i6 += maxWidth) {
-          lines.push(word.slice(i6, i6 + maxWidth));
-        }
-      }
-    } else {
-      if (current.length + 1 + word.length <= maxWidth) {
-        current += " " + word;
-      } else {
-        lines.push(current);
-        if (word.length <= maxWidth) {
-          current = word;
-        } else {
-          for (let i6 = 0; i6 < word.length; i6 += maxWidth) {
-            const chunk = word.slice(i6, i6 + maxWidth);
-            if (i6 + maxWidth < word.length) {
-              lines.push(chunk);
-            } else {
-              current = chunk;
-            }
-          }
-        }
-      }
-    }
-  }
-  if (current) {
-    lines.push(current);
-  }
-  return lines;
-}
-function paginateBrailleLines(lines, pageHeight = BRF_PAGE_HEIGHT) {
-  const pages = [];
-  let currentPage = [];
-  for (const line of lines) {
-    currentPage.push(line.slice(0, BRF_LINE_WIDTH));
-    if (currentPage.length === pageHeight) {
-      pages.push(currentPage);
-      currentPage = [];
-    }
-  }
-  if (currentPage.length > 0) {
-    while (currentPage.length < pageHeight) {
-      currentPage.push("");
-    }
-    pages.push(currentPage);
-  }
-  return pages.map((pageLines) => pageLines.join("\r\n")).join(`${FORM_FEED}\r
-`);
-}
-function formatTranscriptToBrf(lessonTitle, lang, summary, lines, formatTimeFn = (s5) => `${Math.floor(s5 / 60)}:${String(Math.floor(s5 % 60)).padStart(2, "0")}`) {
-  const isAmharic = lang === "am";
-  const translator = isAmharic ? translateAmharicToBraille : translateEnglishToBraille;
-  const rawDocumentLines = [];
-  rawDocumentLines.push("========================================");
-  rawDocumentLines.push("[DRAFT - PENDING BRAILLE READER REVIEW]");
-  rawDocumentLines.push("========================================");
-  rawDocumentLines.push("");
-  rawDocumentLines.push(
-    `SAVANNA ACCESS KIT - BRF TRANSCRIPT`
-  );
-  const displayTitle = isAmharic ? translator(lessonTitle || "Lesson") : lessonTitle || "Lesson";
-  rawDocumentLines.push(
-    `LESSON: ${displayTitle.toUpperCase()} (${isAmharic ? "AMHARIC" : "ENGLISH"})`
-  );
-  rawDocumentLines.push("----------------------------------------");
-  rawDocumentLines.push("");
-  if (summary && summary.trim().length > 0) {
-    rawDocumentLines.push(isAmharic ? "SUMMARY4" : "SUMMARY:");
-    const translatedSummary = translator(summary.trim());
-    rawDocumentLines.push(translatedSummary);
-    rawDocumentLines.push("----------------------------------------");
-    rawDocumentLines.push("");
-  }
-  rawDocumentLines.push(isAmharic ? "TIMED TRANSCRIPT4" : "TIMED TRANSCRIPT:");
-  rawDocumentLines.push("");
-  for (const line of lines) {
-    const timeStr = `[${formatTimeFn(line.start)}] `;
-    const brailleText = translator(line.text);
-    rawDocumentLines.push(`${timeStr}${brailleText}`);
-  }
-  const wrappedLines = [];
-  for (const rawLine of rawDocumentLines) {
-    const wrapped = wrapBrailleLine(rawLine, BRF_LINE_WIDTH);
-    wrappedLines.push(...wrapped);
-  }
-  return paginateBrailleLines(wrappedLines, BRF_PAGE_HEIGHT);
-}
-
-// module/src/player/preferences-manager.ts
-var PREFS_STORAGE_KEY = "savanna.prefs.v1";
-function getDefaultUiPreferences() {
-  return {
-    lang: "en",
-    speed: 1,
-    theme: "dark",
-    shortcuts: true
-  };
-}
-function getDefaultCaptionsPreferences() {
-  return {
-    enabled: false,
-    lang: "en",
-    fontSize: 100,
-    preset: "white-black",
-    textColor: "#ffffff",
-    bgColor: "#000000",
-    bgOpacity: 80,
-    position: "bottom"
-  };
-}
-function loadPlayerPreferences() {
-  const defaults = {
-    ui: getDefaultUiPreferences(),
-    captions: getDefaultCaptionsPreferences()
-  };
-  try {
-    if (typeof localStorage === "undefined") return defaults;
-    const raw = localStorage.getItem(PREFS_STORAGE_KEY);
-    if (!raw) return defaults;
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return defaults;
-    if (parsed.ui && typeof parsed.ui === "object") {
-      const u3 = parsed.ui;
-      if (u3.lang === "en" || u3.lang === "am") {
-        defaults.ui.lang = u3.lang;
-      }
-      if (typeof u3.speed === "number" && u3.speed >= 0.5 && u3.speed <= 2.5) {
-        defaults.ui.speed = u3.speed;
-      }
-      if (u3.theme === "dark" || u3.theme === "light" || u3.theme === "high-contrast") {
-        defaults.ui.theme = u3.theme;
-      }
-      if (typeof u3.shortcuts === "boolean") {
-        defaults.ui.shortcuts = u3.shortcuts;
-      }
-    }
-    if (parsed.captions && typeof parsed.captions === "object") {
-      const c5 = parsed.captions;
-      if (typeof c5.enabled === "boolean") {
-        defaults.captions.enabled = c5.enabled;
-      }
-      if (c5.lang === "en" || c5.lang === "am" || c5.lang === "off") {
-        defaults.captions.lang = c5.lang;
-      }
-      if (typeof c5.fontSize === "number" && [100, 150, 200, 300].includes(c5.fontSize)) {
-        defaults.captions.fontSize = c5.fontSize;
-      }
-      if (["white-black", "yellow-black", "black-white", "custom"].includes(c5.preset)) {
-        defaults.captions.preset = c5.preset;
-      }
-      if (typeof c5.textColor === "string" && c5.textColor.length > 0) {
-        defaults.captions.textColor = c5.textColor;
-      }
-      if (typeof c5.bgColor === "string" && c5.bgColor.length > 0) {
-        defaults.captions.bgColor = c5.bgColor;
-      }
-      if (typeof c5.bgOpacity === "number") {
-        defaults.captions.bgOpacity = Math.max(0, Math.min(100, c5.bgOpacity));
-      }
-      if (c5.position === "bottom" || c5.position === "top") {
-        defaults.captions.position = c5.position;
-      }
-    }
-  } catch {
-  }
-  return defaults;
-}
-function savePlayerPreferences(ui, captions) {
-  try {
-    if (typeof localStorage === "undefined") return;
-    const raw = localStorage.getItem(PREFS_STORAGE_KEY);
-    let root = {};
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === "object") {
-          root = parsed;
-        }
-      } catch {
-        root = {};
-      }
-    }
-    root["ui"] = {
-      lang: ui.lang,
-      speed: ui.speed,
-      theme: ui.theme,
-      shortcuts: ui.shortcuts
-    };
-    root["captions"] = {
-      enabled: captions.enabled,
-      lang: captions.lang,
-      fontSize: captions.fontSize,
-      preset: captions.preset,
-      textColor: captions.textColor,
-      bgColor: captions.bgColor,
-      bgOpacity: captions.bgOpacity,
-      position: captions.position
-    };
-    localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(root));
-  } catch {
-  }
-}
-
-// module/src/player/caption-loader.ts
-function resolveCaptionUrl(options) {
-  const { urlPath, apiBase, documentOrigin } = options;
-  if (!urlPath || typeof urlPath !== "string") {
-    throw new Error("Caption path must be a non-empty string");
-  }
-  const trimmedPath = urlPath.trim();
-  try {
-    const parsed = new URL(trimmedPath);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      throw new Error(`Invalid caption URL protocol "${parsed.protocol}". Only HTTP and HTTPS are permitted.`);
-    }
-    return parsed.href;
-  } catch (err) {
-    if (err.message && err.message.includes("Only HTTP and HTTPS")) {
-      throw err;
-    }
-  }
-  let base = apiBase?.trim();
-  if (!base) {
-    if (typeof window !== "undefined" && window.location?.origin) {
-      base = window.location.origin;
-    } else if (documentOrigin?.trim()) {
-      base = documentOrigin.trim();
-    }
-  }
-  if (!base) {
-    throw new Error(
-      `Cannot resolve relative caption path "${trimmedPath}": No API base configured and no browser origin available.`
-    );
-  }
-  try {
-    if (!/^[a-z][a-z\d+.-]*:/i.test(base)) {
-      const resolutionBase = typeof window !== "undefined" && window.location?.href ? window.location.href : documentOrigin?.trim();
-      if (!resolutionBase) throw new Error("No page origin is available for a relative API base.");
-      base = new URL(base, resolutionBase).href;
-    }
-  } catch (err) {
-    throw new Error(`Invalid base URL "${base}": ${err.message}`);
-  }
-  try {
-    const parsedBase = new URL(base);
-    if (parsedBase.protocol !== "http:" && parsedBase.protocol !== "https:") {
-      throw new Error(`Base URL protocol "${parsedBase.protocol}" must be HTTP or HTTPS.`);
-    }
-  } catch (err) {
-    if (err.message && err.message.includes("must be HTTP or HTTPS")) throw err;
-    throw new Error(`Invalid base URL "${base}": ${err.message}`);
-  }
-  if (!base.endsWith("/")) {
-    base += "/";
-  }
-  const cleanPath = trimmedPath.startsWith("/") ? trimmedPath.slice(1) : trimmedPath;
-  const resolved = new URL(cleanPath, base);
-  if (resolved.protocol !== "http:" && resolved.protocol !== "https:") {
-    throw new Error(`Resolved caption URL "${resolved.href}" must use HTTP or HTTPS.`);
-  }
-  return resolved.href;
-}
-function isTrustedApiEndpoint(url, apiBase) {
-  if (!apiBase) return false;
-  try {
-    const target = new URL(url);
-    const resolutionBase = typeof window !== "undefined" && window.location?.href ? window.location.href : void 0;
-    const api = new URL(apiBase, resolutionBase);
-    if (target.origin !== api.origin) return false;
-    return target.pathname.startsWith("/v1/") && !target.pathname.startsWith("/media/");
-  } catch {
-    return false;
-  }
-}
-function isStaticMediaUrl(url) {
-  try {
-    const parsed = new URL(url);
-    return parsed.pathname.startsWith("/media/") || parsed.pathname.includes("/static/");
-  } catch {
-    return false;
-  }
-}
-function shouldSendApiKey(url, apiKey, apiBase) {
-  if (!apiKey || !apiKey.trim()) return false;
-  if (isStaticMediaUrl(url)) return false;
-  return isTrustedApiEndpoint(url, apiBase);
-}
-function formatPackSize(bytes) {
-  if (typeof bytes !== "number" || bytes <= 0 || !Number.isFinite(bytes)) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
-async function fetchCaptionTrack(options) {
-  const { url, apiKey, apiBase, createBlobUrl = false, fetchFn = fetch, signal } = options;
-  const mustAuthenticate = shouldSendApiKey(url, apiKey, apiBase);
-  const headers = {};
-  if (mustAuthenticate && apiKey) {
-    headers["X-Savanna-Key"] = apiKey;
-  }
-  let response;
-  try {
-    response = await fetchFn(url, {
-      headers,
-      redirect: mustAuthenticate ? "manual" : "follow",
-      signal
-    });
-  } catch (error) {
-    if (signal?.aborted) throw error;
-    if (typeof caches !== "undefined") {
-      const cached = await caches.match(url).catch(() => void 0);
-      if (cached?.ok) return processCaptionText(await cached.text(), createBlobUrl);
-    }
-    throw error;
-  }
-  if (response.type === "opaqueredirect" || response.status >= 300 && response.status < 400) {
-    const location2 = response.headers.get("location");
-    if (location2) {
-      const targetUrl = resolveCaptionUrl({ urlPath: location2, apiBase });
-      const targetResponse = await fetchFn(targetUrl, {
-        headers: {},
-        // Do NOT forward API key to redirect target
-        redirect: "follow",
-        signal
-      });
-      if (!targetResponse.ok) {
-        throw new Error(`Failed to fetch redirected caption file: HTTP ${targetResponse.status}`);
-      }
-      const text2 = await targetResponse.text();
-      return processCaptionText(text2, createBlobUrl);
-    }
-    throw new Error(
-      "Authenticated caption endpoint returned an opaque redirect. Direct caption streaming or same-origin endpoint required."
-    );
-  }
-  if (response.status === 401 || response.status === 403) {
-    throw new Error(`Authentication failed for caption request: HTTP ${response.status}`);
-  }
-  if (!response.ok) {
-    throw new Error(`Failed to load caption file: HTTP ${response.status}`);
-  }
-  const text = await response.text();
-  return processCaptionText(text, createBlobUrl);
-}
-function processCaptionText(text, createBlobUrl) {
-  let blobUrl;
-  if (createBlobUrl && typeof URL !== "undefined" && typeof URL.createObjectURL === "function" && typeof Blob !== "undefined") {
-    try {
-      const blob = new Blob([text], { type: "text/vtt" });
-      blobUrl = URL.createObjectURL(blob);
-    } catch {
-    }
-  }
-  return { text, blobUrl };
-}
-
-// module/src/player/lesson-manifest.ts
-function isRecord(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function isHttpUrl(value) {
-  if (typeof value !== "string" || value.trim() === "") return false;
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-function isApiPath(value) {
-  return typeof value === "string" && value.startsWith("/v1/");
-}
-function parseLessonManifest(value, expectedId) {
-  if (!isRecord(value)) throw new Error("Lesson manifest must be a JSON object.");
-  if (typeof value.id !== "string" || value.id.trim() === "") throw new Error("Lesson manifest is missing its id.");
-  if (expectedId && value.id !== expectedId) throw new Error("The API returned a manifest for a different lesson.");
-  if (!isRecord(value.title) || typeof value.title.en !== "string" || typeof value.title.am !== "string") {
-    throw new Error("Lesson manifest title must include English and Amharic text.");
-  }
-  if (typeof value.durationSec !== "number" || !Number.isFinite(value.durationSec) || value.durationSec < 0) {
-    throw new Error("Lesson manifest duration must be a non-negative number.");
-  }
-  if (!isRecord(value.media) || !isHttpUrl(value.media.video) || !isHttpUrl(value.media.audio)) {
-    throw new Error("Lesson manifest media must include valid HTTP or HTTPS video and audio URLs.");
-  }
-  if (!Array.isArray(value.captions)) throw new Error("Lesson manifest captions must be an array.");
-  const captions = value.captions.map((caption) => {
-    if (!isRecord(caption) || caption.lang !== "en" && caption.lang !== "am" || !isHttpUrl(caption.url)) {
-      throw new Error("Each caption track must have an en or am language and a valid HTTP or HTTPS URL.");
-    }
-    return { lang: caption.lang, url: caption.url };
-  });
-  if (new Set(captions.map((caption) => caption.lang)).size !== captions.length) {
-    throw new Error("Lesson manifest contains duplicate caption languages.");
-  }
-  let sign = null;
-  if (value.sign !== null) {
-    if (!isRecord(value.sign) || !isHttpUrl(value.sign.url) || typeof value.sign.offsetMs !== "number" || !Number.isFinite(value.sign.offsetMs)) {
-      throw new Error("Lesson manifest sign track must include a valid URL and numeric offsetMs, or be null.");
-    }
-    sign = { url: value.sign.url, offsetMs: value.sign.offsetMs };
-  }
-  let audioDescription = null;
-  if (value.audioDescription !== null) {
-    if (!isRecord(value.audioDescription) || !isHttpUrl(value.audioDescription.audioUrl) || !isHttpUrl(value.audioDescription.vttUrl) || typeof value.audioDescription.extended !== "boolean") {
-      throw new Error("Lesson manifest audio description must include valid audio and VTT URLs and an extended flag, or be null.");
-    }
-    audioDescription = {
-      audioUrl: value.audioDescription.audioUrl,
-      vttUrl: value.audioDescription.vttUrl,
-      extended: value.audioDescription.extended
-    };
-  }
-  if (!isRecord(value.transcript) || !isApiPath(value.transcript.url)) {
-    throw new Error("Lesson manifest transcript URL must be a versioned API path.");
-  }
-  let pack = null;
-  if (value.pack !== null) {
-    if (!isRecord(value.pack) || !isApiPath(value.pack.manifestUrl) || typeof value.pack.sizeBytes !== "number" || !Number.isInteger(value.pack.sizeBytes) || value.pack.sizeBytes < 0) {
-      throw new Error("Lesson manifest pack must include a versioned manifest URL and non-negative sizeBytes, or be null.");
-    }
-    pack = { manifestUrl: value.pack.manifestUrl, sizeBytes: value.pack.sizeBytes };
-  }
-  let summary;
-  if (typeof value.summary === "string") {
-    summary = value.summary;
-  } else if (value.summary !== void 0 && value.summary !== null) {
-    const summaryValue = value.summary;
-    if (!isRecord(summaryValue)) {
-      throw new Error("Lesson manifest summary must be text or an English/Amharic text map.");
-    }
-    if (["en", "am"].some((lang) => summaryValue[lang] !== void 0 && typeof summaryValue[lang] !== "string")) {
-      throw new Error("Lesson manifest summary must be text or an English/Amharic text map.");
-    }
-    summary = {
-      ...typeof summaryValue.en === "string" ? { en: summaryValue.en } : {},
-      ...typeof summaryValue.am === "string" ? { am: summaryValue.am } : {}
-    };
-  }
-  return {
-    id: value.id,
-    title: { en: value.title.en, am: value.title.am },
-    durationSec: value.durationSec,
-    media: { video: value.media.video, audio: value.media.audio },
-    captions,
-    sign,
-    audioDescription,
-    transcript: { url: value.transcript.url },
-    pack,
-    ...summary !== void 0 ? { summary } : {}
-  };
-}
-
-// module/src/offline/offline-cache.ts
-var CACHE_PREFIX = "savanna-pack-";
-async function getCachedObjectUrl(url) {
-  if (typeof caches === "undefined" || typeof URL.createObjectURL !== "function") return null;
-  try {
-    for (const name of await caches.keys()) {
-      if (!name.startsWith(CACHE_PREFIX)) continue;
-      const response = await (await caches.open(name)).match(url);
-      if (response) return URL.createObjectURL(await response.blob());
-    }
-  } catch {
-  }
-  return null;
-}
-
-// module/src/player/savanna-player.ts
-var SavannaPlayer = class extends i4 {
-  constructor() {
-    super(...arguments);
-    this.src = "";
-    this.lesson = "";
-    this.api = "";
-    this.apiKey = "";
-    this.lang = "en";
-    this.disableShortcuts = false;
-    this.showSignWindow = true;
-    this.audioDescriptionEnabled = false;
-    this.showHelpDialog = false;
-    this.showCaptionsDialog = false;
-    this.showPreferencesDialog = false;
-    this.playerTheme = "dark";
-    this.activePrefsTab = "general";
-    this.manifestCaptions = [];
-    this.selectedCaptionLang = "en";
-    this.currentCueText = "";
-    this.captionFontSize = 100;
-    this.captionPreset = "white-black";
-    this.captionTextColor = "#ffffff";
-    this.captionBgColor = "#000000";
-    this.captionBgOpacity = 80;
-    this.captionPosition = "bottom";
-    /** In-memory cache of parsed WebVTT cues mapped by language */
-    this.vttCuesCache = /* @__PURE__ */ new Map();
-    /** Map of active Object URLs generated for authenticated caption tracks (lang -> blobUrl) */
-    this.captionBlobUrls = /* @__PURE__ */ new Map();
-    this.isPlaying = false;
-    this.currentTime = 0;
-    this.duration = 0;
-    this.volume = 1;
-    this.isMuted = false;
-    this.playbackRate = 1;
-    this.captionsShowing = false;
-    this.isFullscreen = false;
-    this.statusToast = "";
-    this.liveRegionMessage = "";
-    this.hasSignTrack = true;
-    this.hasAdTrack = true;
-    this.toastTimeout = null;
-    this.liveRegionTimeout = null;
-    this.triggerElementBeforeDialog = null;
-    /** FR-P1a: Tracks the last focused control in the player for fullscreen restoration */
-    this.lastFocusedControl = null;
-    this.soundDescriptionsEnabled = false;
-    this.isTranscriptOpen = false;
-    this.transcriptLines = [];
-    this.transcriptSummary = "";
-    this.transcriptSearchQuery = "";
-    this.transcriptAutoScroll = true;
-    this.activeTranscriptIndex = -1;
-    this.isSpeedMenuOpen = false;
-    this.manifestLoadError = false;
-    this.lessonTitle = "";
-    /** Stored manifest cache */
-    this.manifestData = null;
-    this.manifestGeneration = 0;
-    this.offlineMediaUrls = /* @__PURE__ */ new Map();
-    /**
-     * Handles the global language change event per Contract C4.
-     */
-    this.handleLangChange = (event) => {
-      const detail = event.detail;
-      if (detail && typeof detail.lang === "string") {
-        this.lang = detail.lang;
-        this.resolveSummary();
-        this.syncTranscriptLanguage();
-        this.requestUpdate();
-      }
-    };
-    this.handleFullscreenChange = () => {
-      const isNowFullscreen = !!document.fullscreenElement;
-      if (this.isFullscreen === isNowFullscreen) {
-        return;
-      }
-      const wasFullscreen = this.isFullscreen;
-      this.isFullscreen = isNowFullscreen;
-      this.announceStatus(
-        this.isFullscreen ? this.t("player.statusFullscreenOn") : this.t("player.statusFullscreenOff"),
-        this.isFullscreen ? "Fullscreen \u26F6" : "Exit Fullscreen"
-      );
-      if (wasFullscreen !== isNowFullscreen) {
-        const active = this.shadowRoot?.activeElement;
-        if (!active || active === this.videoElement) {
-          if (this.lastFocusedControl && this.shadowRoot?.contains(this.lastFocusedControl)) {
-            this.lastFocusedControl.focus();
-          } else if (this.fullscreenButtonElement) {
-            this.fullscreenButtonElement.focus();
-          }
-        }
-      }
-    };
-    this.handleControlFocus = (e8) => {
-      const target = e8.target;
-      if (target && (target.classList?.contains("ctrl-btn") || target.tagName === "BUTTON" || target.tagName === "INPUT")) {
-        this.lastFocusedControl = target;
-      }
-    };
-    this.handleSeekInput = (event) => {
-      const input = event.target;
-      const targetTime = parseFloat(input.value);
-      if (!Number.isNaN(targetTime)) {
-        this.seekTo(targetTime);
-      }
-    };
-    this.handleVolumeInput = (event) => {
-      const input = event.target;
-      const pct = parseFloat(input.value);
-      if (!Number.isNaN(pct) && this.media) {
-        this.media.volume = Math.max(0, Math.min(1, pct / 100));
-        this.volume = this.media.volume;
-        if (this.media.volume > 0 && this.media.muted) {
-          this.media.muted = false;
-          this.isMuted = false;
-        }
-      }
-    };
-    this.handleDocumentClick = (e8) => {
-      if (this.isSpeedMenuOpen) {
-        const path = e8.composedPath();
-        const inSpeedMenu = path.some((node) => node?.classList?.contains("speed-menu-container"));
-        if (!inSpeedMenu) {
-          this.isSpeedMenuOpen = false;
-        }
-      }
-    };
-    this.handleWindowKeyDown = (event) => {
-      if (event.key === "Escape") {
-        if (this.isSpeedMenuOpen) {
-          this.isSpeedMenuOpen = false;
-        }
-        if (this.showHelpDialog || this.helpDialogElement?.open) {
-          this.closeShortcutsDialog();
-        }
-        if (this.showPreferencesDialog || this.prefsDialogElement?.open) {
-          this.closePreferencesDialog();
-        }
-      }
-    };
-    this.handleSpeedChange = (event) => {
-      const select = event.target;
-      const rate = parseFloat(select.value);
-      if (!Number.isNaN(rate)) {
-        this.setPlaybackRate(rate);
-      }
-    };
-    this.handleOffline = () => {
-      const manifest = this.manifestData;
-      if (manifest) void this.useCachedPlayerMedia(manifest);
-      this.configureAccessibilityChildren();
-    };
-    this.handleSignStateChange = (event) => {
-      if (typeof event.detail?.enabled !== "boolean") return;
-      this.showSignWindow = event.detail.enabled;
-    };
-    this.handleAdStateChange = (event) => {
-      if (typeof event.detail?.enabled !== "boolean") return;
-      this.audioDescriptionEnabled = event.detail.enabled;
-      this.announceStatus(
-        event.detail.enabled ? this.t("player.statusAdOn") : this.t("player.statusAdOff"),
-        event.detail.enabled ? "Audio Description: ON" : "Audio Description: OFF"
-      );
-    };
-    /**
-     * Accessible keyboard shortcut handler.
-     */
-    this.handleKeyDown = (event) => {
-      if (this.isSpeedMenuOpen && event.key === "Escape") {
-        event.preventDefault();
-        this.isSpeedMenuOpen = false;
-        return;
-      }
-      if (this.showHelpDialog || this.helpDialogElement?.open) {
-        if (event.key === "Escape" || event.key === "?") {
-          event.preventDefault();
-          this.closeShortcutsDialog();
-          return;
-        }
-      }
-      if (this.showPreferencesDialog || this.prefsDialogElement?.open || this.showCaptionsDialog || this.captionsDialogElement?.open) {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          this.closePreferencesDialog();
-          return;
-        }
-      }
-      if (this.isTranscriptOpen && event.key === "Escape") {
-        event.preventDefault();
-        this.toggleTranscript();
-        return;
-      }
-      if (this.disableShortcuts) {
-        return;
-      }
-      if (event.ctrlKey || event.altKey || event.metaKey) {
-        return;
-      }
-      const target = event.composedPath()[0] || event.target;
-      if (this.isEditableTarget(target)) {
-        return;
-      }
-      if (target instanceof HTMLButtonElement) {
-        if (event.key === " " || event.key === "Enter") {
-          return;
-        }
-      }
-      switch (event.key) {
-        // Play / Pause (Space or K)
-        case " ":
-        case "k":
-        case "K": {
-          event.preventDefault();
-          this.togglePlay();
-          break;
-        }
-        // Seeking -5s / +5s (Left / Right Arrow)
-        case "ArrowLeft": {
-          event.preventDefault();
-          this.seekBy(-5);
-          break;
-        }
-        case "ArrowRight": {
-          event.preventDefault();
-          this.seekBy(5);
-          break;
-        }
-        // Seeking -10s / +10s (J / L)
-        case "j":
-        case "J": {
-          event.preventDefault();
-          this.seekBy(-10);
-          break;
-        }
-        case "l":
-        case "L": {
-          event.preventDefault();
-          this.seekBy(10);
-          break;
-        }
-        // Volume Controls (Up / Down Arrow)
-        case "ArrowUp": {
-          event.preventDefault();
-          this.changeVolume(0.1);
-          break;
-        }
-        case "ArrowDown": {
-          event.preventDefault();
-          this.changeVolume(-0.1);
-          break;
-        }
-        // Mute / Unmute (M)
-        case "m":
-        case "M": {
-          event.preventDefault();
-          this.toggleMute();
-          break;
-        }
-        // Toggle Captions (C)
-        case "c":
-        case "C": {
-          event.preventDefault();
-          this.toggleCaptions();
-          break;
-        }
-        // Toggle Sign Window (S)
-        case "s":
-        case "S": {
-          event.preventDefault();
-          this.toggleSignWindow();
-          break;
-        }
-        // Toggle Audio Description (D)
-        case "d":
-        case "D": {
-          event.preventDefault();
-          this.toggleAudioDescription();
-          break;
-        }
-        // Toggle Interactive Transcript (T)
-        case "t":
-        case "T": {
-          event.preventDefault();
-          this.toggleTranscript();
-          break;
-        }
-        // Toggle Fullscreen (F)
-        case "f":
-        case "F": {
-          event.preventDefault();
-          this.toggleFullscreen();
-          break;
-        }
-        // Toggle Preferences Dialog (P)
-        case "p":
-        case "P": {
-          event.preventDefault();
-          this.togglePreferences("general");
-          break;
-        }
-        // Keyboard Shortcuts Help (?)
-        case "?": {
-          event.preventDefault();
-          this.toggleShortcutsHelp();
-          break;
-        }
-        // Home: Seek to beginning (clamped to 0)
-        case "Home": {
-          event.preventDefault();
-          this.seekTo(0);
-          this.announceStatus(this.t("player.statusSeek", { time: this.formatTime(0) }), "0:00 \u23EA");
-          break;
-        }
-        // End: Seek to end of video
-        case "End": {
-          event.preventDefault();
-          if (this.media && Number.isFinite(this.media.duration)) {
-            const end = this.media.duration;
-            this.seekTo(end);
-            this.announceStatus(this.t("player.statusSeek", { time: this.formatTime(end) }), `${this.formatTime(end)} \u23E9`);
-          }
-          break;
-        }
-      }
-    };
-    this.handlePrefsDialogClose = () => {
-      this.showPreferencesDialog = false;
-      this.showCaptionsDialog = false;
-      const dialog = this.prefsDialogElement || this.captionsDialogElement;
-      const active = this.shadowRoot?.activeElement;
-      if (!active || active === dialog || dialog?.contains(active)) {
-        if (this.triggerElementBeforeDialog) {
-          this.triggerElementBeforeDialog.focus();
-        } else if (this.prefsBtnElement) {
-          this.prefsBtnElement.focus();
-        } else if (this.captionsSettingsBtnElement) {
-          this.captionsSettingsBtnElement.focus();
-        }
-      }
-      this.triggerElementBeforeDialog = null;
-    };
-    this.handlePrefsDialogClick = (event) => {
-      const dialog = this.prefsDialogElement || this.captionsDialogElement;
-      if (!dialog) return;
-      const rect = dialog.getBoundingClientRect();
-      const isInDialog = rect.top <= event.clientY && event.clientY <= rect.top + rect.height && rect.left <= event.clientX && event.clientX <= rect.left + rect.width;
-      if (!isInDialog) {
-        this.closePreferencesDialog();
-      }
-    };
-    this.handleCaptionsDialogClose = this.handlePrefsDialogClose;
-    this.handleCaptionsDialogClick = this.handlePrefsDialogClick;
-    this.handlePrefLangChange = (e8) => {
-      const val = e8.target.value;
-      this.setLanguage(val);
-    };
-    this.handlePrefSpeedChange = (e8) => {
-      const val = parseFloat(e8.target.value);
-      if (!Number.isNaN(val)) {
-        this.playbackRate = val;
-        if (this.media) {
-          this.media.playbackRate = val;
-        }
-        this.saveAllPreferences();
-        this.announceStatus(this.t("player.statusSpeed", { speed: val }), `${val}x`);
-      }
-    };
-    this.handlePrefThemeChange = (e8) => {
-      const val = e8.target.value;
-      this.setTheme(val);
-    };
-    this.handlePrefShortcutsChange = (e8) => {
-      const val = e8.target.value === "true";
-      this.disableShortcuts = !val;
-      this.saveAllPreferences();
-      this.announceStatus(
-        val ? this.t("player.prefShortcutsOn") : this.t("player.prefShortcutsOff"),
-        val ? "Keys: ON" : "Keys: OFF"
-      );
-    };
-    this.handlePrefSignChange = (e8) => {
-      const val = e8.target.value === "true";
-      if (this.showSignWindow !== val) {
-        this.toggleSignWindow();
-      }
-    };
-    this.handlePrefAdChange = (e8) => {
-      const val = e8.target.value === "true";
-      if (this.audioDescriptionEnabled !== val) {
-        this.toggleAudioDescription();
-      }
-    };
-    this.handleCaptionTrackSelect = (e8) => {
-      const val = e8.target.value;
-      if (val === "off") {
-        this.captionsShowing = false;
-        this.selectedCaptionLang = "off";
-        this.currentCueText = "";
-        this.announceStatus(this.t("player.statusCaptionsOff"), "Captions: OFF");
-      } else {
-        this.selectedCaptionLang = val;
-        this.captionsShowing = true;
-        const label = val === "am" ? "Amharic" : "English";
-        this.announceStatus(this.t("player.statusCaptionsOn"), `Captions: ${label}`);
-        const cues = this.vttCuesCache.get(val) || [];
-        this.currentCueText = getActiveCueText(cues, this.currentTime);
-      }
-      this.saveCaptionsPreferences();
-      this.emitEvent("savanna:caption-change");
-    };
-    this.handleCaptionSizeSelect = (e8) => {
-      const size = parseInt(e8.target.value, 10);
-      if (!Number.isNaN(size)) {
-        this.captionFontSize = size;
-        this.saveCaptionsPreferences();
-        const msg = this.activeLang === "am" ? `\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1218\u1320\u1295 ${size} \u1260\u1218\u1276` : `Caption size ${size} percent`;
-        this.announceStatus(msg);
-      }
-    };
-    this.handleCaptionPresetSelect = (e8) => {
-      const preset = e8.target.value;
-      this.captionPreset = preset;
-      if (preset === "white-black") {
-        this.captionTextColor = "#ffffff";
-        this.captionBgColor = "#000000";
-      } else if (preset === "yellow-black") {
-        this.captionTextColor = "#ffff00";
-        this.captionBgColor = "#000000";
-      } else if (preset === "black-white") {
-        this.captionTextColor = "#000000";
-        this.captionBgColor = "#ffffff";
-      }
-      this.saveCaptionsPreferences();
-      const presetName = preset === "yellow-black" ? this.activeLang === "am" ? "\u1262\u132B \u1260\u1325\u1241\u122D \u120B\u12ED" : "Yellow on black" : preset === "white-black" ? this.activeLang === "am" ? "\u1290\u132D \u1260\u1325\u1241\u122D \u120B\u12ED" : "White on black" : this.activeLang === "am" ? "\u1325\u1241\u122D \u1260\u1290\u132D \u120B\u12ED" : "Black on white";
-      const msg = this.activeLang === "am" ? `\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1308\u133D\u1273 ${presetName}` : `Caption style ${presetName}`;
-      this.announceStatus(msg);
-    };
-    this.handleCaptionTextColorChange = (e8) => {
-      this.captionTextColor = e8.target.value;
-      this.captionPreset = "custom";
-      this.saveCaptionsPreferences();
-    };
-    this.handleCaptionBgColorChange = (e8) => {
-      this.captionBgColor = e8.target.value;
-      this.captionPreset = "custom";
-      this.saveCaptionsPreferences();
-    };
-    this.handleCaptionOpacitySelect = (e8) => {
-      const op = parseInt(e8.target.value, 10);
-      if (!Number.isNaN(op)) {
-        this.captionBgOpacity = op;
-        this.saveCaptionsPreferences();
-      }
-    };
-    this.handleCaptionPositionSelect = (e8) => {
-      const pos = e8.target.value;
-      this.captionPosition = pos;
-      this.saveCaptionsPreferences();
-    };
-    this.handleDialogClose = () => {
-      this.showHelpDialog = false;
-      const active = this.shadowRoot?.activeElement;
-      if (!active || active === this.helpDialogElement || this.helpDialogElement?.contains(active)) {
-        if (this.triggerElementBeforeDialog) {
-          this.triggerElementBeforeDialog.focus();
-        } else if (this.helpButtonElement) {
-          this.helpButtonElement.focus();
-        }
-      }
-      this.triggerElementBeforeDialog = null;
-    };
-    this.handleDialogClick = (event) => {
-      if (!this.helpDialogElement) return;
-      const rect = this.helpDialogElement.getBoundingClientRect();
-      const isInDialog = rect.top <= event.clientY && event.clientY <= rect.top + rect.height && rect.left <= event.clientX && event.clientX <= rect.left + rect.width;
-      if (!isInDialog) {
-        this.closeShortcutsDialog();
-      }
-    };
-    // 1. Video starts playing.
-    this.handlePlay = () => {
-      this.isPlaying = true;
-      this.emitEvent("savanna:play");
-    };
-    // 2. Video is paused.
-    this.handlePause = () => {
-      this.isPlaying = false;
-      this.emitEvent("savanna:pause");
-    };
-    // 3. User seeks to another position (Contract C2: detail.time in seconds).
-    this.handleSeek = () => {
-      if (this.media) {
-        this.currentTime = this.media.currentTime;
-      }
-      this.emitEvent("savanna:seek", {
-        time: this.media ? this.media.currentTime : 0
-      });
-    };
-    // 4. Playback position changes (Contract C2: detail: { time, paused, rate }).
-    this.handleTimeUpdate = () => {
-      if (this.media) {
-        this.currentTime = this.media.currentTime;
-        if (Number.isFinite(this.media.duration) && this.media.duration > 0) {
-          this.duration = this.media.duration;
-        }
-        if (this.captionsShowing && this.selectedCaptionLang !== "off") {
-          const cues = this.vttCuesCache.get(this.selectedCaptionLang) || [];
-          this.currentCueText = getActiveCueText(cues, this.currentTime);
-        } else {
-          this.currentCueText = "";
-        }
-        const activeIdx = findActiveTranscriptLineIndex(this.transcriptLines, this.currentTime);
-        if (activeIdx !== this.activeTranscriptIndex) {
-          this.activeTranscriptIndex = activeIdx;
-          if (this.transcriptAutoScroll && this.isTranscriptOpen && activeIdx >= 0) {
-            this.scrollActiveLineIntoView(activeIdx);
-          }
-        }
-      }
-      this.emitEvent("savanna:timeupdate", {
-        time: this.media ? this.media.currentTime : 0,
-        paused: this.media ? this.media.paused : true,
-        rate: this.media ? this.media.playbackRate : 1
-      });
-    };
-    // 5. Active caption track changes.
-    this.handleCaptionChange = () => {
-      if (this.videoElement?.textTracks) {
-        const tracks = Array.from(this.videoElement.textTracks);
-        tracks.forEach((t6) => {
-          if (t6.mode === "showing") {
-            t6.mode = "hidden";
-            this.captionsShowing = true;
-          }
-        });
-      }
-      this.emitEvent("savanna:caption-change");
-    };
-    // 6. Video encounters an error.
-    this.handleError = () => {
-      this.emitEvent("savanna:error");
-    };
-    this.toggleTranscript = () => {
-      this.isTranscriptOpen = !this.isTranscriptOpen;
-      if (this.isTranscriptOpen) {
-        if (this.transcriptLines.length === 0) {
-          if (this.manifestData?.transcript?.url) {
-            this.fetchTranscript(this.manifestData.transcript.url, this.manifestData);
-          } else {
-            this.fallbackTranscriptFromCaptions(this.manifestData);
-          }
-        }
-        this.announceStatus(
-          this.t("player.statusTranscriptOpen"),
-          "Transcript \u{1F4DD}"
-        );
-        this.updateComplete.then(() => {
-          this.transcriptSearchInput?.focus();
-        });
-      } else {
-        this.announceStatus(
-          this.t("player.statusTranscriptClosed"),
-          "Transcript Closed"
-        );
-        this.transcriptBtnElement?.focus();
-      }
-    };
-    this.handleTranscriptSearchInput = (e8) => {
-      const input = e8.target;
-      this.transcriptSearchQuery = input.value;
-      const filtered = filterTranscriptLines(this.transcriptLines, this.transcriptSearchQuery);
-      if (this.transcriptSearchQuery.trim()) {
-        if (filtered.length === 0) {
-          this.announceStatus(this.t("player.transcriptNoMatches"));
-        } else {
-          this.announceStatus(this.t("player.transcriptMatches", { count: filtered.length }));
-        }
-      }
-    };
-    this.clearTranscriptSearch = () => {
-      this.transcriptSearchQuery = "";
-      this.transcriptSearchInput?.focus();
-    };
-    this.downloadTranscript = () => {
-      const title = this.lessonTitle || (this.manifestData?.title ? this.manifestData.title[this.activeLang] || this.manifestData.title.en : "Lesson");
-      const content = formatTranscriptForDownload(
-        title,
-        this.activeLang,
-        this.transcriptSummary,
-        this.transcriptLines,
-        (sec) => this.formatTime(sec)
-      );
-      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a3 = document.createElement("a");
-      a3.href = url;
-      a3.download = `${this.lesson || "lesson"}-transcript-${this.activeLang}.txt`;
-      document.body.appendChild(a3);
-      a3.click();
-      document.body.removeChild(a3);
-      URL.revokeObjectURL(url);
-      this.announceStatus(this.t("player.transcriptDownloaded"));
-    };
-    /**
-     * Generates and downloads the transcript as a standard 40 cells x 25 lines
-     * ASCII Braille (.brf) document with mandatory draft watermark notice (SRS FR-S1, Task 1.8).
-     */
-    this.downloadBrailleTranscript = () => {
-      const title = this.lessonTitle || (this.manifestData?.title ? this.manifestData.title[this.activeLang] || this.manifestData.title.en : "Lesson");
-      const content = formatTranscriptToBrf(
-        title,
-        this.activeLang,
-        this.getEffectiveSummary(),
-        this.transcriptLines,
-        (sec) => this.formatTime(sec)
-      );
-      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a3 = document.createElement("a");
-      a3.href = url;
-      a3.download = `${this.lesson || "lesson"}-transcript-${this.activeLang}.brf`;
-      document.body.appendChild(a3);
-      a3.click();
-      document.body.removeChild(a3);
-      URL.revokeObjectURL(url);
-      this.announceStatus(this.t("player.statusBrailleDownloaded"), "BRF (.brf)");
-    };
-  }
-  /** Exposes the offline pack metadata from the lesson manifest (Contract C1) */
-  get offlinePack() {
-    return this.manifestData?.pack ?? null;
-  }
-  /**
-   * Dynamically formatted offline pack size (e.g. "1.72 MB" or "850 KB") without hardcoding.
-   */
-  get formattedPackSize() {
-    return formatPackSize(this.manifestData?.pack?.sizeBytes);
-  }
-  /** Reactive state aliases matching developer/test expectations */
-  get isCaptionsOpen() {
-    return this.captionsShowing;
-  }
-  set isCaptionsOpen(val) {
-    if (this.captionsShowing !== val) {
-      this.toggleCaptions();
-    }
-  }
-  get isPrefsOpen() {
-    return this.showPreferencesDialog;
-  }
-  set isPrefsOpen(val) {
-    if (val) {
-      this.openPreferencesDialog("general");
-    } else {
-      this.closePreferencesDialog();
-    }
-  }
-  get isSignOpen() {
-    return this.showSignWindow;
-  }
-  set isSignOpen(val) {
-    if (this.showSignWindow !== val) {
-      this.toggleSignWindow();
-    }
-  }
-  get isAdOpen() {
-    return this.audioDescriptionEnabled;
-  }
-  set isAdOpen(val) {
-    if (this.audioDescriptionEnabled !== val) {
-      this.toggleAudioDescription();
-    }
-  }
-  // Expose the real browser media element (Contract C2).
-  get media() {
-    return this.videoElement;
-  }
-  /**
-   * Resolves the active language code per Contract C4.
-   * Reads component's lang attribute, falls back to document.documentElement.lang, else 'en'.
-   * Normalizes 'am-ET' or any 'am*' to 'am'; any unknown code becomes 'en'.
-   */
-  get activeLang() {
-    const raw = (this.lang || (typeof document !== "undefined" ? document.documentElement?.lang : "") || "en").trim().toLowerCase();
-    return raw.startsWith("am") ? "am" : "en";
-  }
-  /**
-   * Looks up a translation string in the active language with English fallback,
-   * replacing {placeholder} variables if provided.
-   */
-  t(key, vars) {
-    const dict = this.activeLang === "am" ? am_default : en_default;
-    let text = dict[key] || en_default[key] || key;
-    if (vars) {
-      for (const [k2, v2] of Object.entries(vars)) {
-        text = text.replaceAll(`{${k2}}`, String(v2));
-      }
-    }
-    return text;
-  }
-  /**
-   * Converts the selected caption background color and opacity to an rgba string.
-   */
-  get captionBackgroundRgba() {
-    if (this.captionBgOpacity === 0) return "transparent";
-    const hex = this.captionBgColor.replace("#", "");
-    const r8 = parseInt(hex.substring(0, 2), 16) || 0;
-    const g2 = parseInt(hex.substring(2, 4), 16) || 0;
-    const b3 = parseInt(hex.substring(4, 6), 16) || 0;
-    const a3 = Math.max(0, Math.min(1, this.captionBgOpacity / 100));
-    return `rgba(${r8}, ${g2}, ${b3}, ${a3})`;
-  }
-  /**
-   * Computes inline CSS style string for live caption rendering.
-   */
-  computeCaptionStyle() {
-    let fontRem = "1.15rem";
-    if (this.captionFontSize === 150) fontRem = "1.65rem";
-    else if (this.captionFontSize === 200) fontRem = "2.15rem";
-    else if (this.captionFontSize === 300) fontRem = "3rem";
-    return `font-size: ${fontRem}; color: ${this.captionTextColor}; background-color: ${this.captionBackgroundRgba};`;
-  }
-  /**
-   * Loads Member 1's preferences (ui, captions) from localStorage per Contract C3.
-   */
-  loadAllPreferences() {
-    const prefs = loadPlayerPreferences();
-    if (prefs.ui.lang) {
-      this.lang = prefs.ui.lang;
-    }
-    if (typeof prefs.ui.speed === "number") {
-      this.playbackRate = prefs.ui.speed;
-    }
-    if (prefs.ui.theme) {
-      this.playerTheme = prefs.ui.theme;
-      this.setAttribute("data-theme", this.playerTheme);
-    }
-    if (typeof prefs.ui.shortcuts === "boolean") {
-      this.disableShortcuts = !prefs.ui.shortcuts;
-    }
-    const c5 = prefs.captions;
-    this.captionsShowing = c5.enabled;
-    this.selectedCaptionLang = c5.lang;
-    this.captionFontSize = c5.fontSize;
-    this.captionPreset = c5.preset;
-    this.captionTextColor = c5.textColor;
-    this.captionBgColor = c5.bgColor;
-    this.captionBgOpacity = c5.bgOpacity;
-    this.captionPosition = c5.position;
-  }
-  /**
-   * Persists Member 1's preferences to localStorage per Contract C3,
-   * preserving all peer namespaces ('sign', 'ad', 'offline', 'jobs') untouched.
-   */
-  saveAllPreferences() {
-    const ui = {
-      lang: this.activeLang,
-      speed: this.playbackRate,
-      theme: this.playerTheme,
-      shortcuts: !this.disableShortcuts
-    };
-    const captions = {
-      enabled: this.captionsShowing,
-      lang: this.selectedCaptionLang,
-      fontSize: this.captionFontSize,
-      preset: this.captionPreset,
-      textColor: this.captionTextColor,
-      bgColor: this.captionBgColor,
-      bgOpacity: this.captionBgOpacity,
-      position: this.captionPosition
-    };
-    savePlayerPreferences(ui, captions);
-  }
-  /** Alias for backward compatibility */
-  loadCaptionsPreferences() {
-    this.loadAllPreferences();
-  }
-  /** Alias for backward compatibility */
-  saveCaptionsPreferences() {
-    this.saveAllPreferences();
-  }
-  /**
-   * Switches the active language per Contract C4 without requiring a page reload.
-   * Fires 'savanna:lang-change' on window with detail: { lang }.
-   */
-  setLanguage(newLang) {
-    if (this.lang === newLang) return;
-    this.lang = newLang;
-    this.setAttribute("lang", newLang);
-    if (typeof document !== "undefined" && document.documentElement) {
-      document.documentElement.lang = newLang;
-      document.documentElement.setAttribute("lang", newLang);
-    }
-    this.saveAllPreferences();
-    this.resolveSummary();
-    this.syncTranscriptLanguage();
-    window.dispatchEvent(
-      new CustomEvent("savanna:lang-change", {
-        detail: { lang: newLang },
-        bubbles: true,
-        composed: true
-      })
-    );
-    this.announceStatus(
-      this.t("player.statusLangChanged", { lang: newLang === "am" ? "Amharic" : "English" }),
-      newLang.toUpperCase()
-    );
-  }
-  /**
-   * Applies display theme per Contract C3 & C5 (dark, light, high-contrast).
-   */
-  setTheme(newTheme) {
-    this.playerTheme = newTheme;
-    this.setAttribute("data-theme", newTheme);
-    this.saveAllPreferences();
-    this.announceStatus(
-      `Theme: ${newTheme}`,
-      newTheme === "high-contrast" ? "AAA" : newTheme.toUpperCase()
-    );
-  }
-  /**
-   * Resets Member 1's preferences to defaults while preserving peer namespaces.
-   */
-  resetPreferences() {
-    const defaultUi = getDefaultUiPreferences();
-    const defaultCap = getDefaultCaptionsPreferences();
-    this.lang = defaultUi.lang;
-    this.playbackRate = defaultUi.speed;
-    if (this.media) this.media.playbackRate = defaultUi.speed;
-    this.playerTheme = defaultUi.theme;
-    this.setAttribute("data-theme", defaultUi.theme);
-    this.disableShortcuts = !defaultUi.shortcuts;
-    this.captionsShowing = defaultCap.enabled;
-    this.selectedCaptionLang = defaultCap.lang;
-    this.captionFontSize = defaultCap.fontSize;
-    this.captionPreset = defaultCap.preset;
-    this.captionTextColor = defaultCap.textColor;
-    this.captionBgColor = defaultCap.bgColor;
-    this.captionBgOpacity = defaultCap.bgOpacity;
-    this.captionPosition = defaultCap.position;
-    this.saveAllPreferences();
-    this.resolveSummary();
-    this.syncTranscriptLanguage();
-    this.announceStatus(this.t("player.statusPrefsSaved"), "Reset");
-  }
-  /**
-   * Downloads saved preferences as JSON file (FR-A4 / NFR-S3).
-   */
-  downloadMySettings() {
-    try {
-      const raw = typeof localStorage !== "undefined" ? localStorage.getItem("savanna.prefs.v1") || "{}" : "{}";
-      const blob = new Blob([raw], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a3 = document.createElement("a");
-      a3.href = url;
-      a3.download = "savanna-preferences.json";
-      document.body.appendChild(a3);
-      a3.click();
-      document.body.removeChild(a3);
-      URL.revokeObjectURL(url);
-      this.announceStatus(this.t("player.prefDownload"), "Export");
-    } catch {
-    }
-  }
-  /**
-   * Clears saved preferences and resets state (FR-A4 / NFR-S3).
-   */
-  deleteMySettings() {
-    try {
-      if (typeof localStorage !== "undefined") {
-        localStorage.removeItem("savanna.prefs.v1");
-      }
-      this.resetPreferences();
-      this.announceStatus(this.t("player.prefDelete"), "Delete");
-    } catch {
-    }
-  }
-  /**
-   * Announces an update to screen readers via a persistent polite live region
-   * and optionally renders a visual HUD badge for sighted users.
-   */
-  announceStatus(message, visualBadge) {
-    this.liveRegionMessage = message;
-    if (this.liveRegionTimeout !== null) {
-      window.clearTimeout(this.liveRegionTimeout);
-    }
-    this.liveRegionTimeout = window.setTimeout(() => {
-      this.liveRegionMessage = "";
-      this.liveRegionTimeout = null;
-    }, 5e3);
-    this.showToast(visualBadge || message);
-  }
-  showToast(msg) {
-    this.statusToast = msg;
-    if (this.toastTimeout !== null) {
-      window.clearTimeout(this.toastTimeout);
-    }
-    this.toastTimeout = window.setTimeout(() => {
-      this.statusToast = "";
-      this.toastTimeout = null;
-    }, 1500);
-  }
-  /**
-   * FR-P12: Formats cue text for screen readers. Bracketed non-speech cues
-   * (e.g. "[music]") stay out of screen-reader live speech unless sound descriptions are enabled.
-   */
-  filterCueForScreenReader(cueText) {
-    if (this.soundDescriptionsEnabled) {
-      return cueText;
-    }
-    return cueText.replace(/\[.*?\]/g, "").trim();
-  }
-  formatTime(seconds) {
-    if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
-    const m2 = Math.floor(seconds / 60);
-    const s5 = Math.floor(seconds % 60);
-    return `${m2}:${s5 < 10 ? "0" : ""}${s5}`;
-  }
-  /**
-   * Toggles playback speed popover menu (SRS FR-P9).
-   */
-  toggleSpeedMenu() {
-    this.isSpeedMenuOpen = !this.isSpeedMenuOpen;
-  }
-  /**
-   * Sets the playback rate, synchronizes media element, updates preferences and announces status (SRS FR-P9).
-   */
-  setPlaybackRate(rate) {
-    if (Number.isNaN(rate) || rate <= 0) return;
-    this.playbackRate = rate;
-    if (this.media) {
-      this.media.playbackRate = rate;
-    }
-    this.saveAllPreferences();
-    this.announceStatus(this.t("player.statusSpeed", { speed: rate }), `${rate}x`);
-    this.isSpeedMenuOpen = false;
-  }
-  /**
-   * Computes human-readable wording for the position slider per SRS FR-P2.
-   */
-  get positionValueText() {
-    const cur = Math.max(0, Math.floor(this.currentTime));
-    const total = Math.max(0, Math.floor(this.duration));
-    if (total < 60) {
-      const secUnit = cur === 1 ? this.t("player.secondSingular") : this.t("player.secondPlural");
-      const totalSecUnit = total === 1 ? this.t("player.secondSingular") : this.t("player.secondPlural");
-      return this.t("player.positionValueTextSeconds", {
-        curSec: cur,
-        secUnit,
-        totalSec: total,
-        totalSecUnit
-      });
-    }
-    const curMin = Math.floor(cur / 60);
-    const curSec = cur % 60;
-    const totalMin = Math.floor(total / 60);
-    const minUnit = curMin === 1 ? this.t("player.minuteSingular") : this.t("player.minutePlural");
-    const totalMinUnit = totalMin === 1 ? this.t("player.minuteSingular") : this.t("player.minutePlural");
-    return this.t("player.positionValueText", {
-      curMin,
-      minUnit,
-      curSec,
-      totalMin,
-      totalMinUnit
-    });
-  }
-  /**
-   * Computes human-readable wording for the volume slider per SRS FR-P2.
-   */
-  get volumeValueText() {
-    const pct = this.isMuted ? 0 : Math.round(this.volume * 100);
-    return this.t("player.volumeValueText", { percent: pct });
-  }
-  connectedCallback() {
-    super.connectedCallback();
-    this.loadAllPreferences();
-    if (!this.hasAttribute("tabindex")) {
-      this.setAttribute("tabindex", "0");
-    }
-    this.addEventListener("keydown", this.handleKeyDown);
-    this.addEventListener("savanna:sign-toggle", this.handleSignStateChange);
-    this.addEventListener("savanna:ad-change", this.handleAdStateChange);
-    window.addEventListener("keydown", this.handleWindowKeyDown);
-    window.addEventListener("offline", this.handleOffline);
-    window.addEventListener("savanna:lang-change", this.handleLangChange);
-    document.addEventListener("fullscreenchange", this.handleFullscreenChange);
-    document.addEventListener("click", this.handleDocumentClick);
-  }
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this.removeEventListener("keydown", this.handleKeyDown);
-    this.removeEventListener("savanna:sign-toggle", this.handleSignStateChange);
-    this.removeEventListener("savanna:ad-change", this.handleAdStateChange);
-    window.removeEventListener("keydown", this.handleWindowKeyDown);
-    window.removeEventListener("offline", this.handleOffline);
-    window.removeEventListener("savanna:lang-change", this.handleLangChange);
-    document.removeEventListener("fullscreenchange", this.handleFullscreenChange);
-    document.removeEventListener("click", this.handleDocumentClick);
-    this.manifestAbortController?.abort();
-    this.manifestGeneration += 1;
-    if (this.videoElement?.textTracks) {
-      this.videoElement.textTracks.removeEventListener("change", this.handleCaptionChange);
-    }
-    this.revokeCaptionBlobUrls();
-    this.revokeOfflineMediaUrls();
-  }
-  /**
-   * Safely revokes and clears any created Object URLs for caption tracks.
-   */
-  revokeCaptionBlobUrls() {
-    for (const [, blobUrl] of this.captionBlobUrls) {
-      try {
-        URL.revokeObjectURL(blobUrl);
-      } catch {
-      }
-    }
-    this.captionBlobUrls.clear();
-  }
-  revokeOfflineMediaUrls() {
-    for (const url of this.offlineMediaUrls.values()) {
-      try {
-        URL.revokeObjectURL(url);
-      } catch {
-      }
-    }
-    this.offlineMediaUrls.clear();
-  }
-  /**
-   * Ensures native text tracks remain in 'hidden' mode so that browser
-   * default subtitles do not collide with our custom accessible overlay.
-   */
-  suppressNativeSubtitles() {
-    if (this.videoElement?.textTracks) {
-      Array.from(this.videoElement.textTracks).forEach((t6) => {
-        if (t6.mode === "showing") {
-          t6.mode = "hidden";
-        }
-      });
-    }
-  }
-  updated(changedProps) {
-    super.updated(changedProps);
-    if (changedProps.has("lesson") || changedProps.has("api") || changedProps.has("apiKey")) {
-      if (this.lesson && this.api) {
-        void this.fetchLessonManifest();
-      } else {
-        this.manifestAbortController?.abort();
-        this.manifestAbortController = void 0;
-        this.manifestGeneration += 1;
-      }
-    }
-    if (changedProps.has("lang")) {
-      this.syncTranscriptLanguage();
-      this.configureAccessibilityChildren();
-    }
-  }
-  /**
-   * Loads and parses all WebVTT caption files referenced in manifestCaptions.
-   */
-  async loadVttCues() {
-    const expectedLesson = this.manifestData?.id;
-    for (const track of this.manifestCaptions) {
-      if (!track.url || this.vttCuesCache.has(track.lang)) continue;
-      try {
-        const resolvedUrl = resolveCaptionUrl({ urlPath: track.url, apiBase: this.api });
-        const requiresAuth = shouldSendApiKey(resolvedUrl, this.apiKey, this.api);
-        const result = await fetchCaptionTrack({
-          url: resolvedUrl,
-          apiKey: this.apiKey,
-          apiBase: this.api,
-          createBlobUrl: requiresAuth
-        });
-        if (expectedLesson && this.manifestData?.id !== expectedLesson) return;
-        if (result.blobUrl) {
-          const prevBlob = this.captionBlobUrls.get(track.lang);
-          if (prevBlob) {
-            try {
-              URL.revokeObjectURL(prevBlob);
-            } catch {
-            }
-          }
-          this.captionBlobUrls.set(track.lang, result.blobUrl);
-          this.requestUpdate();
-        }
-        const cues = parseWebVtt(result.text);
-        this.vttCuesCache.set(track.lang, cues);
-        if (track.lang === this.activeLang && this.transcriptLines.length === 0) {
-          this.fallbackTranscriptFromCaptions();
-        }
-      } catch (err) {
-        console.warn(`[savanna-player] Failed to load caption track (${track.lang}):`, err?.message || err);
-      }
-    }
-    this.suppressNativeSubtitles();
-  }
-  /**
-   * Fetches lesson manifest per Contract C1 & C6 and configures media sources.
-   */
-  async fetchLessonManifest() {
-    const lessonId = this.lesson.trim();
-    if (!lessonId || !this.api.trim()) return;
-    this.manifestAbortController?.abort();
-    const controller = new AbortController();
-    this.manifestAbortController = controller;
-    const generation = ++this.manifestGeneration;
-    try {
-      const apiBase = new URL(this.api.trim(), document.baseURI);
-      if (apiBase.protocol !== "http:" && apiBase.protocol !== "https:") {
-        throw new Error("The API URL must use HTTP or HTTPS.");
-      }
-      const endpoint = new URL(`/v1/lessons/${encodeURIComponent(lessonId)}`, apiBase).href;
-      const headers = {};
-      if (this.apiKey) {
-        headers["X-Savanna-Key"] = this.apiKey;
-      }
-      const res = await fetch(endpoint, { headers, signal: controller.signal });
-      if (!res.ok) {
-        const detail = res.status === 401 || res.status === 403 ? "The lesson API key was rejected." : `The lesson service returned HTTP ${res.status}.`;
-        throw new Error(detail);
-      }
-      const manifest = parseLessonManifest(await res.json(), lessonId);
-      if (generation !== this.manifestGeneration) return;
-      try {
-        localStorage.setItem(`savanna.cached_manifest.${lessonId}`, JSON.stringify(manifest));
-      } catch {
-      }
-      this.manifestLoadError = false;
-      this.applyManifest(manifest);
-    } catch (error) {
-      if (controller.signal.aborted || generation !== this.manifestGeneration) return;
-      let loadedFromCache = false;
-      try {
-        const cachedRaw = localStorage.getItem(`savanna.cached_manifest.${lessonId}`);
-        if (cachedRaw) {
-          const cachedManifest = parseLessonManifest(JSON.parse(cachedRaw), lessonId);
-          this.manifestLoadError = false;
-          this.applyManifest(cachedManifest);
-          this.announceStatus(this.t("player.statusOfflineManifest"), "Offline Cache");
-          loadedFromCache = true;
-        }
-      } catch {
-      }
-      if (!loadedFromCache) {
-        this.manifestLoadError = true;
-        const detail = error instanceof Error ? error.message : this.t("player.errorManifestLoad");
-        this.announceStatus(`${this.t("player.errorManifestLoad")} ${detail}`, "Lesson API error");
-      }
-    } finally {
-      if (generation === this.manifestGeneration) this.manifestAbortController = void 0;
-    }
-  }
-  applyManifest(manifest) {
-    const lessonChanged = this.manifestData?.id !== manifest.id;
-    if (lessonChanged) {
-      this.vttCuesCache.clear();
-      this.transcriptLines = [];
-      this.transcriptSummary = "";
-      this.activeTranscriptIndex = -1;
-      this.revokeCaptionBlobUrls();
-      this.revokeOfflineMediaUrls();
-    }
-    this.manifestData = manifest;
-    this.lessonTitle = manifest.title[this.activeLang] || manifest.title.en;
-    this.src = manifest.media.video;
-    void this.useCachedPlayerMedia(manifest);
-    this.revokeCaptionBlobUrls();
-    this.manifestCaptions = manifest.captions.map((caption) => ({
-      lang: caption.lang,
-      url: resolveCaptionUrl({ urlPath: caption.url, apiBase: this.api })
-    }));
-    void this.loadVttCues();
-    this.hasSignTrack = manifest.sign !== null;
-    this.hasAdTrack = manifest.audioDescription !== null;
-    this.configureAccessibilityChildren();
-    if (manifest.transcript.url) {
-      this.fetchTranscript(manifest.transcript.url, manifest);
-    } else {
-      this.fallbackTranscriptFromCaptions(manifest);
-    }
-    this.resolveSummary(manifest);
-    if (!this.hasAdTrack) {
-      const adAudio = this.querySelector("audio[data-ad], audio.ad-track");
-      adAudio?.pause();
-    }
-  }
-  configureAccessibilityChildren() {
-    const sign = this.manifestData?.sign;
-    const signElement = this.querySelector("savanna-sign-window");
-    if (signElement) {
-      signElement.hidden = !this.hasSignTrack;
-      signElement.src = sign?.url ?? "";
-      if (sign?.url) void this.useCachedChildMedia(sign.url, signElement, this.manifestId);
-      signElement.offsetMs = sign?.offsetMs ?? 0;
-      signElement.lang = this.activeLang;
-      if (this.hasSignTrack) {
-        this.showSignWindow = signElement.enabled !== false;
-        signElement.enabled = this.showSignWindow;
-      }
-    }
-    const ad = this.manifestData?.audioDescription;
-    const adElement = this.querySelector("savanna-audio-description");
-    if (adElement) {
-      adElement.hidden = !this.hasAdTrack;
-      adElement.src = ad?.audioUrl ?? "";
-      if (ad?.audioUrl) void this.useCachedChildMedia(ad.audioUrl, adElement, this.manifestId);
-      adElement.textVtt = ad?.vttUrl ?? "";
-      adElement.api = this.api;
-      adElement.apiKey = this.apiKey;
-      adElement.lang = this.activeLang;
-      adElement.defaultExtended = ad?.extended ?? false;
-      this.audioDescriptionEnabled = Boolean(adElement.isEnabled);
-    }
-  }
-  get manifestId() {
-    return this.manifestData?.id;
-  }
-  async cachedUrl(source, lessonId) {
-    const existing = this.offlineMediaUrls.get(source);
-    if (existing) return existing;
-    const objectUrl = await getCachedObjectUrl(source);
-    if (!objectUrl) return null;
-    if (lessonId && this.manifestData?.id !== lessonId) {
-      URL.revokeObjectURL(objectUrl);
-      return null;
-    }
-    this.offlineMediaUrls.set(source, objectUrl);
-    return objectUrl;
-  }
-  async useCachedPlayerMedia(manifest) {
-    const videoUrl = await this.cachedUrl(manifest.media.video, manifest.id);
-    const audioUrl = videoUrl ? null : await this.cachedUrl(manifest.media.audio, manifest.id);
-    const source = videoUrl || audioUrl;
-    if (source && this.manifestData?.id === manifest.id) {
-      this.src = source;
-    }
-  }
-  async useCachedChildMedia(originalUrl, element, lessonId) {
-    const source = await this.cachedUrl(originalUrl, lessonId);
-    if (source && element.isConnected && this.manifestData?.id === lessonId) {
-      element.src = source;
-    }
-  }
-  /**
-   * Helper to check if the active element is an editable input or textarea.
-   */
-  isEditableTarget(target) {
-    if (!target || !(target instanceof HTMLElement)) return false;
-    const tagName = target.tagName.toLowerCase();
-    return tagName === "input" || tagName === "textarea" || tagName === "select" || target.isContentEditable;
-  }
-  /**
-   * Toggles play and pause on the underlying media element.
-   */
-  togglePlay() {
-    if (!this.media) return;
-    if (this.media.paused || this.media.ended) {
-      this.media.play().catch(() => {
-      });
-      this.isPlaying = true;
-      this.announceStatus(this.t("player.statusPlay"), "Play \u25B6");
-    } else {
-      this.media.pause();
-      this.isPlaying = false;
-      this.announceStatus(this.t("player.statusPause"), "Pause \u23F8");
-    }
-  }
-  /**
-   * Adjusts the volume by delta (-1.0 to 1.0) and un-mutes if volume increases.
-   */
-  changeVolume(delta) {
-    if (!this.media) return;
-    const current = this.media.volume;
-    const next = Math.max(0, Math.min(1, current + delta));
-    this.media.volume = Number(next.toFixed(2));
-    this.volume = this.media.volume;
-    if (this.media.volume > 0 && this.media.muted) {
-      this.media.muted = false;
-      this.isMuted = false;
-    }
-    const pct = Math.round(this.media.volume * 100);
-    this.announceStatus(
-      this.t("player.statusVolume", { percent: pct }),
-      `Volume: ${pct}% \u{1F50A}`
-    );
-  }
-  /**
-   * Toggles audio mute state on the media element.
-   */
-  toggleMute() {
-    if (!this.media) return;
-    this.media.muted = !this.media.muted;
-    this.isMuted = this.media.muted;
-    const isMutedNow = this.media.muted;
-    this.announceStatus(
-      isMutedNow ? this.t("player.statusMuted") : this.t("player.statusUnmuted"),
-      isMutedNow ? "Muted \u{1F507}" : "Unmuted \u{1F50A}"
-    );
-  }
-  /**
-   * Toggles captions display across available text tracks and fires C2 savanna:caption-change.
-   */
-  toggleCaptions() {
-    if (this.manifestCaptions.length === 0 && (!this.videoElement?.textTracks || this.videoElement.textTracks.length === 0)) {
-      this.announceStatus(this.t("player.captionsUnavailable"), "No Captions Track");
-      return;
-    }
-    this.captionsShowing = !this.captionsShowing;
-    if (this.captionsShowing) {
-      if (this.selectedCaptionLang === "off") {
-        this.selectedCaptionLang = this.activeLang;
-      }
-      const label = this.selectedCaptionLang === "am" ? "Amharic" : "English";
-      this.announceStatus(this.t("player.statusCaptionsOn"), `Captions: ${label} ON`);
-    } else {
-      this.currentCueText = "";
-      this.announceStatus(this.t("player.statusCaptionsOff"), "Captions: OFF");
-    }
-    if (this.videoElement?.textTracks) {
-      Array.from(this.videoElement.textTracks).forEach((t6) => t6.mode = "hidden");
-    }
-    this.saveCaptionsPreferences();
-    this.emitEvent("savanna:caption-change");
-  }
-  /**
-   * Opens the Preferences modal dialog (Contract C3/C4 & Task 1.6).
-   */
-  openPreferencesDialog(tab = "general") {
-    const dialog = this.prefsDialogElement || this.captionsDialogElement;
-    if (!dialog) return;
-    this.activePrefsTab = tab;
-    this.triggerElementBeforeDialog = this.shadowRoot?.activeElement || this.prefsBtnElement || this.captionsSettingsBtnElement;
-    if (!dialog.open) {
-      if (typeof dialog.showModal === "function") {
-        dialog.showModal();
-      } else {
-        dialog.setAttribute("open", "");
-      }
-      this.showPreferencesDialog = true;
-      this.showCaptionsDialog = true;
-      const closeBtn = dialog.querySelector(".close-prefs-btn, .close-captions-btn");
-      closeBtn?.focus();
-    }
-  }
-  /**
-   * Closes the Preferences modal dialog.
-   */
-  closePreferencesDialog() {
-    const dialog = this.prefsDialogElement || this.captionsDialogElement;
-    if (!dialog) return;
-    if (dialog.open) {
-      if (typeof dialog.close === "function") {
-        dialog.close();
-      } else {
-        dialog.removeAttribute("open");
-      }
-    }
-    this.showPreferencesDialog = false;
-    this.showCaptionsDialog = false;
-  }
-  togglePreferences(tab = "general") {
-    const dialog = this.prefsDialogElement || this.captionsDialogElement;
-    if (dialog?.open) {
-      this.closePreferencesDialog();
-    } else {
-      this.openPreferencesDialog(tab);
-    }
-  }
-  /** Backward-compatibility aliases for captions settings dialog */
-  openCaptionsDialog() {
-    this.openPreferencesDialog("captions");
-  }
-  closeCaptionsDialog() {
-    this.closePreferencesDialog();
-  }
-  toggleCaptionsSettings() {
-    this.togglePreferences("captions");
-  }
-  /**
-   * Toggles sign window visibility on any slotted sign window component (Step 6 null-safe).
-   */
-  toggleSignWindow() {
-    if (!this.hasSignTrack) {
-      this.announceStatus(this.t("player.signUnavailable"), this.t("player.signUnavailable"));
-      return;
-    }
-    this.showSignWindow = !this.showSignWindow;
-    const signComponent = this.querySelector("savanna-sign-window");
-    const signElement = signComponent || this.querySelector("[data-sign-window]");
-    if (signElement) {
-      signElement.hidden = false;
-      if (signComponent) signComponent.enabled = this.showSignWindow;
-      else signElement.hidden = !this.showSignWindow;
-    }
-    this.announceStatus(
-      this.showSignWindow ? this.t("player.statusSignOn") : this.t("player.statusSignOff"),
-      this.showSignWindow ? "Sign Window: Visible \u{1F91F}" : "Sign Window: Hidden"
-    );
-  }
-  /**
-   * Toggles audio description state on any slotted/child audio description element (Step 6 null-safe).
-   */
-  toggleAudioDescription() {
-    if (!this.hasAdTrack) {
-      this.announceStatus(this.t("player.adUnavailable"), this.t("player.adUnavailable"));
-      return;
-    }
-    const adComponent = this.querySelector("savanna-audio-description");
-    if (adComponent?.toggle) {
-      adComponent.toggle();
-      return;
-    }
-    this.audioDescriptionEnabled = !this.audioDescriptionEnabled;
-    const adAudio = this.querySelector(
-      "audio[data-ad], audio.ad-track"
-    );
-    if (adAudio) {
-      adAudio.muted = !this.audioDescriptionEnabled;
-      if (this.audioDescriptionEnabled && this.media && !this.media.paused) {
-        adAudio.currentTime = this.media.currentTime;
-        adAudio.play().catch(() => {
-        });
-      } else {
-        adAudio.pause();
-      }
-    }
-    this.announceStatus(
-      this.audioDescriptionEnabled ? this.t("player.statusAdOn") : this.t("player.statusAdOff"),
-      this.audioDescriptionEnabled ? "Audio Description: ON \u{1F399}\uFE0F" : "Audio Description: OFF"
-    );
-  }
-  /**
-   * Toggles fullscreen on the player container.
-   */
-  toggleFullscreen() {
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {
-      });
-    } else {
-      this.requestFullscreen().catch(() => {
-        if (this.videoElement && this.videoElement.requestFullscreen) {
-          this.videoElement.requestFullscreen().catch(() => {
-          });
-        }
-      });
-    }
-  }
-  /**
-   * Opens the keyboard shortcuts help modal dialog (Step 7).
-   */
-  openShortcutsDialog() {
-    if (!this.helpDialogElement) return;
-    this.triggerElementBeforeDialog = this.shadowRoot?.activeElement || this.helpButtonElement;
-    if (!this.helpDialogElement.open) {
-      if (typeof this.helpDialogElement.showModal === "function") {
-        this.helpDialogElement.showModal();
-      } else {
-        this.helpDialogElement.setAttribute("open", "");
-      }
-      this.showHelpDialog = true;
-      const closeBtn = this.helpDialogElement.querySelector(".close-help-btn");
-      closeBtn?.focus();
-    }
-  }
-  /**
-   * Closes the keyboard shortcuts help modal dialog (Step 7).
-   */
-  closeShortcutsDialog() {
-    if (!this.helpDialogElement) return;
-    if (this.helpDialogElement.open) {
-      if (typeof this.helpDialogElement.close === "function") {
-        this.helpDialogElement.close();
-      } else {
-        this.helpDialogElement.removeAttribute("open");
-      }
-    }
-    this.showHelpDialog = false;
-  }
-  /**
-   * Displays or closes the keyboard shortcuts help dialog.
-   */
-  toggleShortcutsHelp() {
-    if (this.helpDialogElement?.open) {
-      this.closeShortcutsDialog();
-    } else {
-      this.openShortcutsDialog();
-    }
-  }
-  /**
-   * Seeks relatively by a given number of seconds.
-   */
-  seekBy(deltaSeconds) {
-    if (!this.media) return;
-    const duration = Number.isFinite(this.media.duration) ? this.media.duration : Infinity;
-    const newTime = Math.max(0, Math.min(this.media.currentTime + deltaSeconds, duration));
-    this.media.currentTime = newTime;
-    this.announceStatus(
-      this.t("player.statusSeek", { time: this.formatTime(newTime) }),
-      deltaSeconds > 0 ? `+${deltaSeconds}s \u23E9` : `${deltaSeconds}s \u23EA`
-    );
-  }
-  /**
-   * Seeks to an absolute timestamp in seconds.
-   */
-  seekTo(targetSeconds) {
-    if (!this.media) return;
-    const duration = Number.isFinite(this.media.duration) ? this.media.duration : 0;
-    const newTime = Math.max(0, Math.min(targetSeconds, duration));
-    this.media.currentTime = newTime;
-    this.currentTime = newTime;
-    const activeIdx = findActiveTranscriptLineIndex(this.transcriptLines, newTime);
-    if (activeIdx !== this.activeTranscriptIndex) {
-      this.activeTranscriptIndex = activeIdx;
-      if (this.transcriptAutoScroll && this.isTranscriptOpen && activeIdx >= 0) {
-        this.scrollActiveLineIntoView(activeIdx);
-      }
-    }
-  }
-  // Dispatch events that other components can listen to (Contract C2).
-  emitEvent(eventName, detail) {
-    this.dispatchEvent(
-      new CustomEvent(eventName, {
-        detail,
-        bubbles: true,
-        composed: true
-      })
-    );
-  }
-  // Runs after Lit completes the first render.
-  firstUpdated() {
-    if (this.videoElement?.textTracks) {
-      this.videoElement.textTracks.addEventListener(
-        "change",
-        this.handleCaptionChange
-      );
-    }
-    if (this.videoElement) {
-      if (this.playbackRate) {
-        this.videoElement.playbackRate = this.playbackRate;
-      }
-      this.videoElement.addEventListener("volumechange", () => {
-        this.volume = this.videoElement.volume;
-        this.isMuted = this.videoElement.muted;
-      });
-      this.videoElement.addEventListener("loadedmetadata", () => {
-        if (Number.isFinite(this.videoElement.duration)) {
-          this.duration = this.videoElement.duration;
-        }
-        if (this.playbackRate) {
-          this.videoElement.playbackRate = this.playbackRate;
-        }
-      });
-    }
-    if (!this.lesson || !this.api) {
-      this.hasSignTrack = Boolean(this.querySelector("savanna-sign-window, [data-sign-window]"));
-      this.hasAdTrack = Boolean(this.querySelector("savanna-audio-description[src], savanna-audio-description[text-vtt], audio[data-ad], audio.ad-track"));
-    }
-    this.emitEvent("savanna:ready");
-  }
-  /**
-   * Fetches transcript from the API endpoint per Contract C1 or falls back to VTT cues.
-   */
-  async fetchTranscript(url, manifest) {
-    const expectedLesson = this.manifestData?.id;
-    let targetUrl;
-    try {
-      targetUrl = resolveCaptionUrl({ urlPath: url, apiBase: this.api });
-      const parsed = new URL(targetUrl);
-      parsed.searchParams.set("lang", this.activeLang);
-      targetUrl = parsed.href;
-    } catch {
-      targetUrl = url;
-    }
-    try {
-      const headers = {};
-      if (this.apiKey && shouldSendApiKey(targetUrl, this.apiKey, this.api)) {
-        headers["X-Savanna-Key"] = this.apiKey;
-      }
-      const res = await fetch(targetUrl, { headers });
-      if (expectedLesson && this.manifestData?.id !== expectedLesson) return;
-      if (res.ok) {
-        const data = await res.json();
-        if (expectedLesson && this.manifestData?.id !== expectedLesson) return;
-        const lines = Array.isArray(data?.lines) ? data.lines.filter((line) => {
-          if (!line || typeof line !== "object") return false;
-          const item = line;
-          return Number.isFinite(item.start) && Number.isFinite(item.end) && item.start >= 0 && item.end >= item.start && typeof item.text === "string";
-        }) : [];
-        if (lines.length > 0) {
-          const matchingVtt = this.vttCuesCache.get(this.activeLang);
-          if (data.lang && data.lang !== this.activeLang && matchingVtt && matchingVtt.length > 0) {
-            this.transcriptLines = matchingVtt.map((c5) => ({ start: c5.start, end: c5.end, text: c5.text }));
-            this.resolveSummary(manifest);
-            return;
-          }
-          if (matchingVtt && matchingVtt.length > lines.length) {
-            this.transcriptLines = matchingVtt.map((c5) => ({ start: c5.start, end: c5.end, text: c5.text }));
-            this.resolveSummary(manifest);
-            return;
-          }
-          this.transcriptLines = lines;
-          this.resolveSummary(manifest);
-          return;
-        }
-      }
-    } catch {
-    }
-    this.fallbackTranscriptFromCaptions(manifest);
-  }
-  /**
-   * Fallback: populates transcript lines from cached or fetched WebVTT cues (FR-P8).
-   */
-  fallbackTranscriptFromCaptions(manifest) {
-    const cues = this.vttCuesCache.get(this.activeLang);
-    if (cues && cues.length > 0) {
-      this.transcriptLines = cues.map((c5) => ({ start: c5.start, end: c5.end, text: c5.text }));
-    } else {
-      const track = this.manifestCaptions.find((c5) => c5.lang === this.activeLang) || this.manifestCaptions[0];
-      if (track?.url) {
-        const resolvedUrl = resolveCaptionUrl({ urlPath: track.url, apiBase: this.api });
-        fetchCaptionTrack({
-          url: resolvedUrl,
-          apiKey: this.apiKey,
-          apiBase: this.api
-        }).then((res) => {
-          const parsed = parseWebVtt(res.text);
-          this.vttCuesCache.set(track.lang, parsed);
-          this.transcriptLines = parsed.map((c5) => ({ start: c5.start, end: c5.end, text: c5.text }));
-        }).catch(() => {
-        });
-      }
-    }
-    this.resolveSummary(manifest);
-  }
-  /**
-   * Resolves plain-language summary and lesson title for current language (SRS FR-P8, FR-D4).
-   */
-  resolveSummary(manifest) {
-    const m2 = manifest || this.manifestData;
-    let resolved = "";
-    if (m2?.summary) {
-      if (typeof m2.summary === "object") {
-        resolved = m2.summary[this.activeLang] || m2.summary.en || "";
-      } else if (typeof m2.summary === "string") {
-        resolved = m2.summary;
-      }
-    }
-    this.transcriptSummary = resolved || this.t("player.defaultSummary");
-    if (m2?.title) {
-      this.lessonTitle = m2.title[this.activeLang] || m2.title.en || "";
-    }
-  }
-  /**
-   * Dynamically evaluates the plain-language summary according to current active language (SRS FR-P8, FR-P10).
-   */
-  getEffectiveSummary() {
-    const m2 = this.manifestData;
-    if (m2?.summary) {
-      if (typeof m2.summary === "object") {
-        return m2.summary[this.activeLang] || m2.summary.en || "";
-      } else if (typeof m2.summary === "string") {
-        return m2.summary;
-      }
-    }
-    return this.t("player.defaultSummary");
-  }
-  /**
-   * Synchronizes transcript content when the UI language changes (Contract C4).
-   */
-  syncTranscriptLanguage() {
-    if (this.manifestData?.transcript?.url) {
-      this.fetchTranscript(this.manifestData.transcript.url, this.manifestData);
-    } else {
-      this.fallbackTranscriptFromCaptions(this.manifestData);
-    }
-  }
-  scrollActiveLineIntoView(index) {
-    const el = this.shadowRoot?.querySelector(`.transcript-line[data-index="${index}"]`);
-    if (el) {
-      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
-  }
-  seekFromTranscript(start) {
-    this.seekTo(start);
-    this.announceStatus(this.t("player.statusSeek", { time: this.formatTime(start) }));
-  }
-  renderCueText(text, query) {
-    if (!query || !query.trim()) {
-      return text;
-    }
-    const parts = splitTextByMatch(text, query);
-    return parts.map(
-      (part) => part.isMatch ? b2`<mark class="transcript-mark">${part.text}</mark>` : part.text
-    );
-  }
-  renderTranscriptPanel() {
-    if (!this.isTranscriptOpen) return "";
-    const filteredItems = filterTranscriptLines(this.transcriptLines, this.transcriptSearchQuery);
-    const isSearching = Boolean(this.transcriptSearchQuery.trim());
-    return b2`
+import{a as v,b as y}from"./chunks/chunk-UFQ6XX3Z.js";import{a as w}from"./chunks/chunk-QXYEMUCC.js";import{a as k,b as x,c as L,d as S}from"./chunks/chunk-LI7YCJHX.js";import{a as $,b as p,c as b,e as E,f as D,g,h as l,i as f}from"./chunks/chunk-4E6CAAHO.js";import{a as r}from"./chunks/chunk-INEEODZZ.js";var T={"player.controlsLabel":"Player controls","player.play":"Play","player.pause":"Pause","player.back10":"Rewind 10 seconds","player.seekSlider":"Video position","player.positionValueTextSeconds":"Position {curSec} {secUnit} of {totalSec} {totalSecUnit}","player.positionValueText":"Position {curMin} {minUnit} {curSec} of {totalMin} {totalMinUnit}","player.minuteSingular":"minute","player.minutePlural":"minutes","player.secondSingular":"second","player.secondPlural":"seconds","player.volumeSlider":"Volume level","player.volumeValueText":"Volume {percent} percent","player.mute":"Mute audio","player.speed":"Playback speed","player.speedNormal":"Normal (1x)","player.captions":"Closed captions","player.lowDataEnabled":"Save data enabled","player.lowDataDisabled":"Save data disabled","player.lowDataOn":"Data saver: On","player.lowDataOff":"Data saver: Off","player.lowDataPending":"Video has not been downloaded yet","player.lowDataHelp":"Save data mode waits to request the video until you press Play.","player.loadingVideo":"Loading video\u2026","player.mediaRetryHelp":"Check your connection, then retry this video.","player.errorMediaLoad":"The lesson video could not be loaded. Check your connection and try Play again.","player.qaTitle":"Ask about this lesson","player.qaDescription":"Answers are based on this lesson transcript and work in English or Amharic. This demo supports a few lesson topics.","player.qaQuestionLabel":"Your question","player.qaPlaceholder":"Ask about the main idea or the 4 minute 12 second figure","player.qaAsk":"Ask","player.languageSwitchAm":"Switch interface and captions to Amharic","player.languageSwitchEn":"Switch interface and captions to English","player.languageAmShort":"\u12A0\u121B","player.languageEnShort":"EN","player.captionsUnavailable":"No captions track available in this lesson","player.sign":"Sign language window","player.signUnavailable":"Sign language is not available for this lesson","player.audioDescription":"Audio description","player.adUnavailable":"Audio description is not available for this lesson","player.fullscreen":"Full screen","player.help":"Keyboard shortcuts help","player.closeHelp":"Close shortcuts help dialog","player.notAvailableSuffix":"(Not available for this lesson)","player.helpTitle":"Keyboard Shortcuts","player.helpHeaderKey":"Key","player.helpHeaderAction":"Action","player.shortcutPlayPause":"Play or pause video","player.shortcutSeek5":"Seek backward or forward 5 seconds","player.shortcutSeek10":"Seek backward or forward 10 seconds","player.shortcutVolume":"Increase or decrease volume","player.shortcutMute":"Mute or unmute audio","player.shortcutCaptions":"Toggle closed captions","player.shortcutSign":"Show or hide sign language window","player.shortcutAudioDescription":"Toggle audio description","player.shortcutFullscreen":"Toggle full screen","player.shortcutHelp":"Show or hide keyboard shortcuts help","player.shortcutStartEnd":"Seek to start or end of lesson","player.statusPlay":"Playing","player.statusPause":"Paused","player.statusVolume":"Volume {percent} percent","player.statusMuted":"Audio muted","player.statusUnmuted":"Audio unmuted","player.statusSeek":"Seeked to {time}","player.statusSpeed":"Playback speed {speed}x","player.statusCaptionsOn":"Captions turned on","player.statusCaptionsOff":"Captions turned off","player.statusSignOn":"Sign language window visible","player.statusSignOff":"Sign language window hidden","player.statusAdOn":"Audio description enabled","player.statusAdOff":"Audio description disabled","player.statusFullscreenOn":"Entered full screen","player.statusFullscreenOff":"Exited full screen","player.statusTranscriptOpen":"Interactive transcript opened","player.statusTranscriptClosed":"Interactive transcript closed","player.captionsSettings":"Caption settings","player.closeCaptionsSettings":"Close caption settings dialog","player.captionsTrack":"Captions track","player.captionsTrackOff":"Off","player.captionsTrackEn":"English","player.captionsTrackAm":"Amharic (\u12A0\u121B\u122D\u129B)","player.captionsSize":"Font size","player.captionsColor":"Color theme","player.captionsPresetWhiteBlack":"White on Black","player.captionsPresetYellowBlack":"Yellow on Black","player.captionsPresetBlackWhite":"Black on White","player.captionsPresetCustom":"Custom","player.captionsTextColor":"Text color","player.captionsBgColor":"Background color","player.captionsOpacity":"Background opacity","player.captionsPosition":"Position","player.captionsPositionBottom":"Bottom","player.captionsPositionTop":"Top","player.captionsPreview":"Captions preview","player.captionsPreviewText":"This is how captions will look.","player.transcript":"Transcript","player.transcriptToggle":"Toggle transcript panel","player.transcriptTitle":"Interactive Transcript","player.transcriptSearch":"Search transcript","player.transcriptSearchPlaceholder":"Search transcript...","player.transcriptClearSearch":"Clear search","player.transcriptMatches":"{count} matches found","player.transcriptNoMatches":"No matching transcript lines found","player.transcriptDownload":"Download transcript (.txt)","player.transcriptDownloadBraille":"Download Braille (.brf)","player.transcriptSummaryTitle":"Plain-Language Summary","player.transcriptAutoScroll":"Auto-scroll with video","player.transcriptClose":"Close transcript panel","player.transcriptDownloaded":"Transcript downloaded","player.statusBrailleDownloaded":"Braille file (.brf) downloaded","player.errorManifestLoad":"Unable to load lesson. Please check your network connection.","player.retry":"Retry","player.statusOfflineManifest":"Loaded offline cached lesson manifest","player.shortcutTranscript":"Toggle transcript panel","player.shortcutPreferences":"Toggle preferences dialog","player.defaultSummary":"This lesson introduces foundational concepts with accessible learning materials and structured examples.","player.preferences":"Preferences","player.preferencesTitle":"Player Preferences","player.closePreferences":"Close preferences dialog","player.prefSectionGeneral":"General","player.prefSectionCaptions":"Captions","player.prefLanguage":"Interface Language","player.prefLanguageEn":"English","player.prefLanguageAm":"Amharic (\u12A0\u121B\u122D\u129B)","player.prefSpeed":"Default Playback Speed","player.prefTheme":"Display Theme","player.prefThemeDark":"Dark (Default)","player.prefThemeLight":"Light","player.prefThemeHighContrast":"High Contrast (AAA)","player.prefShortcuts":"Keyboard Shortcuts","player.prefShortcutsOn":"Enabled (K, J, L, C, S, D, F, T)","player.prefShortcutsOff":"Disabled","player.prefSignWindow":"Sign Language Window","player.prefAudioDescription":"Audio Description (AD)","player.prefEnabled":"Enabled","player.prefDisabled":"Disabled","player.prefReset":"Reset to Defaults","player.prefDownload":"Download my settings","player.prefDelete":"Delete my settings","player.statusPrefsSaved":"Preferences saved","player.statusLangChanged":"Language changed to {lang}"};var M={_comment:"DRAFT - Amharic translations for Savanna Player controls and announcements. Must be reviewed by a native Amharic speaker.","player.controlsLabel":"\u12E8\u121B\u132B\u12C8\u127B \u1218\u1246\u1323\u1320\u122A\u12EB\u12CE\u127D","player.play":"\u12A0\u132B\u12CD\u1275","player.pause":"\u12A0\u1241\u121D","player.back10":"10 \u1230\u12A8\u1295\u12F5 \u12C8\u12F0 \u128B\u120B \u1218\u120D\u1235","player.seekSlider":"\u12E8\u126A\u12F2\u12EE \u1266\u1273","player.positionValueTextSeconds":"\u1266\u1273 {curSec} {secUnit} \u12A8 {totalSec} {totalSecUnit}","player.positionValueText":"\u1266\u1273 {curMin} {minUnit} {curSec} \u12A8 {totalMin} {totalMinUnit}","player.minuteSingular":"\u12F0\u1242\u1243","player.minutePlural":"\u12F0\u1242\u1243","player.secondSingular":"\u1230\u12A8\u1295\u12F5","player.secondPlural":"\u1230\u12A8\u1295\u12F5","player.volumeSlider":"\u12E8\u12F5\u121D\u133D \u1218\u1320\u1295","player.volumeValueText":"\u12F5\u121D\u133D {percent} \u1260\u1218\u1276","player.mute":"\u12F5\u121D\u133D \u12A0\u1325\u134B","player.speed":"\u12E8\u121B\u132B\u12C8\u127B \u134D\u1325\u1290\u1275","player.speedNormal":"\u1218\u12F0\u1260\u129B (1x)","player.captions":"\u12E8\u130D\u122D\u130C \u133D\u1211\u134D","player.lowDataEnabled":"\u12F3\u1273 \u1246\u1323\u1262 \u1260\u122D\u1277\u120D","player.lowDataDisabled":"\u12F3\u1273 \u1246\u1323\u1262 \u1320\u134D\u1277\u120D","player.lowDataOn":"\u12F3\u1273 \u1246\u1323\u1262\u1366 \u1260\u122D\u1277\u120D","player.lowDataOff":"\u12F3\u1273 \u1246\u1323\u1262\u1366 \u1320\u134D\u1277\u120D","player.lowDataPending":"\u126A\u12F2\u12EE\u12CD \u1308\u1293 \u12A0\u120D\u12C8\u1228\u12F0\u121D","player.lowDataHelp":"\u1260\u12F3\u1273 \u1246\u1323\u1262 \u1201\u1290\u1273 \u12E8\u126A\u12F2\u12EE\u12CD \u121B\u12CD\u1228\u12F5 \u12A0\u132B\u12CD\u1275\u1295 \u12A5\u1235\u12AA\u132B\u1291 \u12ED\u1320\u1265\u1243\u120D\u1362","player.loadingVideo":"\u126A\u12F2\u12EE\u12CD \u1260\u1218\u132B\u1295 \u120B\u12ED \u1290\u12CD\u2026","player.mediaRetryHelp":"\u130D\u1295\u1299\u1290\u1275\u12CE\u1295 \u12ED\u1348\u1275\u1239\u1363 \u12A8\u12DA\u12EB \u126A\u12F2\u12EE\u12CD\u1295 \u12A5\u1295\u12F0\u1308\u1293 \u12ED\u121E\u12AD\u1229\u1362","player.errorMediaLoad":"\u12E8\u1275\u121D\u1205\u122D\u1271\u1295 \u126A\u12F2\u12EE \u1218\u132B\u1295 \u12A0\u120D\u1270\u127B\u1208\u121D\u1362 \u130D\u1295\u1299\u1290\u1275\u12CE\u1295 \u12EB\u1228\u130B\u130D\u1321\u1293 \u12A0\u132B\u12CD\u1275\u1295 \u12A5\u1295\u12F0\u1308\u1293 \u12ED\u132B\u1291\u1362","player.qaTitle":"\u1235\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12ED\u1320\u12ED\u1241","player.qaDescription":"\u1218\u120D\u1236\u1279 \u1260\u1275\u121D\u1205\u122D\u1271 \u130D\u120D\u1260\u1323 \u133D\u1211\u134D \u120B\u12ED \u12E8\u1270\u1218\u1220\u1228\u1271 \u1232\u1206\u1291 \u1260\u12A5\u1295\u130D\u120A\u12DD\u129B \u12C8\u12ED\u121D \u1260\u12A0\u121B\u122D\u129B \u120A\u1320\u12E8\u1241 \u12ED\u127D\u120B\u1209\u1362 \u12ED\u1205 \u1219\u12A8\u122B \u1325\u1242\u1275 \u12E8\u1275\u121D\u1205\u122D\u1275 \u122D\u12D5\u1236\u127D\u1295 \u1265\u127B \u12ED\u12F0\u130D\u134B\u120D\u1362","player.qaQuestionLabel":"\u1325\u12EB\u1244\u12CE","player.qaPlaceholder":"\u1235\u1208 \u12CB\u1293\u12CD \u1210\u1233\u1265 \u12C8\u12ED\u121D \u1235\u1208 4 \u12F0\u1242\u1243 \u12A812 \u1230\u12A8\u1295\u12F5 \u1241\u1325\u122D \u12ED\u1320\u12ED\u1241","player.qaAsk":"\u1320\u12ED\u1245","player.languageSwitchAm":"\u12E8\u1218\u1308\u1293\u129B \u124B\u1295\u124B\u1295\u1293 \u130D\u122D\u130C \u133D\u1211\u1349\u1295 \u12C8\u12F0 \u12A0\u121B\u122D\u129B \u1240\u12ED\u122D","player.languageSwitchEn":"\u12E8\u1218\u1308\u1293\u129B \u124B\u1295\u124B\u1295\u1293 \u130D\u122D\u130C \u133D\u1211\u1349\u1295 \u12C8\u12F0 \u12A5\u1295\u130D\u120A\u12DD\u129B \u1240\u12ED\u122D","player.languageAmShort":"\u12A0\u121B","player.languageEnShort":"EN","player.captionsUnavailable":"\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u121D\u1295\u121D \u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u12E8\u1208\u121D","player.sign":"\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u1218\u1235\u12AE\u1275","player.signUnavailable":"\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u12E8\u1208\u121D","player.audioDescription":"\u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB","player.adUnavailable":"\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB \u12E8\u1208\u121D","player.fullscreen":"\u1219\u1209 \u121B\u12EB","player.help":"\u12E8\u1241\u120D\u134D \u1230\u120C\u12F3 \u12A0\u124B\u122B\u132E\u127D \u12A5\u1308\u12DB","player.closeHelp":"\u12E8\u12A5\u1308\u12DB \u1218\u1235\u12AE\u1271\u1295 \u12DD\u130B","player.notAvailableSuffix":"(\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u1208\u121D)","player.helpTitle":"\u12E8\u1241\u120D\u134D \u1230\u120C\u12F3 \u12A0\u124B\u122B\u132E\u127D","player.helpHeaderKey":"\u1241\u120D\u134D","player.helpHeaderAction":"\u1270\u130D\u1263\u122D","player.shortcutPlayPause":"\u126A\u12F2\u12EE\u12CD\u1295 \u12A0\u132B\u12CD\u1275 \u12C8\u12ED\u121D \u12A0\u1241\u121D","player.shortcutSeek5":"5 \u1230\u12A8\u1295\u12F5 \u12C8\u12F0 \u128B\u120B \u12C8\u12ED\u121D \u12C8\u12F0 \u134A\u1275 \u12DD\u1208\u120D","player.shortcutSeek10":"10 \u1230\u12A8\u1295\u12F5 \u12C8\u12F0 \u128B\u120B \u12C8\u12ED\u121D \u12C8\u12F0 \u134A\u1275 \u12DD\u1208\u120D","player.shortcutVolume":"\u12E8\u12F5\u121D\u133D \u1218\u1320\u1295 \u1328\u121D\u122D \u12C8\u12ED\u121D \u1240\u1295\u1235","player.shortcutMute":"\u12F5\u121D\u133D \u12A0\u1325\u134B \u12C8\u12ED\u121D \u12AD\u1348\u1275","player.shortcutCaptions":"\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u12A0\u1265\u122B \u12C8\u12ED\u121D \u12A0\u1325\u134B","player.shortcutSign":"\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u1218\u1235\u12AE\u1275 \u12A0\u1233\u12ED \u12C8\u12ED\u121D \u12F0\u1265\u1245","player.shortcutAudioDescription":"\u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB \u12A0\u1265\u122B \u12C8\u12ED\u121D \u12A0\u1325\u134B","player.shortcutFullscreen":"\u1219\u1209 \u121B\u12EB \u12A0\u1265\u122B \u12C8\u12ED\u121D \u12A0\u1325\u134B","player.shortcutHelp":"\u12E8\u1241\u120D\u134D \u1230\u120C\u12F3 \u12A0\u124B\u122B\u132E\u127D \u12A5\u1308\u12DB\u1295 \u12A0\u1233\u12ED \u12C8\u12ED\u121D \u12F0\u1265\u1245","player.shortcutStartEnd":"\u12C8\u12F0 \u1275\u121D\u1205\u122D\u1271 \u1218\u1300\u1218\u122A\u12EB \u12C8\u12ED\u121D \u1218\u1328\u1228\u123B \u12DD\u1208\u120D","player.statusPlay":"\u12A5\u12E8\u1270\u132B\u12C8\u1270 \u1290\u12CD","player.statusPause":"\u1246\u121F\u120D","player.statusVolume":"\u12F5\u121D\u133D {percent} \u1260\u1218\u1276","player.statusMuted":"\u12F5\u121D\u133D \u1320\u134D\u1277\u120D","player.statusUnmuted":"\u12F5\u121D\u133D \u1270\u12A8\u134D\u1277\u120D","player.statusSeek":"\u12C8\u12F0 {time} \u1270\u12D8\u120F\u120D","player.statusSpeed":"\u12E8\u121B\u132B\u12C8\u127B \u134D\u1325\u1290\u1275 \u12C8\u12F0 {speed}x \u1270\u1240\u12ED\u122F\u120D","player.statusCaptionsOn":"\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1260\u122D\u1277\u120D","player.statusCaptionsOff":"\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1320\u134D\u1277\u120D","player.statusSignOn":"\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u1218\u1235\u12AE\u1275 \u12ED\u1273\u12EB\u120D","player.statusSignOff":"\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u1218\u1235\u12AE\u1275 \u1270\u12F0\u1265\u124B\u120D","player.statusAdOn":"\u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB \u1260\u122D\u1277\u120D","player.statusAdOff":"\u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB \u1320\u134D\u1277\u120D","player.statusFullscreenOn":"\u12C8\u12F0 \u1219\u1209 \u121B\u12EB \u1308\u1265\u1277\u120D","player.statusFullscreenOff":"\u12A8\u1219\u1209 \u121B\u12EB \u12C8\u1325\u1277\u120D","player.statusTranscriptOpen":"\u1270\u130D\u1263\u122B\u12CA \u130D\u120D\u1260\u1323 \u133D\u1211\u134D \u1270\u12A8\u134D\u1277\u120D","player.statusTranscriptClosed":"\u1270\u130D\u1263\u122B\u12CA \u130D\u120D\u1260\u1323 \u133D\u1211\u134D \u1270\u12D8\u130D\u1277\u120D","player.captionsSettings":"\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1245\u1295\u1265\u122E\u127D","player.closeCaptionsSettings":"\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1245\u1295\u1265\u122E\u127D \u1218\u1235\u12AE\u1275\u1295 \u12DD\u130B","player.captionsTrack":"\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u124B\u1295\u124B","player.captionsTrackOff":"\u1320\u134D\u1277\u120D","player.captionsTrackEn":"\u12A5\u1295\u130D\u120A\u12DD\u129B (English)","player.captionsTrackAm":"\u12A0\u121B\u122D\u129B","player.captionsSize":"\u12E8\u134A\u12F0\u120D \u1218\u1320\u1295","player.captionsColor":"\u12E8\u1240\u1208\u121D \u1308\u133D\u1273","player.captionsPresetWhiteBlack":"\u1290\u132D \u1260\u1325\u1241\u122D \u120B\u12ED","player.captionsPresetYellowBlack":"\u1262\u132B \u1260\u1325\u1241\u122D \u120B\u12ED","player.captionsPresetBlackWhite":"\u1325\u1241\u122D \u1260\u1290\u132D \u120B\u12ED","player.captionsPresetCustom":"\u1265\u1301","player.captionsTextColor":"\u12E8\u133D\u1211\u134D \u1240\u1208\u121D","player.captionsBgColor":"\u12E8\u1300\u122D\u1263 \u1240\u1208\u121D","player.captionsOpacity":"\u12E8\u1300\u122D\u1263 \u130D\u120D\u133D\u1290\u1275","player.captionsPosition":"\u1266\u1273","player.captionsPositionBottom":"\u12A8\u1273\u127D","player.captionsPositionTop":"\u12A8\u120B\u12ED","player.captionsPreview":"\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1245\u12F5\u1218-\u12D5\u12ED\u1273","player.captionsPreviewText":"\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1260\u12DA\u1205 \u1218\u120D\u12AD \u12ED\u1273\u12EB\u120D\u1362","player.transcript":"\u130D\u120D\u1260\u1323 \u133D\u1211\u134D","player.transcriptToggle":"\u12E8\u130D\u120D\u1260\u1323 \u133D\u1211\u134D \u1218\u1235\u12AE\u1275 \u12AD\u1348\u1275/\u12DD\u130B","player.transcriptTitle":"\u1270\u130D\u1263\u122B\u12CA \u130D\u120D\u1260\u1323 \u133D\u1211\u134D","player.transcriptSearch":"\u1260\u133D\u1211\u1349 \u12CD\u1235\u1325 \u12ED\u1348\u120D\u1309","player.transcriptSearchPlaceholder":"\u12E8\u133D\u1211\u134D \u1218\u1235\u1218\u122E\u127D\u1295 \u12ED\u1348\u120D\u1309...","player.transcriptClearSearch":"\u134D\u1208\u130B\u1295 \u12A0\u133D\u12F3","player.transcriptMatches":"{count} \u12CD\u1324\u1276\u127D \u1270\u1308\u129D\u1270\u12CB\u120D","player.transcriptNoMatches":"\u121D\u1295\u121D \u12E8\u1270\u1308\u1298 \u12E8\u133D\u1211\u134D \u1218\u1235\u1218\u122D \u12E8\u1208\u121D","player.transcriptDownload":"\u133D\u1211\u1349\u1295 \u12A0\u12CD\u122D\u12F5 (.txt)","player.transcriptDownloadBraille":"\u1265\u122C\u12ED\u120D \u12A0\u12CD\u122D\u12F5 (.brf)","player.transcriptSummaryTitle":"\u12E8\u1275\u121D\u1205\u122D\u1271 \u121B\u1320\u1243\u1208\u12EB","player.transcriptAutoScroll":"\u12A8\u126A\u12F2\u12EE\u12CD \u130B\u122D \u12A0\u1265\u122E \u121B\u1295\u1238\u122B\u1270\u1275","player.transcriptClose":"\u12E8\u130D\u120D\u1260\u1323 \u133D\u1211\u134D \u1218\u1235\u12AE\u1275\u1295 \u12DD\u130B","player.transcriptDownloaded":"\u12E8\u126A\u12F2\u12EE\u12CD \u133D\u1211\u134D \u12C8\u122D\u12F7\u120D","player.statusBrailleDownloaded":"\u12E8\u1265\u122C\u12ED\u120D \u134B\u12ED\u120D (.brf) \u12C8\u122D\u12F7\u120D","player.errorManifestLoad":"\u12E8\u1275\u121D\u1205\u122D\u1275 \u1218\u1228\u1303\u1295 \u1218\u132B\u1295 \u12A0\u120D\u1270\u127B\u1208\u121D\u1362 \u12A5\u1263\u12AD\u12CE \u12E8\u1260\u12ED\u1290\u1218\u1228\u1265 \u130D\u1295\u1299\u1290\u1275\u12CE\u1295 \u12EB\u1228\u130B\u130D\u1321\u1362","player.retry":"\u12F3\u130D\u121D \u121E\u12AD\u122D","player.statusOfflineManifest":"\u12A8\u1218\u1235\u1218\u122D \u12CD\u132D \u12E8\u1270\u1240\u1218\u1320 \u1218\u1228\u1303 \u1270\u132D\u1297\u120D","player.shortcutTranscript":"\u12E8\u130D\u120D\u1260\u1323 \u133D\u1211\u134D \u1218\u1235\u12AE\u1275 \u12AD\u1348\u1275/\u12DD\u130B","player.shortcutPreferences":"\u12E8\u1245\u1295\u1265\u122E\u127D \u1218\u1235\u12AE\u1275\u1295 \u12AD\u1348\u1275/\u12DD\u130B","player.defaultSummary":"\u12ED\u1205 \u1275\u121D\u1205\u122D\u1275 \u1218\u1220\u1228\u1273\u12CA \u133D\u1295\u1230-\u1200\u1233\u1266\u127D\u1295 \u1270\u12F0\u122B\u123D \u1260\u1206\u1290 \u12E8\u1275\u121D\u1205\u122D\u1275 \u1241\u1233\u1241\u1235 \u12A5\u1293 \u121D\u1233\u120C\u12CE\u127D \u12EB\u1235\u1270\u121D\u122B\u120D\u1362","player.preferences":"\u1245\u1295\u1265\u122E\u127D","player.preferencesTitle":"\u12E8\u121B\u132B\u12C8\u127B\u12CD \u1245\u1295\u1265\u122E\u127D","player.closePreferences":"\u12E8\u1245\u1295\u1265\u122E\u127D \u1218\u1235\u12AE\u1275\u1295 \u12DD\u130B","player.prefSectionGeneral":"\u12A0\u1320\u1243\u120B\u12ED","player.prefSectionCaptions":"\u12E8\u130D\u122D\u130C \u133D\u1211\u134D","player.prefLanguage":"\u124B\u1295\u124B","player.prefLanguageEn":"\u12A5\u1295\u130D\u120A\u12DD\u129B (English)","player.prefLanguageAm":"\u12A0\u121B\u122D\u129B (Amharic)","player.prefSpeed":"\u12E8\u121B\u132B\u12C8\u127B \u134D\u1325\u1290\u1275","player.prefTheme":"\u1308\u133D\u1273","player.prefThemeDark":"\u1325\u1241\u122D (\u1218\u12F0\u1260\u129B)","player.prefThemeLight":"\u1290\u132D","player.prefThemeHighContrast":"\u12A8\u134D\u1270\u129B \u1295\u1345\u1345\u122D (AAA)","player.prefShortcuts":"\u12E8\u1241\u120D\u134D \u1230\u120C\u12F3 \u12A0\u124B\u122B\u132E\u127D","player.prefShortcutsOn":"\u12E8\u1290\u1243 (K, J, L, C, S, D, F, T)","player.prefShortcutsOff":"\u12E8\u1266\u12D8\u1290","player.prefSignWindow":"\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B \u1218\u1235\u12AE\u1275","player.prefAudioDescription":"\u12E8\u12F5\u121D\u133D \u121B\u1265\u122B\u122A\u12EB (AD)","player.prefEnabled":"\u12E8\u1290\u1243","player.prefDisabled":"\u12E8\u1266\u12D8\u1290","player.prefReset":"\u12C8\u12F0 \u1290\u1263\u122A \u1218\u120D\u1235","player.prefDownload":"\u12E8\u12A5\u1294\u1295 \u121D\u122D\u132B\u12CE\u127D \u12A0\u12CD\u122D\u12F5","player.prefDelete":"\u12E8\u12A5\u1294\u1295 \u121D\u122D\u132B\u12CE\u127D \u1230\u122D\u12DD","player.statusPrefsSaved":"\u1245\u1295\u1265\u122E\u127D \u1270\u1240\u121D\u1320\u12CB\u120D","player.statusLangChanged":"\u124B\u1295\u124B \u12C8\u12F0 {lang} \u1270\u1240\u12ED\u122F\u120D"};var U={en:{main:"The speaker reflects on learning from short online videos and contrasts those focused segments with longer lectures. The lesson presents this as the speaker's experience, not a rule that every learner should follow.",fourMinutes:"The speaker says 4 minutes 12 seconds is the average YouTube video length and uses it to describe how they experience learning in short chunks. Treat that number as the speaker's claim in this clip, not as a verified current statistic.",comparison:"The speaker says ideas in a long lecture can still arrive in short sections, while a less structured lecture may stay on one point for much longer. The contrast is about how clearly ideas are divided, not simply the total video length.",unsupported:"I can't find that in this lesson. I can answer questions about the main idea, the 4 minutes 12 seconds figure, and the comparison between short video segments and lectures."},am:{main:"\u1270\u1293\u130B\u122A\u12CD \u12A8\u12A0\u132D\u122D \u12E8\u1218\u1235\u1218\u122D \u120B\u12ED \u126A\u12F2\u12EE\u12CE\u127D \u1235\u1208\u1218\u121B\u122D \u12EB\u1230\u120B\u1235\u120B\u120D\u1364 \u12A5\u1290\u12DA\u1205\u1295 \u12AD\u134D\u120E\u127D \u12A8\u1228\u1305\u121D \u1295\u130D\u130D\u122E\u127D \u130B\u122D \u12EB\u1290\u133B\u133D\u122B\u120D\u1362 \u12ED\u1205 \u12E8\u1270\u1293\u130B\u122A\u12CD \u1270\u121E\u12AD\u122E \u1290\u12CD\u1364 \u1201\u1209\u121D \u1270\u121B\u122A\u12CE\u127D \u1218\u12A8\u1270\u120D \u12EB\u1208\u1263\u1278\u12CD \u1215\u130D \u12A0\u12ED\u12F0\u1208\u121D\u1362",fourMinutes:"\u1270\u1293\u130B\u122A\u12CD 4 \u12F0\u1242\u1243 \u12A812 \u1230\u12A8\u1295\u12F5 \u12E8YouTube \u126A\u12F2\u12EE \u12A0\u121B\u12AB\u12ED \u122D\u12DD\u1218\u1275 \u1290\u12CD \u12ED\u120B\u120D\u1364 \u12ED\u1205\u1295\u121D \u1260\u12A0\u132D\u122D \u12AD\u134D\u120E\u127D \u12E8\u1218\u121B\u122D \u1270\u121E\u12AD\u122E\u12CD\u1295 \u1208\u1218\u130D\u1208\u133D \u12ED\u1320\u1240\u121D\u1260\u1273\u120D\u1362 \u1241\u1325\u1229\u1295 \u1260\u12DA\u1205 \u126A\u12F2\u12EE \u12CD\u1235\u1325 \u12A5\u1295\u12F0\u1270\u1293\u130B\u122A\u12CD \u12A0\u1263\u1263\u120D \u12ED\u12CD\u1230\u12F1\u1275\u1364 \u12E8\u12DB\u122C \u12E8\u1270\u1228\u130B\u1308\u1320 \u1235\u1273\u1272\u1235\u1272\u12AD\u1235 \u12A0\u12ED\u12F0\u1208\u121D\u1362",comparison:"\u1270\u1293\u130B\u122A\u12CD \u1260\u1228\u1305\u121D \u1295\u130D\u130D\u122D \u12CD\u1235\u1325\u121D \u1210\u1233\u1266\u127D \u1260\u12A0\u132D\u122D \u12AD\u134D\u120E\u127D \u120A\u1240\u122D\u1261 \u12A5\u1295\u12F0\u121A\u127D\u1209 \u12ED\u1308\u120D\u133B\u120D\u1362 \u1290\u1325\u1266\u127D \u1260\u130D\u120D\u133D \u12AB\u120D\u1270\u12A8\u134B\u1348\u1209 \u130D\u1295 \u12A0\u1295\u12F5 \u1210\u1233\u1265 \u1228\u1305\u121D \u130A\u12DC \u120A\u1246\u12ED \u12ED\u127D\u120B\u120D\u1362 \u1295\u133D\u133D\u1229 \u1235\u1208 \u1210\u1233\u1266\u127D \u12A0\u1240\u122B\u1228\u1265 \u1290\u12CD\u1364 \u1235\u1208 \u126A\u12F2\u12EE\u12CD \u12A0\u1320\u1243\u120B\u12ED \u122D\u12DD\u1218\u1275 \u1265\u127B \u12A0\u12ED\u12F0\u1208\u121D\u1362",unsupported:"\u1235\u1208 \u1275\u121D\u1205\u122D\u1271 \u12CB\u1293 \u1210\u1233\u1265\u1363 \u1235\u1208 4 \u12F0\u1242\u1243 \u12A812 \u1230\u12A8\u1295\u12F5 \u1241\u1325\u122D\u1363 \u12A5\u1293 \u1235\u1208 \u12A0\u132D\u122D \u126A\u12F2\u12EE\u12CE\u127D\u1293 \u1295\u130D\u130D\u122E\u127D \u1295\u133D\u133D\u122D \u1218\u120D\u1235 \u1218\u1235\u1320\u1275 \u12A5\u127D\u120B\u1208\u1201\u1362 \u1208\u12DA\u1205 \u1325\u12EB\u1244 \u12E8\u121A\u1218\u120D\u1235 \u1260\u1242 \u12E8\u1275\u121D\u1205\u122D\u1275 \u1218\u1228\u1303 \u12E8\u1208\u129D\u121D\u1362"}};function H(d){return/[\u1200-\u137f]/u.test(d)}function P(d,u){let e=H(d)?"am":"en",t=d.trim().toLocaleLowerCase(),i=U[e];return!t||u!=="L-102"&&u!=="L-103"?{language:e,answer:i.unsupported,supported:!1}:(e==="am"?/4|12|ደቂቃ|ሰከንድ|ዩቲዩብ|አማካይ/u.test(t):/4\s*minutes?|four\s+minutes?|4\s*[:.]\s*12|twelve\s+seconds?|average\s+(video\s+)?length|youtube/u.test(t))?{language:e,answer:i.fourMinutes,supported:!0}:(e==="am"?/ንግግር|ረጅም|ንጽጽር|አነጻጽር|ክፍል|የሚለያይ/u.test(t):/lecture|compare|comparison|difference|long|chunks?/u.test(t))?{language:e,answer:i.comparison,supported:!0}:(e==="am"?/ዋና|ሐሳብ|ሀሳብ|ቁልፍ|ስለ\s*ምን|ትምህርት/u.test(t):/main idea|key idea|lesson about|what is this about|summary|point/u.test(t))?{language:e,answer:i.main,supported:!0}:{language:e,answer:i.unsupported,supported:!1}}var N="savanna-pack-";async function A(d){if(typeof caches>"u"||typeof URL.createObjectURL!="function")return null;try{for(let u of await caches.keys()){if(!u.startsWith(N))continue;let e=await(await caches.open(u)).match(d);if(e)return URL.createObjectURL(await e.blob())}}catch{}return null}function R(d,u){return!d.length||!Number.isFinite(u)?-1:d.findIndex(e=>u>=e.start&&u<e.end)}var s=class extends E{constructor(){super(...arguments);this.src="";this.lesson="";this.api="";this.apiKey="";this.lang="en";this.disableShortcuts=!1;this.showSignWindow=!0;this.audioDescriptionEnabled=!1;this.showHelpDialog=!1;this.showCaptionsDialog=!1;this.showPreferencesDialog=!1;this.playerTheme="dark";this.activePrefsTab="general";this.manifestCaptions=[];this.selectedCaptionLang="en";this.lowDataMode=!0;this.mediaRequested=!1;this.mediaFallbackAttempted=!1;this.mediaLoadError=!1;this.mediaLoading=!1;this.questionAnswer="";this.questionText="";this.questionSupported=!0;this.questionLanguage="en";this.currentCueText="";this.captionFontSize=100;this.captionPreset="white-black";this.captionTextColor="#ffffff";this.captionBgColor="#000000";this.captionBgOpacity=80;this.captionPosition="bottom";this.vttCuesCache=new Map;this.captionBlobUrls=new Map;this.isPlaying=!1;this.currentTime=0;this.duration=0;this.volume=1;this.isMuted=!1;this.playbackRate=1;this.captionsShowing=!1;this.isFullscreen=!1;this.statusToast="";this.liveRegionMessage="";this.hasSignTrack=!1;this.hasAdTrack=!1;this.toastTimeout=null;this.liveRegionTimeout=null;this.triggerElementBeforeDialog=null;this.lastFocusedControl=null;this.lastFocusedControlSelector="";this.soundDescriptionsEnabled=!1;this.isTranscriptOpen=!1;this.transcriptLines=[];this.transcriptSummary="";this.transcriptSearchQuery="";this.transcriptTools=null;this.preferencesReady=Promise.resolve();this.transcriptAutoScroll=!0;this.activeTranscriptIndex=-1;this.isSpeedMenuOpen=!1;this.manifestLoadError=!1;this.lessonTitle="";this.manifestData=null;this.manifestGeneration=0;this.offlineMediaUrls=new Map;this.handleLangChange=e=>{let t=e.detail;t&&typeof t.lang=="string"&&(this.lang=t.lang,this.resolveSummary(),this.syncTranscriptLanguage(),this.requestUpdate())};this.handleFullscreenChange=()=>{let e=!!document.fullscreenElement;if(this.isFullscreen===e)return;let t=this.isFullscreen;if(this.isFullscreen=e,this.announceStatus(this.isFullscreen?this.t("player.statusFullscreenOn"):this.t("player.statusFullscreenOff"),this.isFullscreen?"Fullscreen \u26F6":"Exit Fullscreen"),t!==e){let i=this.shadowRoot?.activeElement;(!i||i===this.videoElement)&&(this.lastFocusedControl&&this.shadowRoot?.contains(this.lastFocusedControl)?this.lastFocusedControl.focus():this.fullscreenButtonElement&&this.fullscreenButtonElement.focus())}};this.handleControlFocus=e=>{let t=e.target;if(t&&(t.classList?.contains("ctrl-btn")||t.tagName==="BUTTON"||t.tagName==="INPUT")){this.lastFocusedControl=t;let i=Array.from(t.classList).find(a=>a.startsWith("btn-")||a.startsWith("slider-"));this.lastFocusedControlSelector=i?`.${i}`:""}};this.handlePlayerSurfaceClick=e=>{let t=e.composedPath()[0];t instanceof Element&&t.closest("button, a, input, select, textarea, [role='button']")||this.focus()};this.handleSeekInput=e=>{let t=e.target,i=parseFloat(t.value);Number.isNaN(i)||this.seekTo(i)};this.handleVolumeInput=e=>{let t=e.target,i=parseFloat(t.value);!Number.isNaN(i)&&this.media&&(this.media.volume=Math.max(0,Math.min(1,i/100)),this.volume=this.media.volume,this.media.volume>0&&this.media.muted&&(this.media.muted=!1,this.isMuted=!1))};this.handleDocumentClick=e=>{this.isSpeedMenuOpen&&(e.composedPath().some(a=>a?.classList?.contains("speed-menu-container"))||(this.isSpeedMenuOpen=!1))};this.handleSpeedMenuKeydown=e=>{if(!this.isSpeedMenuOpen||!["ArrowDown","ArrowUp","Home","End"].includes(e.key))return;let t=Array.from(this.shadowRoot?.querySelectorAll(".speed-opt-btn")??[]);if(!t.length)return;e.preventDefault();let i=t.indexOf(this.shadowRoot?.activeElement),a=e.key==="Home"?0:e.key==="End"?t.length-1:(i+(e.key==="ArrowDown"?1:-1)+t.length)%t.length;t[a]?.focus()};this.handleWindowKeyDown=e=>{e.key==="Escape"&&(this.isSpeedMenuOpen&&(this.isSpeedMenuOpen=!1,this.shadowRoot?.querySelector(".btn-speed")?.focus()),(this.showHelpDialog||this.helpDialogElement?.open)&&this.closeShortcutsDialog(),(this.showPreferencesDialog||this.prefsDialogElement?.open)&&this.closePreferencesDialog())};this.handleSpeedChange=e=>{let t=e.target,i=parseFloat(t.value);Number.isNaN(i)||this.setPlaybackRate(i)};this.handleOffline=()=>{let e=this.manifestData;e&&this.useCachedPlayerMedia(e),this.configureAccessibilityChildren()};this.handleKeyDown=e=>{if(this.isSpeedMenuOpen&&e.key==="Escape"){e.preventDefault(),this.isSpeedMenuOpen=!1;return}if((this.showHelpDialog||this.helpDialogElement?.open)&&(e.key==="Escape"||e.key==="?")){e.preventDefault(),this.closeShortcutsDialog();return}if((this.showPreferencesDialog||this.prefsDialogElement?.open||this.showCaptionsDialog||this.captionsDialogElement?.open)&&e.key==="Escape"){e.preventDefault(),this.closePreferencesDialog();return}if(this.isTranscriptOpen&&e.key==="Escape"){e.preventDefault(),this.toggleTranscript();return}if(this.disableShortcuts||e.ctrlKey||e.altKey||e.metaKey)return;let t=e.composedPath()[0]||e.target;if(!this.isEditableTarget(t)&&!(t instanceof HTMLButtonElement&&(e.key===" "||e.key==="Enter")))switch(e.key){case" ":case"k":case"K":{e.preventDefault(),this.togglePlay();break}case"ArrowLeft":{e.preventDefault(),this.seekBy(-5);break}case"ArrowRight":{e.preventDefault(),this.seekBy(5);break}case"j":case"J":{e.preventDefault(),this.seekBy(-10);break}case"l":case"L":{e.preventDefault(),this.seekBy(10);break}case"ArrowUp":{e.preventDefault(),this.changeVolume(.1);break}case"ArrowDown":{e.preventDefault(),this.changeVolume(-.1);break}case"m":case"M":{e.preventDefault(),this.toggleMute();break}case"c":case"C":{e.preventDefault(),this.toggleCaptions();break}case"s":case"S":{e.preventDefault(),this.toggleSignWindow();break}case"d":case"D":{e.preventDefault(),this.toggleAudioDescription();break}case"t":case"T":{e.preventDefault(),this.toggleTranscript();break}case"f":case"F":{e.preventDefault(),this.toggleFullscreen();break}case"p":case"P":{e.preventDefault(),this.togglePreferences("general");break}case"?":{e.preventDefault(),this.toggleShortcutsHelp();break}case"Home":{e.preventDefault(),this.seekTo(0),this.announceStatus(this.t("player.statusSeek",{time:this.formatTime(0)}),"0:00 \u23EA");break}case"End":{if(e.preventDefault(),this.media&&Number.isFinite(this.media.duration)){let i=this.media.duration;this.seekTo(i),this.announceStatus(this.t("player.statusSeek",{time:this.formatTime(i)}),`${this.formatTime(i)} \u23E9`)}break}}};this.retryMedia=async()=>{this.videoElement&&(this.mediaFallbackAttempted=!1,this.mediaLoadError=!1,this.mediaLoading=!0,this.mediaRequested=!0,await this.updateComplete,this.videoElement.load(),await this.togglePlay())};this.handlePrefsDialogClose=()=>{this.showPreferencesDialog=!1,this.showCaptionsDialog=!1;let e=this.prefsDialogElement||this.captionsDialogElement,t=this.shadowRoot?.activeElement;(!t||t===e||e?.contains(t))&&(this.triggerElementBeforeDialog?this.triggerElementBeforeDialog.focus():this.prefsBtnElement?this.prefsBtnElement.focus():this.captionsSettingsBtnElement&&this.captionsSettingsBtnElement.focus()),this.triggerElementBeforeDialog=null};this.handlePrefsDialogClick=e=>{let t=this.prefsDialogElement||this.captionsDialogElement;if(!t)return;let i=t.getBoundingClientRect();i.top<=e.clientY&&e.clientY<=i.top+i.height&&i.left<=e.clientX&&e.clientX<=i.left+i.width||this.closePreferencesDialog()};this.handleCaptionsDialogClose=this.handlePrefsDialogClose;this.handleCaptionsDialogClick=this.handlePrefsDialogClick;this.handlePrefLangChange=e=>{let t=e.target.value;this.setLanguage(t)};this.handlePrefSpeedChange=e=>{let t=parseFloat(e.target.value);Number.isNaN(t)||(this.playbackRate=t,this.media&&(this.media.playbackRate=t),this.saveAllPreferences(),this.announceStatus(this.t("player.statusSpeed",{speed:t}),`${t}x`))};this.handlePrefThemeChange=e=>{let t=e.target.value;this.setTheme(t)};this.handlePrefShortcutsChange=e=>{let t=e.target.value==="true";this.disableShortcuts=!t,this.saveAllPreferences(),this.announceStatus(t?this.t("player.prefShortcutsOn"):this.t("player.prefShortcutsOff"),t?"Keys: ON":"Keys: OFF")};this.handlePrefSignChange=e=>{let t=e.target.value==="true";this.showSignWindow!==t&&this.toggleSignWindow()};this.handlePrefAdChange=e=>{let t=e.target.value==="true";this.audioDescriptionEnabled!==t&&this.toggleAudioDescription()};this.handleAdAvailability=e=>{let t=e.detail,i=!!t?.available,a=this.manifestData?.audioDescription,o=!!(a?.audioUrl&&a?.vttUrl),n=i&&o,c=this.hasAdTrack;this.hasAdTrack=n,n&&typeof t?.enabled=="boolean"&&(this.audioDescriptionEnabled=t.enabled);let h=this.querySelector("savanna-audio-description");h&&(h.hidden=!n),!n&&this.audioDescriptionEnabled&&(this.audioDescriptionEnabled=!1,c&&this.announceStatus(this.t("player.adUnavailable"),this.t("player.adUnavailable")))};this.handleCaptionTrackSelect=e=>{let t=e.target.value;if(t==="off")this.captionsShowing=!1,this.selectedCaptionLang="off",this.currentCueText="",this.announceStatus(this.t("player.statusCaptionsOff"),"Captions: OFF");else{this.selectedCaptionLang=t,this.captionsShowing=!0;let i=t==="am"?"Amharic":"English";this.announceStatus(this.t("player.statusCaptionsOn"),`Captions: ${i}`);let a=this.vttCuesCache.get(t)||[];this.currentCueText=y(a,this.currentTime)}this.saveCaptionsPreferences(),this.emitEvent("savanna:caption-change")};this.handleCaptionSizeSelect=e=>{let t=parseInt(e.target.value,10);if(!Number.isNaN(t)){this.captionFontSize=t,this.saveCaptionsPreferences();let i=this.activeLang==="am"?`\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1218\u1320\u1295 ${t} \u1260\u1218\u1276`:`Caption size ${t} percent`;this.announceStatus(i)}};this.handleCaptionPresetSelect=e=>{let t=e.target.value;this.captionPreset=t,t==="white-black"?(this.captionTextColor="#ffffff",this.captionBgColor="#000000"):t==="yellow-black"?(this.captionTextColor="#ffff00",this.captionBgColor="#000000"):t==="black-white"&&(this.captionTextColor="#000000",this.captionBgColor="#ffffff"),this.saveCaptionsPreferences();let i=t==="yellow-black"?this.activeLang==="am"?"\u1262\u132B \u1260\u1325\u1241\u122D \u120B\u12ED":"Yellow on black":t==="white-black"?this.activeLang==="am"?"\u1290\u132D \u1260\u1325\u1241\u122D \u120B\u12ED":"White on black":this.activeLang==="am"?"\u1325\u1241\u122D \u1260\u1290\u132D \u120B\u12ED":"Black on white",a=this.activeLang==="am"?`\u12E8\u130D\u122D\u130C \u133D\u1211\u134D \u1308\u133D\u1273 ${i}`:`Caption style ${i}`;this.announceStatus(a)};this.handleCaptionTextColorChange=e=>{this.captionTextColor=e.target.value,this.captionPreset="custom",this.saveCaptionsPreferences()};this.handleCaptionBgColorChange=e=>{this.captionBgColor=e.target.value,this.captionPreset="custom",this.saveCaptionsPreferences()};this.handleCaptionOpacitySelect=e=>{let t=parseInt(e.target.value,10);Number.isNaN(t)||(this.captionBgOpacity=t,this.saveCaptionsPreferences())};this.handleCaptionPositionSelect=e=>{let t=e.target.value;this.captionPosition=t,this.saveCaptionsPreferences()};this.handleDialogClose=()=>{this.showHelpDialog=!1;let e=this.shadowRoot?.activeElement;(!e||e===this.helpDialogElement||this.helpDialogElement?.contains(e))&&(this.triggerElementBeforeDialog?this.triggerElementBeforeDialog.focus():this.helpButtonElement&&this.helpButtonElement.focus()),this.triggerElementBeforeDialog=null};this.handleDialogClick=e=>{if(!this.helpDialogElement)return;let t=this.helpDialogElement.getBoundingClientRect();t.top<=e.clientY&&e.clientY<=t.top+t.height&&t.left<=e.clientX&&e.clientX<=t.left+t.width||this.closeShortcutsDialog()};this.handlePlay=()=>{this.isPlaying=!0,this.mediaLoading=!1,this.emitEvent("savanna:play")};this.handlePause=()=>{this.isPlaying=!1,this.mediaLoading=!1,this.emitEvent("savanna:pause")};this.handleMediaLoadStart=()=>{this.mediaRequested&&(this.mediaLoading=!0)};this.handleMediaReady=()=>{this.mediaLoading=!1,this.mediaLoadError=!1};this.handleMediaWaiting=()=>{this.mediaRequested&&(this.mediaLoading=!0)};this.handleSeek=()=>{this.media&&(this.currentTime=this.media.currentTime),this.emitEvent("savanna:seek",{time:this.media?this.media.currentTime:0})};this.handleTimeUpdate=()=>{if(this.media){if(this.currentTime=this.media.currentTime,Number.isFinite(this.media.duration)&&this.media.duration>0&&(this.duration=this.media.duration),this.captionsShowing&&this.selectedCaptionLang!=="off"){let t=this.vttCuesCache.get(this.selectedCaptionLang)||[];this.currentCueText=y(t,this.currentTime)}else this.currentCueText="";let e=R(this.transcriptLines,this.currentTime);e!==this.activeTranscriptIndex&&(this.activeTranscriptIndex=e,this.transcriptAutoScroll&&this.isTranscriptOpen&&e>=0&&this.scrollActiveLineIntoView(e))}this.emitEvent("savanna:timeupdate",{time:this.media?this.media.currentTime:0,paused:this.media?this.media.paused:!0,rate:this.media?this.media.playbackRate:1})};this.handleCaptionChange=()=>{this.videoElement?.textTracks&&Array.from(this.videoElement.textTracks).forEach(t=>{t.mode==="showing"&&(t.mode="hidden",this.captionsShowing=!0)}),this.emitEvent("savanna:caption-change")};this.handleError=()=>{if(this.mediaRequested&&!this.mediaFallbackAttempted){let e=this.resolveLoopbackMediaFallback(this.src);if(e){this.mediaFallbackAttempted=!0,this.mediaLoadError=!1,this.mediaLoading=!0,this.src=e;return}}this.mediaLoading=!1,this.mediaLoadError=!0,this.announceStatus(this.t("player.errorMediaLoad")),this.emitEvent("savanna:error")};this.toggleTranscript=async()=>{if(this.isTranscriptOpen=!this.isTranscriptOpen,this.isTranscriptOpen){if(this.transcriptTools??=await import("./chunks/transcript-manager-6WDW5Y57.js"),!this.isTranscriptOpen)return;this.transcriptLines.length===0&&(this.manifestData?.transcript?.url?this.fetchTranscript(this.manifestData.transcript.url,this.manifestData):this.fallbackTranscriptFromCaptions(this.manifestData)),this.announceStatus(this.t("player.statusTranscriptOpen"),"Transcript \u{1F4DD}"),this.updateComplete.then(()=>{this.transcriptSearchInput?.focus()})}else this.announceStatus(this.t("player.statusTranscriptClosed"),"Transcript Closed"),this.transcriptBtnElement?.focus()};this.handleTranscriptSearchInput=async e=>{let t=e.target;this.transcriptSearchQuery=t.value,this.transcriptTools??=await import("./chunks/transcript-manager-6WDW5Y57.js");let i=this.transcriptTools.filterTranscriptLines(this.transcriptLines,this.transcriptSearchQuery);this.transcriptSearchQuery.trim()&&(i.length===0?this.announceStatus(this.t("player.transcriptNoMatches")):this.announceStatus(this.t("player.transcriptMatches",{count:i.length})))};this.handleTranscriptSearchKeyDown=async e=>{if(e.key!=="Enter")return;let t=e.target;this.transcriptSearchQuery=t.value,this.transcriptTools??=await import("./chunks/transcript-manager-6WDW5Y57.js");let i=this.transcriptTools.filterTranscriptLines(this.transcriptLines,this.transcriptSearchQuery)[0];i&&(e.preventDefault(),this.seekFromTranscript(i.line.start))};this.clearTranscriptSearch=()=>{this.transcriptSearchQuery="",this.transcriptSearchInput?.focus()};this.downloadTranscript=async()=>{let{formatTranscriptForDownload:e}=await import("./chunks/transcript-manager-6WDW5Y57.js"),t=this.lessonTitle||(this.manifestData?.title?this.manifestData.title[this.activeLang]||this.manifestData.title.en:"Lesson"),i=e(t,this.activeLang,this.transcriptSummary,this.transcriptLines,c=>this.formatTime(c)),a=new Blob([i],{type:"text/plain;charset=utf-8"}),o=URL.createObjectURL(a),n=document.createElement("a");n.href=o,n.download=`${this.lesson||"lesson"}-transcript-${this.activeLang}.txt`,document.body.appendChild(n),n.click(),document.body.removeChild(n),URL.revokeObjectURL(o),this.announceStatus(this.t("player.transcriptDownloaded"))};this.downloadBrailleTranscript=async()=>{let{formatTranscriptToBrf:e}=await import("./chunks/braille-formatter-UJB54GCH.js"),t=this.lessonTitle||(this.manifestData?.title?this.manifestData.title[this.activeLang]||this.manifestData.title.en:"Lesson"),i=e(t,this.activeLang,this.getEffectiveSummary(),this.transcriptLines,c=>this.formatTime(c)),a=new Blob([i],{type:"text/plain;charset=utf-8"}),o=URL.createObjectURL(a),n=document.createElement("a");n.href=o,n.download=`${this.lesson||"lesson"}-transcript-${this.activeLang}.brf`,document.body.appendChild(n),n.click(),document.body.removeChild(n),URL.revokeObjectURL(o),this.announceStatus(this.t("player.statusBrailleDownloaded"),"BRF (.brf)")};this.handleLessonQuestionSubmit=e=>{e.preventDefault();let t=P(this.questionText,this.lesson);this.questionAnswer=t.answer,this.questionSupported=t.supported,this.questionLanguage=t.language}}get offlinePack(){return this.manifestData?.pack??null}get formattedPackSize(){return L(this.manifestData?.pack?.sizeBytes)}get isCaptionsOpen(){return this.captionsShowing}set isCaptionsOpen(e){this.captionsShowing!==e&&this.toggleCaptions()}get isPrefsOpen(){return this.showPreferencesDialog}set isPrefsOpen(e){e?this.openPreferencesDialog("general"):this.closePreferencesDialog()}get isSignOpen(){return this.showSignWindow}set isSignOpen(e){this.showSignWindow!==e&&this.toggleSignWindow()}get isAdOpen(){return this.audioDescriptionEnabled}set isAdOpen(e){this.audioDescriptionEnabled!==e&&this.toggleAudioDescription()}get media(){return this.videoElement}get activeLang(){return(this.lang||(typeof document<"u"?document.documentElement?.lang:"")||"en").trim().toLowerCase().startsWith("am")?"am":"en"}t(e,t){let a=(this.activeLang==="am"?M:T)[e]||T[e]||e;if(t)for(let[o,n]of Object.entries(t))a=a.replaceAll(`{${o}}`,String(n));return a}get captionBackgroundRgba(){if(this.captionBgOpacity===0)return"transparent";let e=this.captionBgColor.replace("#",""),t=parseInt(e.substring(0,2),16)||0,i=parseInt(e.substring(2,4),16)||0,a=parseInt(e.substring(4,6),16)||0,o=Math.max(0,Math.min(1,this.captionBgOpacity/100));return`rgba(${t}, ${i}, ${a}, ${o})`}computeCaptionStyle(){let e="1.15rem";return this.captionFontSize===150?e="1.65rem":this.captionFontSize===200?e="2.15rem":this.captionFontSize===300&&(e="3rem"),`font-size: ${e}; color: ${this.captionTextColor}; background-color: ${this.captionBackgroundRgba};`}async loadAllPreferences(){let e=await import("./chunks/preferences-manager-6JASUJ46.js"),t=e.loadPlayerPreferences(),i=e.loadStoredPlayerLanguagePreference();i&&(this.lang=i,this.setAttribute("lang",i),typeof document<"u"&&document.documentElement&&(document.documentElement.lang=i)),typeof t.ui.speed=="number"&&(this.playbackRate=t.ui.speed),t.ui.theme&&(this.playerTheme=t.ui.theme,this.setAttribute("data-theme",this.playerTheme)),typeof t.ui.shortcuts=="boolean"&&(this.disableShortcuts=!t.ui.shortcuts),this.lowDataMode=t.ui.lowData;let a=t.captions;this.captionsShowing=a.enabled,this.selectedCaptionLang=a.lang,this.captionFontSize=a.fontSize,this.captionPreset=a.preset,this.captionTextColor=a.textColor,this.captionBgColor=a.bgColor,this.captionBgOpacity=a.bgOpacity,this.captionPosition=a.position}async saveAllPreferences(){let e={lang:this.activeLang,speed:this.playbackRate,theme:this.playerTheme,shortcuts:!this.disableShortcuts,lowData:this.lowDataMode},t={enabled:this.captionsShowing,lang:this.selectedCaptionLang,fontSize:this.captionFontSize,preset:this.captionPreset,textColor:this.captionTextColor,bgColor:this.captionBgColor,bgOpacity:this.captionBgOpacity,position:this.captionPosition};(await import("./chunks/preferences-manager-6JASUJ46.js")).savePlayerPreferences(e,t)}async loadCaptionsPreferences(){await this.loadAllPreferences()}async saveCaptionsPreferences(){await this.saveAllPreferences()}setLanguage(e){this.lang!==e&&(this.lang=e,this.setAttribute("lang",e),typeof document<"u"&&document.documentElement&&(document.documentElement.lang=e,document.documentElement.setAttribute("lang",e)),this.saveAllPreferences(),this.resolveSummary(),this.syncTranscriptLanguage(),window.dispatchEvent(new CustomEvent("savanna:lang-change",{detail:{lang:e},bubbles:!0,composed:!0})),this.announceStatus(this.t("player.statusLangChanged",{lang:e==="am"?"Amharic":"English"}),e.toUpperCase()))}setTheme(e){this.playerTheme=e,this.setAttribute("data-theme",e),this.saveAllPreferences(),this.announceStatus(`Theme: ${e}`,e==="high-contrast"?"AAA":e.toUpperCase())}async resetPreferences(){let e=await import("./chunks/preferences-manager-6JASUJ46.js"),t=e.getDefaultUiPreferences(),i=e.getDefaultCaptionsPreferences();this.lang=t.lang,this.playbackRate=t.speed,this.media&&(this.media.playbackRate=t.speed),this.playerTheme=t.theme,this.setAttribute("data-theme",t.theme),this.disableShortcuts=!t.shortcuts,this.lowDataMode=t.lowData,this.mediaRequested=!this.lowDataMode,this.captionsShowing=i.enabled,this.selectedCaptionLang=i.lang,this.captionFontSize=i.fontSize,this.captionPreset=i.preset,this.captionTextColor=i.textColor,this.captionBgColor=i.bgColor,this.captionBgOpacity=i.bgOpacity,this.captionPosition=i.position,await this.saveAllPreferences(),this.resolveSummary(),this.syncTranscriptLanguage(),this.announceStatus(this.t("player.statusPrefsSaved"),"Reset")}downloadMySettings(){try{let e=typeof localStorage<"u"&&localStorage.getItem("savanna.prefs.v1")||"{}",t=new Blob([e],{type:"application/json"}),i=URL.createObjectURL(t),a=document.createElement("a");a.href=i,a.download="savanna-preferences.json",document.body.appendChild(a),a.click(),document.body.removeChild(a),URL.revokeObjectURL(i),this.announceStatus(this.t("player.prefDownload"),"Export")}catch{}}deleteMySettings(){try{typeof localStorage<"u"&&localStorage.removeItem("savanna.prefs.v1"),this.resetPreferences(),this.announceStatus(this.t("player.prefDelete"),"Delete")}catch{}}announceStatus(e,t){this.liveRegionMessage=e,this.liveRegionTimeout!==null&&window.clearTimeout(this.liveRegionTimeout),this.liveRegionTimeout=window.setTimeout(()=>{this.liveRegionMessage="",this.liveRegionTimeout=null},5e3),this.showToast(t||e)}showToast(e){this.statusToast=e,this.toastTimeout!==null&&window.clearTimeout(this.toastTimeout),this.toastTimeout=window.setTimeout(()=>{this.statusToast="",this.toastTimeout=null},1500)}restoreControlFocusAfterUpdate(){let e=this.shadowRoot;if(!e||e.activeElement||document.activeElement!==this||!this.lastFocusedControlSelector)return;let t=e.querySelector(this.lastFocusedControlSelector);t&&(t.focus({preventScroll:!0}),this.lastFocusedControl=t)}filterCueForScreenReader(e){return this.soundDescriptionsEnabled?e:e.replace(/\[.*?\]/g,"").trim()}formatTime(e){if(!Number.isFinite(e)||e<0)return"0:00";let t=Math.floor(e/60),i=Math.floor(e%60);return`${t}:${i<10?"0":""}${i}`}toggleSpeedMenu(){this.isSpeedMenuOpen=!this.isSpeedMenuOpen}setPlaybackRate(e){Number.isNaN(e)||e<=0||(this.playbackRate=e,this.media&&(this.media.playbackRate=e),this.saveAllPreferences(),this.announceStatus(this.t("player.statusSpeed",{speed:e}),`${e}x`),this.isSpeedMenuOpen=!1)}get positionValueText(){let e=Math.max(0,Math.floor(this.currentTime)),t=Math.max(0,Math.floor(this.duration));if(t<60){let h=e===1?this.t("player.secondSingular"):this.t("player.secondPlural"),m=t===1?this.t("player.secondSingular"):this.t("player.secondPlural");return this.t("player.positionValueTextSeconds",{curSec:e,secUnit:h,totalSec:t,totalSecUnit:m})}let i=Math.floor(e/60),a=e%60,o=Math.floor(t/60),n=i===1?this.t("player.minuteSingular"):this.t("player.minutePlural"),c=o===1?this.t("player.minuteSingular"):this.t("player.minutePlural");return this.t("player.positionValueText",{curMin:i,minUnit:n,curSec:a,totalMin:o,totalMinUnit:c})}get volumeValueText(){let e=this.isMuted?0:Math.round(this.volume*100);return this.t("player.volumeValueText",{percent:e})}connectedCallback(){super.connectedCallback(),this.preferencesReady=this.loadAllPreferences(),this.hasAttribute("tabindex")||this.setAttribute("tabindex","0"),this.addEventListener("keydown",this.handleKeyDown),this.addEventListener("savanna:ad-availability",this.handleAdAvailability),window.addEventListener("keydown",this.handleWindowKeyDown),window.addEventListener("offline",this.handleOffline),window.addEventListener("savanna:lang-change",this.handleLangChange),document.addEventListener("fullscreenchange",this.handleFullscreenChange),document.addEventListener("click",this.handleDocumentClick)}disconnectedCallback(){super.disconnectedCallback(),this.removeEventListener("keydown",this.handleKeyDown),this.removeEventListener("savanna:ad-availability",this.handleAdAvailability),window.removeEventListener("keydown",this.handleWindowKeyDown),window.removeEventListener("savanna:lang-change",this.handleLangChange),document.removeEventListener("fullscreenchange",this.handleFullscreenChange),document.removeEventListener("click",this.handleDocumentClick),window.removeEventListener("offline",this.handleOffline),this.manifestAbortController?.abort(),this.manifestGeneration+=1,this.videoElement?.textTracks&&this.videoElement.textTracks.removeEventListener("change",this.handleCaptionChange),this.revokeCaptionBlobUrls(),this.revokeOfflineMediaUrls()}revokeCaptionBlobUrls(){for(let[,e]of this.captionBlobUrls)try{URL.revokeObjectURL(e)}catch{}this.captionBlobUrls.clear()}revokeOfflineMediaUrls(){for(let e of this.offlineMediaUrls.values())try{URL.revokeObjectURL(e)}catch{}this.offlineMediaUrls.clear()}suppressNativeSubtitles(){this.videoElement?.textTracks&&Array.from(this.videoElement.textTracks).forEach(e=>{e.mode==="showing"&&(e.mode="hidden")})}updated(e){super.updated(e),(e.has("lesson")||e.has("api"))&&(this.lesson&&this.api?this.fetchLessonManifest():(this.manifestAbortController?.abort(),this.manifestAbortController=void 0,this.manifestGeneration+=1)),e.has("lang")&&(this.syncTranscriptLanguage(),this.configureAccessibilityChildren()),this.restoreControlFocusAfterUpdate()}resolveLoopbackMediaFallback(e){if(typeof window>"u"||!this.api)return null;try{let t=new URL(e,window.location.origin),i=new URL(this.api,window.location.origin),a=o=>o==="localhost"||o==="127.0.0.1"||o==="[::1]";return!t.pathname.startsWith("/media/")||t.origin===i.origin||!a(t.hostname)||!a(i.hostname)?null:new URL(`${t.pathname}${t.search}`,i.origin).href}catch{return null}}async fetchCaptionWithLoopbackFallback(e,t=!1){try{return await S({url:e,apiKey:this.apiKey,apiBase:this.api,createBlobUrl:t})}catch(i){let a=this.resolveLoopbackMediaFallback(e);if(!a)throw i;return S({url:a,apiKey:this.apiKey,apiBase:this.api,createBlobUrl:t})}}async loadVttCues(){for(let e of this.manifestCaptions)if(!(!e.url||this.vttCuesCache.has(e.lang)))try{let t=this.resolveLessonAssetUrl(e.url),i=x(t,this.apiKey,this.api),a=await this.fetchCaptionWithLoopbackFallback(t,i);if(a.blobUrl){let n=this.captionBlobUrls.get(e.lang);if(n)try{URL.revokeObjectURL(n)}catch{}this.captionBlobUrls.set(e.lang,a.blobUrl),this.requestUpdate()}let o=v(a.text);this.vttCuesCache.set(e.lang,o),this.captionsShowing&&this.selectedCaptionLang===e.lang&&(this.currentCueText=y(o,this.currentTime)),e.lang===this.activeLang&&this.transcriptLines.length===0&&this.fallbackTranscriptFromCaptions()}catch(t){console.warn(`[savanna-player] Failed to load caption track (${e.lang}):`,t?.message||t)}this.suppressNativeSubtitles()}async fetchLessonManifest(){let e=this.lesson.trim();if(!e||!this.api.trim())return;this.manifestAbortController?.abort();let t=new AbortController;this.manifestAbortController=t;let i=++this.manifestGeneration;try{let a=new URL(this.api.trim(),document.baseURI);if(a.protocol!=="http:"&&a.protocol!=="https:")throw new Error("The API URL must use HTTP or HTTPS.");let o=new URL(`/v1/lessons/${encodeURIComponent(e)}`,a).href,n={};this.apiKey&&(n["X-Savanna-Key"]=this.apiKey);let c=await fetch(o,{headers:n,signal:t.signal});if(!c.ok){let m=c.status===401||c.status===403?"The lesson API key was rejected.":`The lesson service returned HTTP ${c.status}.`;throw new Error(m)}let h=w(await c.json(),e);if(i!==this.manifestGeneration)return;try{localStorage.setItem(`savanna.cached_manifest.${e}`,JSON.stringify(h))}catch{}this.manifestLoadError=!1,await this.applyManifest(h)}catch{if(t.signal.aborted||i!==this.manifestGeneration)return;let a=!1;try{let o=localStorage.getItem(`savanna.cached_manifest.${e}`);if(o){let n=w(JSON.parse(o),e);this.manifestLoadError=!1,await this.applyManifest(n),this.announceStatus(this.t("player.statusOfflineManifest"),"Offline Cache"),a=!0}}catch{}a||(this.manifestLoadError=!0,this.announceStatus(this.t("player.errorManifestLoad"),"Network Error"))}finally{i===this.manifestGeneration&&(this.manifestAbortController=void 0)}}async applyManifest(e){this.manifestData?.id!==e.id&&(this.vttCuesCache.clear(),this.transcriptLines=[],this.transcriptSummary="",this.activeTranscriptIndex=-1,this.revokeCaptionBlobUrls(),this.revokeOfflineMediaUrls());let i=[];typeof e?.sign?.url=="string"&&e.sign.url&&i.push(import("./chunks/sign-window-WMIUXZYT.js")),typeof e?.audioDescription?.audioUrl=="string"&&e.audioDescription.audioUrl&&typeof e?.audioDescription?.vttUrl=="string"&&e.audioDescription.vttUrl&&i.push(import("./chunks/audio-description-EQFHGOAG.js")),await Promise.all(i),this.manifestData=e,this.mediaFallbackAttempted=!1,e?.title&&(this.lessonTitle=e.title[this.activeLang]||e.title.en||""),e?.media?.video&&(this.src=e.media.video,this.useCachedPlayerMedia(e)),Number.isFinite(e?.durationSec)&&e.durationSec>0&&(this.duration=e.durationSec),Array.isArray(e?.captions)&&(this.revokeCaptionBlobUrls(),this.manifestCaptions=e.captions.map(n=>{try{return{lang:n.lang,url:this.resolveLessonAssetUrl(n.url)}}catch{return n}}),this.loadVttCues()),this.hasSignTrack=!!e?.sign?.url,this.showSignWindow=this.hasSignTrack&&this.showSignWindow;let a=this.querySelector("savanna-sign-window, [data-sign-window]");a&&(a.src=e?.sign?.url||"",a.offsetMs=Number(e?.sign?.offsetMs)||0,a.lang=this.activeLang,a.languageName=e?.sign?.languageName||"",a.enabled=this.showSignWindow,a.hidden=!this.showSignWindow);let o=this.querySelector("savanna-audio-description");if(o){let n=e?.audioDescription?.audioUrl||"",c=e?.audioDescription?.vttUrl||"",h=Number(e?.audioDescription?.offsetMs??0),m=o.src!==n||o.textVtt!==c||o.offsetMs!==h;(m||!n||!c)&&(this.hasAdTrack=!1),o.src=n,o.textVtt=c,o.offsetMs=h,o.hidden=!this.hasAdTrack,!m&&n&&c&&!this.hasAdTrack&&o.validateTrack?.()}if(e?.transcript?.url?this.fetchTranscript(e.transcript.url,e):this.fallbackTranscriptFromCaptions(e),this.resolveSummary(e),!this.hasAdTrack){let n=this.querySelector("audio[data-ad], audio.ad-track");n&&(n.muted=!0,n.pause())}this.configureAccessibilityChildren()}configureAccessibilityChildren(){let e=this.manifestData?.sign,t=this.querySelector("savanna-sign-window, [data-sign-window]");t&&(t.hidden=!this.hasSignTrack,t.src=e?.url??"",e?.url&&this.useCachedChildMedia(e.url,t,this.manifestData?.id),t.offsetMs=e?.offsetMs??0,t.lang=this.activeLang,t.enabled=this.hasSignTrack&&this.showSignWindow);let i=this.manifestData?.audioDescription,a=this.querySelector("savanna-audio-description");a&&(a.hidden=!this.hasAdTrack,a.src=i?.audioUrl??"",i?.audioUrl&&this.useCachedChildMedia(i.audioUrl,a,this.manifestData?.id),a.textVtt=i?.vttUrl??"",a.offsetMs=i?.offsetMs??0,a.lang=this.activeLang,a.api=this.api,a.apiKey=this.apiKey)}async cachedUrl(e,t){let i=this.offlineMediaUrls.get(e);if(i)return i;let a=await A(e);return a?t&&this.manifestData?.id!==t?(URL.revokeObjectURL(a),null):(this.offlineMediaUrls.set(e,a),a):null}async useCachedPlayerMedia(e){let t=await this.cachedUrl(e.media.video,e.id),i=t?null:await this.cachedUrl(e.media.audio,e.id),a=t||i;a&&this.manifestData?.id===e.id&&(this.src=a)}async useCachedChildMedia(e,t,i){let a=await this.cachedUrl(e,i);a&&t.isConnected&&this.manifestData?.id===i&&(t.src=a)}resolveLessonAssetUrl(e){return e.startsWith("/media/")&&typeof window<"u"?new URL(e,window.location.origin).href:k({urlPath:e,apiBase:this.api})}isEditableTarget(e){if(!e||!(e instanceof HTMLElement))return!1;let t=e.tagName.toLowerCase();return t==="input"||t==="textarea"||t==="select"||e.isContentEditable}async togglePlay(){if(this.media)if(this.media.paused||this.media.ended){this.mediaLoadError=!1,this.mediaLoading=!0,this.mediaRequested||(this.mediaRequested=!0,await this.updateComplete);try{await this.media.play(),this.isPlaying=!0,this.mediaLoading=!1,this.announceStatus(this.t("player.statusPlay"),"Play \u25B6")}catch{this.mediaLoadError=!0,this.mediaLoading=!1,this.isPlaying=!1,this.announceStatus(this.t("player.errorMediaLoad"))}}else this.media.pause(),this.isPlaying=!1,this.announceStatus(this.t("player.statusPause"),"Pause \u23F8")}changeVolume(e){if(!this.media)return;let t=this.media.volume,i=Math.max(0,Math.min(1,t+e));this.media.volume=Number(i.toFixed(2)),this.volume=this.media.volume,this.media.volume>0&&this.media.muted&&(this.media.muted=!1,this.isMuted=!1);let a=Math.round(this.media.volume*100);this.announceStatus(this.t("player.statusVolume",{percent:a}),`Volume: ${a}% \u{1F50A}`)}toggleMute(){if(!this.media)return;this.media.muted=!this.media.muted,this.isMuted=this.media.muted;let e=this.media.muted;this.announceStatus(e?this.t("player.statusMuted"):this.t("player.statusUnmuted"),e?"Muted \u{1F507}":"Unmuted \u{1F50A}")}toggleCaptions(){if(this.manifestCaptions.length===0&&(!this.videoElement?.textTracks||this.videoElement.textTracks.length===0)){this.announceStatus(this.t("player.captionsUnavailable"),"No Captions Track");return}if(this.captionsShowing=!this.captionsShowing,this.captionsShowing){this.selectedCaptionLang==="off"&&(this.selectedCaptionLang=this.activeLang);let e=this.selectedCaptionLang==="am"?"Amharic":"English";this.announceStatus(this.t("player.statusCaptionsOn"),`Captions: ${e} ON`)}else this.currentCueText="",this.announceStatus(this.t("player.statusCaptionsOff"),"Captions: OFF");this.videoElement?.textTracks&&Array.from(this.videoElement.textTracks).forEach(e=>e.mode="hidden"),this.saveCaptionsPreferences(),this.emitEvent("savanna:caption-change")}openPreferencesDialog(e="general"){let t=this.prefsDialogElement||this.captionsDialogElement;t&&(this.activePrefsTab=e,this.triggerElementBeforeDialog=this.shadowRoot?.activeElement||this.prefsBtnElement||this.captionsSettingsBtnElement,t.open||(typeof t.showModal=="function"?t.showModal():t.setAttribute("open",""),this.showPreferencesDialog=!0,this.showCaptionsDialog=!0,t.querySelector(".close-prefs-btn, .close-captions-btn")?.focus()))}closePreferencesDialog(){let e=this.prefsDialogElement||this.captionsDialogElement;e&&(e.open&&(typeof e.close=="function"?e.close():e.removeAttribute("open")),this.showPreferencesDialog=!1,this.showCaptionsDialog=!1)}togglePreferences(e="general"){(this.prefsDialogElement||this.captionsDialogElement)?.open?this.closePreferencesDialog():this.openPreferencesDialog(e)}openCaptionsDialog(){this.openPreferencesDialog("captions")}closeCaptionsDialog(){this.closePreferencesDialog()}toggleCaptionsSettings(){this.togglePreferences("captions")}toggleSignWindow(){let e=this.querySelector("savanna-sign-window, [data-sign-window]");if(!this.hasSignTrack){this.showSignWindow=!1,e&&(e.hidden=!0,e.enabled=!1,e.lang=this.activeLang),this.announceStatus(this.t("player.signUnavailable"),this.t("player.signUnavailable"));return}this.showSignWindow=!this.showSignWindow,e&&(e.hidden=!this.showSignWindow,e.enabled=this.showSignWindow,e.lang=this.activeLang),this.announceStatus(this.showSignWindow?this.t("player.statusSignOn"):this.t("player.statusSignOff"),this.showSignWindow?"Sign Window: Visible \u{1F91F}":"Sign Window: Hidden")}toggleAudioDescription(){if(!this.hasAdTrack){this.announceStatus(this.t("player.adUnavailable"),this.t("player.adUnavailable"));return}this.audioDescriptionEnabled=!this.audioDescriptionEnabled;let e=this.querySelector("savanna-audio-description");if(e?.toggle){e.toggle();return}let t=this.querySelector("audio[data-ad], audio.ad-track");t&&(t.muted=!this.audioDescriptionEnabled,this.audioDescriptionEnabled&&this.media&&!this.media.paused?(t.currentTime=this.media.currentTime,t.play().catch(()=>{})):t.pause()),this.announceStatus(this.audioDescriptionEnabled?this.t("player.statusAdOn"):this.t("player.statusAdOff"),this.audioDescriptionEnabled?"Audio Description: ON \u{1F399}\uFE0F":"Audio Description: OFF")}toggleFullscreen(){document.fullscreenElement?document.exitFullscreen().catch(()=>{}):this.requestFullscreen().catch(()=>{this.videoElement&&this.videoElement.requestFullscreen&&this.videoElement.requestFullscreen().catch(()=>{})})}openShortcutsDialog(){this.helpDialogElement&&(this.triggerElementBeforeDialog=this.shadowRoot?.activeElement||this.helpButtonElement,this.helpDialogElement.open||(typeof this.helpDialogElement.showModal=="function"?this.helpDialogElement.showModal():this.helpDialogElement.setAttribute("open",""),this.showHelpDialog=!0,this.helpDialogElement.querySelector(".close-help-btn")?.focus()))}closeShortcutsDialog(){this.helpDialogElement&&(this.helpDialogElement.open&&(typeof this.helpDialogElement.close=="function"?this.helpDialogElement.close():this.helpDialogElement.removeAttribute("open")),this.showHelpDialog=!1)}toggleShortcutsHelp(){this.helpDialogElement?.open?this.closeShortcutsDialog():this.openShortcutsDialog()}seekBy(e){if(!this.media||!this.mediaRequested)return;let t=Number.isFinite(this.media.duration)?this.media.duration:1/0,i=Math.max(0,Math.min(this.media.currentTime+e,t));this.media.currentTime=i,this.announceStatus(this.t("player.statusSeek",{time:this.formatTime(i)}),e>0?`+${e}s \u23E9`:`${e}s \u23EA`)}seekTo(e){if(!this.media||!this.mediaRequested)return;let t=Number.isFinite(this.media.duration)?this.media.duration:0,i=Math.max(0,Math.min(e,t));this.media.currentTime=i,this.currentTime=i;let a=R(this.transcriptLines,i);a!==this.activeTranscriptIndex&&(this.activeTranscriptIndex=a,this.transcriptAutoScroll&&this.isTranscriptOpen&&a>=0&&this.scrollActiveLineIntoView(a))}emitEvent(e,t){this.dispatchEvent(new CustomEvent(e,{detail:t,bubbles:!0,composed:!0}))}async firstUpdated(){await this.preferencesReady,this.lowDataMode||(this.mediaRequested=!0),this.videoElement?.textTracks&&this.videoElement.textTracks.addEventListener("change",this.handleCaptionChange),this.videoElement&&(this.playbackRate&&(this.videoElement.playbackRate=this.playbackRate),this.videoElement.addEventListener("volumechange",()=>{this.volume=this.videoElement.volume,this.isMuted=this.videoElement.muted}),this.videoElement.addEventListener("loadedmetadata",()=>{Number.isFinite(this.videoElement.duration)&&(this.duration=this.videoElement.duration),this.playbackRate&&(this.videoElement.playbackRate=this.playbackRate)})),this.lesson&&this.api?this.fetchLessonManifest():(this.hasSignTrack=!!this.querySelector("savanna-sign-window, [data-sign-window]"),this.hasAdTrack=!!this.querySelector("audio[data-ad], audio.ad-track")),this.emitEvent("savanna:ready")}async fetchTranscript(e,t){let i;try{i=k({urlPath:e,apiBase:this.api});let a=new URL(i);a.searchParams.set("lang",this.activeLang),i=a.href}catch{i=e}try{let a={};this.apiKey&&x(i,this.apiKey,this.api)&&(a["X-Savanna-Key"]=this.apiKey);let o=await fetch(i,{headers:a});if(o.ok){let n=await o.json();if(Array.isArray(n?.lines)&&n.lines.length>0){let c=this.vttCuesCache.get(this.activeLang);if(n.lang&&n.lang!==this.activeLang&&c&&c.length>0){this.transcriptLines=c.map(h=>({start:h.start,end:h.end,text:h.text})),this.resolveSummary(t);return}if(c&&c.length>n.lines.length){this.transcriptLines=c.map(h=>({start:h.start,end:h.end,text:h.text})),this.resolveSummary(t);return}this.transcriptLines=n.lines,this.resolveSummary(t);return}}}catch{if(typeof caches<"u")try{let a=(await caches.keys()).filter(o=>o.startsWith("savanna-pack-"));for(let o of a){let n=await(await caches.open(o)).match(i);if(!n?.ok)continue;let c=await n.json();if(Array.isArray(c?.lines)&&c.lines.length>0){this.transcriptLines=c.lines,this.resolveSummary(t);return}}}catch{}}this.fallbackTranscriptFromCaptions(t)}fallbackTranscriptFromCaptions(e){let t=this.vttCuesCache.get(this.activeLang);if(t&&t.length>0)this.transcriptLines=t.map(i=>({start:i.start,end:i.end,text:i.text}));else{let i=this.manifestCaptions.find(a=>a.lang===this.activeLang)||this.manifestCaptions[0];if(i?.url){let a=this.resolveLessonAssetUrl(i.url);this.fetchCaptionWithLoopbackFallback(a).then(o=>{let n=v(o.text);this.vttCuesCache.set(i.lang,n),this.transcriptLines=n.map(c=>({start:c.start,end:c.end,text:c.text}))}).catch(()=>{})}}this.resolveSummary(e)}resolveSummary(e){let t=e||this.manifestData,i="";t?.summary&&(typeof t.summary=="object"?i=t.summary[this.activeLang]||t.summary.en||"":typeof t.summary=="string"&&(i=t.summary)),this.transcriptSummary=i||this.t("player.defaultSummary"),t?.title&&(this.lessonTitle=t.title[this.activeLang]||t.title.en||"")}getEffectiveSummary(){let e=this.manifestData;if(e?.summary){if(typeof e.summary=="object")return e.summary[this.activeLang]||e.summary.en||"";if(typeof e.summary=="string")return e.summary}return this.t("player.defaultSummary")}syncTranscriptLanguage(){this.manifestData?.transcript?.url?this.fetchTranscript(this.manifestData.transcript.url,this.manifestData):this.fallbackTranscriptFromCaptions(this.manifestData)}scrollActiveLineIntoView(e){let t=this.shadowRoot?.querySelector(`.transcript-line[data-index="${e}"]`);t&&t.scrollIntoView({block:"nearest",behavior:"smooth"})}seekFromTranscript(e){this.seekTo(e),this.announceStatus(this.t("player.statusSeek",{time:this.formatTime(e)}))}renderCueText(e,t){return!t||!t.trim()||!this.transcriptTools?e:this.transcriptTools.splitTextByMatch(e,t).map(a=>a.isMatch?p`<mark class="transcript-mark">${a.text}</mark>`:a.text)}toggleLowDataMode(){this.lowDataMode=!this.lowDataMode,this.lowDataMode?!this.isPlaying&&this.currentTime===0&&this.videoElement?.readyState===0&&(this.mediaRequested=!1,this.videoElement.removeAttribute("src"),this.videoElement.load()):this.mediaRequested=!0,this.saveAllPreferences(),this.announceStatus(this.t(this.lowDataMode?"player.lowDataEnabled":"player.lowDataDisabled"))}toggleLearningLanguage(){let e=this.activeLang==="am"?"en":"am";this.setLanguage(e),this.selectedCaptionLang=e,this.captionsShowing=!0,this.currentCueText=y(this.vttCuesCache.get(e)||[],this.currentTime),this.loadVttCues(),this.syncTranscriptLanguage(),this.saveAllPreferences()}renderLessonQuestionPanel(){return this.lesson!=="L-102"&&this.lesson!=="L-103"?b:p`
+      <section class="lesson-qa" aria-labelledby="lesson-qa-title" lang=${this.questionLanguage}>
+        <h2 id="lesson-qa-title">${this.t("player.qaTitle")}</h2>
+        <p>${this.t("player.qaDescription")}</p>
+        <form @submit=${this.handleLessonQuestionSubmit}>
+          <label class="sr-only" for="lesson-question">${this.t("player.qaQuestionLabel")}</label>
+          <input
+            id="lesson-question"
+            type="text"
+            dir="auto"
+            .value=${this.questionText}
+            @input=${e=>{this.questionText=e.target.value}}
+            placeholder=${this.t("player.qaPlaceholder")}
+            autocomplete="off"
+          />
+          <button type="submit">${this.t("player.qaAsk")}</button>
+        </form>
+        ${this.questionAnswer?p`<p
+                class="lesson-qa-answer"
+                role="status"
+                aria-live="polite"
+                dir="auto"
+                lang=${this.questionLanguage}
+              >
+                ${this.questionAnswer}
+              </p>`:b}
+      </section>
+    `}renderTranscriptPanel(){if(!this.isTranscriptOpen)return"";let e=this.transcriptTools?this.transcriptTools.filterTranscriptLines(this.transcriptLines,this.transcriptSearchQuery):this.transcriptLines.map((i,a)=>({line:i,originalIndex:a})),t=!!this.transcriptSearchQuery.trim();return p`
       <section
         id="transcript-panel"
         class="transcript-panel"
@@ -3642,19 +58,24 @@ var SavannaPlayer = class extends i4 {
             <!-- Auto-scroll Toggle -->
             <button
               type="button"
-              class="transcript-action-btn ${this.transcriptAutoScroll ? "is-active-btn" : ""}"
-              @click=${() => {
-      this.transcriptAutoScroll = !this.transcriptAutoScroll;
-      this.announceStatus(
-        this.transcriptAutoScroll ? "Auto-scroll on" : "Auto-scroll off"
-      );
-    }}
-              aria-pressed=${this.transcriptAutoScroll ? "true" : "false"}
+              class="transcript-action-btn ${this.transcriptAutoScroll?"is-active-btn":""}"
+              @click=${()=>{this.transcriptAutoScroll=!this.transcriptAutoScroll,this.announceStatus(this.transcriptAutoScroll?"Auto-scroll on":"Auto-scroll off")}}
+              aria-pressed=${this.transcriptAutoScroll?"true":"false"}
               aria-label=${this.t("player.transcriptAutoScroll")}
               title=${this.t("player.transcriptAutoScroll")}
             >
-              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              <svg
+                aria-hidden="true"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
               </svg>
             </button>
 
@@ -3666,7 +87,17 @@ var SavannaPlayer = class extends i4 {
               aria-label=${this.t("player.transcriptDownload")}
               title=${this.t("player.transcriptDownload")}
             >
-              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                aria-hidden="true"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -3683,7 +114,17 @@ var SavannaPlayer = class extends i4 {
               title=${this.t("player.transcriptDownloadBraille")}
             >
               <span class="btn-braille-badge" aria-hidden="true">⠃⠗</span>
-              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                aria-hidden="true"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -3699,7 +140,17 @@ var SavannaPlayer = class extends i4 {
               aria-label="${this.t("player.transcriptClose")} ✕"
               title="${this.t("player.transcriptClose")} (Esc)"
             >
-              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                aria-hidden="true"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
@@ -3708,12 +159,16 @@ var SavannaPlayer = class extends i4 {
         </div>
 
         <!-- Plain-Language Summary Header (SRS FR-P8 & FR-D4) -->
-        ${this.getEffectiveSummary() ? b2`
-              <div class="transcript-summary-card" role="region" aria-label=${this.t("player.transcriptSummaryTitle")}>
-                <span class="summary-badge">${this.t("player.transcriptSummaryTitle")}</span>
-                <p class="summary-text">${this.getEffectiveSummary()}</p>
-              </div>
-            ` : ""}
+        ${this.getEffectiveSummary()?p`
+                <div
+                  class="transcript-summary-card"
+                  role="region"
+                  aria-label=${this.t("player.transcriptSummaryTitle")}
+                >
+                  <span class="summary-badge">${this.t("player.transcriptSummaryTitle")}</span>
+                  <p class="summary-text">${this.getEffectiveSummary()}</p>
+                </div>
+              `:""}
 
         <!-- Search Bar (SRS FR-P8) -->
         <div class="transcript-search-row">
@@ -3727,779 +182,932 @@ var SavannaPlayer = class extends i4 {
             placeholder=${this.t("player.transcriptSearchPlaceholder")}
             .value=${this.transcriptSearchQuery}
             @input=${this.handleTranscriptSearchInput}
+            @keydown=${this.handleTranscriptSearchKeyDown}
           />
-          ${this.transcriptSearchQuery ? b2`
-                <button
-                  type="button"
-                  class="btn-clear-search"
-                  @click=${this.clearTranscriptSearch}
-                  aria-label="${this.t("player.transcriptClearSearch")} ✕"
-                >
-                  ✕
-                </button>
-              ` : ""}
+          ${this.transcriptSearchQuery?p`
+                  <button
+                    type="button"
+                    class="btn-clear-search"
+                    @click=${this.clearTranscriptSearch}
+                    aria-label="${this.t("player.transcriptClearSearch")} ✕"
+                  >
+                    ✕
+                  </button>
+                `:""}
         </div>
 
-        ${isSearching ? b2`
-              <div class="search-status-bar" aria-live="polite">
-                ${filteredItems.length === 0 ? this.t("player.transcriptNoMatches") : this.t("player.transcriptMatches", { count: filteredItems.length })}
-              </div>
-            ` : ""}
+        ${t?p`
+                <div class="search-status-bar" aria-live="polite">
+                  ${e.length===0?this.t("player.transcriptNoMatches"):this.t("player.transcriptMatches",{count:e.length})}
+                </div>
+              `:""}
 
         <!-- Timed Cue Lines List (SRS FR-P8) -->
         <div class="transcript-lines-container" aria-label=${this.t("player.transcript")}>
-          ${filteredItems.length === 0 ? b2`<div class="transcript-empty">${this.t("player.transcriptNoMatches")}</div>` : filteredItems.map(
-      ({ line, originalIndex }) => {
-        const isActive = originalIndex === this.activeTranscriptIndex;
-        return b2`
+          ${e.length===0?p`<div class="transcript-empty">${this.t("player.transcriptNoMatches")}</div>`:e.map(({line:i,originalIndex:a})=>{let o=a===this.activeTranscriptIndex;return p`
                     <button
                       type="button"
-                      class="transcript-line ${isActive ? "is-active" : ""}"
-                      data-index=${originalIndex}
-                      aria-current=${isActive ? "true" : "false"}
-                      @click=${() => this.seekFromTranscript(line.start)}
+                      class="transcript-line ${o?"is-active":""}"
+                      data-index=${a}
+                      aria-current=${o?"true":"false"}
+                      @click=${()=>this.seekFromTranscript(i.start)}
                     >
-                      <span class="cue-timestamp">${this.formatTime(line.start)}</span>
-                      <span class="cue-text">${this.renderCueText(line.text, this.transcriptSearchQuery)}</span>
+                      <span class="cue-timestamp">${this.formatTime(i.start)}</span>
+                      <span class="cue-text"
+                        >${this.renderCueText(i.text,this.transcriptSearchQuery)}</span
+                      >
                     </button>
-                  `;
-      }
-    )}
+                  `})}
         </div>
       </section>
-    `;
-  }
-  render() {
-    return b2`
-      <div class="player-container ${this.isTranscriptOpen ? "with-transcript" : ""}">
-        <div class="player" @click=${() => this.focus()}>
-        ${this.manifestLoadError && !this.src ? b2`
-              <div class="manifest-error-card" role="alert" aria-live="assertive">
-                <p class="error-msg">⚠️ ${this.t("player.errorManifestLoad")}</p>
+    `}render(){let e=this.activeLang==="am"?`${this.t("player.languageSwitchEn")} EN`:`${this.t("player.languageSwitchAm")} \u12A0\u121B`;return p`
+      <div class="player-container ${this.isTranscriptOpen?"with-transcript":""}">
+        <div class="player" @click=${this.handlePlayerSurfaceClick}>
+          ${this.manifestLoadError&&!this.src?p`
+                  <div class="manifest-error-card" role="alert" aria-live="assertive">
+                    <p class="error-msg">⚠️ ${this.t("player.errorManifestLoad")}</p>
+                    <button
+                      type="button"
+                      class="btn-retry"
+                      @click=${()=>this.fetchLessonManifest()}
+                      aria-label=${this.t("player.retry")}
+                    >
+                      🔄 ${this.t("player.retry")}
+                    </button>
+                  </div>
+                `:""}
+          <video
+            src=${this.mediaRequested?this.src||b:b}
+            crossorigin="anonymous"
+            preload=${this.lowDataMode&&!this.mediaRequested?"none":"metadata"}
+            @loadstart=${this.handleMediaLoadStart}
+            @waiting=${this.handleMediaWaiting}
+            @canplay=${this.handleMediaReady}
+            @play=${this.handlePlay}
+            @pause=${this.handlePause}
+            @seeking=${this.handleSeek}
+            @timeupdate=${this.handleTimeUpdate}
+            @error=${this.handleError}
+            @loadeddata=${this.handleMediaReady}
+          >
+            ${this.manifestCaptions.map(t=>p`
+                <track
+                  kind="subtitles"
+                  srclang=${t.lang}
+                  src=${this.captionBlobUrls.get(t.lang)||t.url}
+                  label=${t.lang==="am"?"Amharic":"English"}
+                  ?default=${t.lang===this.lang}
+                />
+              `)}
+          </video>
+          ${!this.mediaRequested&&this.src?p`<div class="media-pending" aria-live="polite">
+                  <strong>${this.t("player.lowDataPending")}</strong
+                  ><span>${this.t("player.lowDataHelp")}</span>
+                </div>`:this.mediaLoadError?p`<div class="media-pending media-error" role="alert">
+                    <strong>${this.t("player.errorMediaLoad")}</strong>
+                    <span>${this.t("player.mediaRetryHelp")}</span>
+                    <button type="button" class="media-retry" @click=${this.retryMedia}>
+                      ${this.t("player.retry")}
+                    </button>
+                  </div>`:this.mediaLoading?p`<div class="media-pending" role="status" aria-live="polite">
+                      <strong>${this.t("player.loadingVideo")}</strong>
+                    </div>`:b}
+
+          <div class="overlay">
+            <slot name="overlay"></slot>
+          </div>
+
+          <!-- Custom Accessible Captions Overlay (SRS FR-P3) -->
+          <div
+            class="caption-overlay pos-${this.captionPosition}"
+            ?hidden=${!this.captionsShowing||!this.currentCueText}
+            aria-hidden="true"
+          >
+            <div class="caption-cue" style=${this.computeCaptionStyle()}>
+              ${this.currentCueText}
+            </div>
+          </div>
+
+          <!-- Custom Native Accessible Controls Bar (SRS FR-P2) -->
+          <div
+            class="player-controls"
+            aria-label=${this.t("player.controlsLabel")}
+            lang=${this.activeLang}
+            @focusin=${this.handleControlFocus}
+          >
+            <!-- Play / Pause (Toggle) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-play"
+              @click=${this.togglePlay}
+              aria-label=${this.isPlaying?this.t("player.pause"):this.t("player.play")}
+              aria-pressed=${this.isPlaying?"true":"false"}
+              title="${this.isPlaying?this.t("player.pause"):this.t("player.play")} (K)"
+            >
+              ${this.isPlaying?p`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                      <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                    </svg>`:p`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>`}
+            </button>
+
+            <!-- Rewind 10s (Action) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-back10"
+              @click=${()=>this.seekBy(-10)}
+              aria-label="${this.t("player.back10")} 10s"
+              title="${this.t("player.back10")} (J)"
+            >
+              <svg
+                aria-hidden="true"
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                style="margin-right: 2px;"
+              >
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <polyline points="3 3 3 8 8 8"></polyline>
+              </svg>
+              <span style="font-size: 0.8rem; font-weight: 700;">10s</span>
+            </button>
+
+            <button
+              type="button"
+              class="ctrl-btn btn-low-data"
+              @click=${this.toggleLowDataMode}
+              aria-pressed=${this.lowDataMode?"true":"false"}
+                aria-label=${this.lowDataMode?this.t("player.lowDataOn"):this.t("player.lowDataOff")}
+              title=${this.t("player.lowDataHelp")}
+            >
+              ${this.lowDataMode?this.t("player.lowDataOn"):this.t("player.lowDataOff")}
+            </button>
+
+            <button
+              type="button"
+              class="ctrl-btn btn-language"
+              @click=${this.toggleLearningLanguage}
+              aria-label=${e}
+              title=${e}
+            >
+              ${this.activeLang==="am"?this.t("player.languageEnShort"):this.t("player.languageAmShort")}
+            </button>
+
+            <!-- Position Slider -->
+            <input
+              type="range"
+              class="ctrl-slider slider-seek"
+              min="0"
+              max=${Number.isFinite(this.duration)&&this.duration>0?this.duration:100}
+              step="0.1"
+              .value=${String(this.currentTime)}
+              ?disabled=${!this.mediaRequested}
+              @input=${this.handleSeekInput}
+              aria-label=${this.t("player.seekSlider")}
+              aria-valuetext=${this.positionValueText}
+            />
+
+            <!-- Elapsed / Total time display -->
+            <span class="time-display" aria-hidden="true">
+              ${this.formatTime(this.currentTime)} / ${this.formatTime(this.duration)}
+            </span>
+
+            <!-- Mute Toggle -->
+            <button
+              type="button"
+              class="ctrl-btn btn-mute"
+              @click=${this.toggleMute}
+              aria-label=${this.t("player.mute")}
+              aria-pressed=${this.isMuted||this.media&&this.media.muted?"true":"false"}
+              title="${this.t("player.mute")} (M)"
+            >
+              ${this.isMuted||this.volume===0?p`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polygon
+                        points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"
+                        fill="currentColor"
+                      ></polygon>
+                      <line x1="23" y1="9" x2="17" y2="15"></line>
+                      <line x1="17" y1="9" x2="23" y2="15"></line>
+                    </svg>`:p`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polygon
+                        points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"
+                        fill="currentColor"
+                      ></polygon>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>`}
+            </button>
+
+            <!-- Volume Slider -->
+            <input
+              type="range"
+              class="ctrl-slider slider-volume"
+              min="0"
+              max="100"
+              step="1"
+              .value=${String(this.isMuted?0:Math.round(this.volume*100))}
+              @input=${this.handleVolumeInput}
+              aria-label=${this.t("player.volumeSlider")}
+              aria-valuetext=${this.volumeValueText}
+            />
+
+            <!-- Playback Speed Menu (SRS FR-P9 & Stable Popover Buttons) -->
+            <div class="speed-menu-container">
+              <button
+                type="button"
+                class="ctrl-btn btn-speed ${this.isSpeedMenuOpen?"active":""}"
+                @click=${this.toggleSpeedMenu}
+                aria-haspopup="menu"
+                aria-controls="speed-menu"
+                aria-expanded=${this.isSpeedMenuOpen?"true":"false"}
+                aria-label="${this.t("player.speed")}: ${this.playbackRate===1?"1.0x":this.playbackRate+"x"}"
+                title="${this.t("player.speed")}"
+              >
+                ${this.playbackRate===1?"1.0x":this.playbackRate+"x"}
+              </button>
+              ${this.isSpeedMenuOpen?p`
+                      <div
+                        id="speed-menu"
+                        class="speed-popover"
+                        role="menu"
+                        aria-label=${this.t("player.speed")}
+                        @keydown=${this.handleSpeedMenuKeydown}
+                      >
+                        ${[.5,.75,1,1.25,1.5,2].map(t=>p`
+                            <button
+                              type="button"
+                              role="menuitemradio"
+                              class="speed-opt-btn ${this.playbackRate===t?"is-selected":""}"
+                              aria-checked=${this.playbackRate===t?"true":"false"}
+                              @click=${()=>this.setPlaybackRate(t)}
+                            >
+                              ${t===1?`1.0x (${this.t("player.speedNormal")})`:`${t}x`}
+                            </button>
+                          `)}
+                      </div>
+                    `:""}
+            </div>
+
+            <!-- Captions Toggle -->
+            <button
+              type="button"
+              class="ctrl-btn btn-captions ${this.captionsShowing?"active":""}"
+              @click=${this.toggleCaptions}
+              aria-label="${this.t("player.captions")} CC"
+              aria-pressed=${this.captionsShowing?"true":"false"}
+              aria-expanded=${this.captionsShowing?"true":"false"}
+              title="${this.t("player.captions")} (C)"
+              style="position: relative;"
+            >
+              <span
+                style="font-weight: 800; font-size: 0.85rem; border: 1.5px solid currentColor; border-radius: 3px; padding: 1px 4px; line-height: 1;"
+                >CC</span
+              >
+              ${this.captionsShowing?p`<span style="position: absolute; bottom: 4px; left: 10px; right: 10px; height: 2px; background: #e11d48; border-radius: 1px;"></span>`:""}
+            </button>
+
+            <!-- Preferences / Caption Settings Dialog Trigger (SRS FR-P3, FR-P3a, Contract C3/C4) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-preferences btn-captions-settings ${this.showPreferencesDialog?"active":""}"
+              @click=${()=>this.togglePreferences("general")}
+              aria-label=${this.t("player.captionsSettings")}
+              aria-haspopup="dialog"
+              aria-expanded=${this.showPreferencesDialog?"true":"false"}
+              title="${this.t("player.captionsSettings")} (P)"
+            >
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3"></circle>
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                ></path>
+              </svg>
+            </button>
+
+            <!-- Interactive Transcript Toggle Button (SRS FR-P8) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-transcript ${this.isTranscriptOpen?"active":""}"
+              @click=${this.toggleTranscript}
+              aria-label="${this.t("player.transcript")} 📝"
+              aria-expanded=${this.isTranscriptOpen?"true":"false"}
+              aria-controls="transcript-panel"
+              aria-pressed=${this.isTranscriptOpen?"true":"false"}
+              title="${this.t("player.transcript")} (T)"
+            >
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </button>
+
+            <!-- Sign Language Window Toggle (Step 6 Null-Safe) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-sign ${this.hasSignTrack&&this.showSignWindow?"active":""} ${this.hasSignTrack?"":"is-disabled"}"
+              @click=${this.toggleSignWindow}
+              aria-label=${this.hasSignTrack?`${this.manifestData?.sign?.languageName||this.t("player.sign")} SIG`:`${this.t("player.sign")} SIG ${this.t("player.notAvailableSuffix")}`.trim()}
+              aria-disabled=${this.hasSignTrack?"false":"true"}
+              aria-expanded=${this.hasSignTrack&&this.showSignWindow?"true":"false"}
+              aria-pressed=${this.hasSignTrack&&this.showSignWindow?"true":"false"}
+              title="${this.manifestData?.sign?.languageName||this.t("player.sign")} (S)${this.hasSignTrack?"":" "+this.t("player.notAvailableSuffix")}"
+            >
+              <span
+                style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;"
+                >SIG</span
+              >
+            </button>
+
+            <!-- Audio Description Toggle (Step 6 Null-Safe) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-ad ${this.hasAdTrack?"":"is-disabled"} ${this.hasAdTrack&&this.audioDescriptionEnabled?"active":""}"
+              @click=${this.toggleAudioDescription}
+              aria-label=${this.hasAdTrack?`${this.t("player.audioDescription")} AD`:`${this.t("player.audioDescription")} AD ${this.t("player.notAvailableSuffix")}`.trim()}
+              aria-disabled=${this.hasAdTrack?"false":"true"}
+              aria-expanded=${this.hasAdTrack&&this.audioDescriptionEnabled?"true":"false"}
+              aria-pressed=${this.hasAdTrack&&this.audioDescriptionEnabled?"true":"false"}
+              title="${this.t("player.audioDescription")} (D)${this.hasAdTrack?"":" "+this.t("player.notAvailableSuffix")}"
+            >
+              <span
+                style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;"
+                >AD</span
+              >
+            </button>
+
+            <!-- Fullscreen Toggle -->
+            <button
+              type="button"
+              class="ctrl-btn btn-fullscreen"
+              @click=${this.toggleFullscreen}
+              aria-label=${this.t("player.fullscreen")}
+              aria-pressed=${this.isFullscreen?"true":"false"}
+              title="${this.t("player.fullscreen")} (F)"
+            >
+              ${this.isFullscreen?p`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"
+                      ></path>
+                    </svg>`:p`<svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
+                      ></path>
+                    </svg>`}
+            </button>
+
+            <!-- Keyboard Shortcuts Help (Step 7) -->
+            <button
+              type="button"
+              class="ctrl-btn btn-help ${this.showHelpDialog?"active":""}"
+              @click=${this.toggleShortcutsHelp}
+              aria-label=${this.t("player.help")}
+              aria-haspopup="dialog"
+              aria-expanded=${this.showHelpDialog?"true":"false"}
+              title="${this.t("player.help")} (?)"
+            >
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Step 5: Persistent Polite Live Region (Screen Reader Only) -->
+          <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+            ${this.liveRegionMessage}
+          </div>
+
+          <!-- Step 5: Visual On-Screen HUD Notification (aria-hidden) -->
+          ${this.statusToast?p`<div class="status-toast" aria-hidden="true">${this.statusToast}</div>`:""}
+
+          <!-- Step 7: Native Accessible Keyboard Shortcuts Dialog Modal -->
+          <dialog
+            class="shortcuts-dialog"
+            aria-labelledby="shortcuts-dialog-title"
+            @close=${this.handleDialogClose}
+            @click=${this.handleDialogClick}
+          >
+            <div class="shortcuts-header">
+              <h2 id="shortcuts-dialog-title">${this.t("player.helpTitle")}</h2>
+              <button
+                type="button"
+                class="close-help-btn"
+                @click=${this.closeShortcutsDialog}
+                aria-label=${this.t("player.closeHelp")}
+              >
+                ${this.t("player.closeHelp")} (Esc)
+              </button>
+            </div>
+            <table class="shortcuts-table">
+              <thead>
+                <tr>
+                  <th scope="col">${this.t("player.helpHeaderKey")}</th>
+                  <th scope="col">${this.t("player.helpHeaderAction")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><kbd>Space</kbd> / <kbd>K</kbd></td>
+                  <td>${this.t("player.shortcutPlayPause")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>←</kbd> / <kbd>→</kbd></td>
+                  <td>${this.t("player.shortcutSeek5")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>J</kbd> / <kbd>L</kbd></td>
+                  <td>${this.t("player.shortcutSeek10")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>↑</kbd> / <kbd>↓</kbd></td>
+                  <td>${this.t("player.shortcutVolume")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>M</kbd></td>
+                  <td>${this.t("player.shortcutMute")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>C</kbd></td>
+                  <td>${this.t("player.shortcutCaptions")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>S</kbd></td>
+                  <td>${this.t("player.shortcutSign")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>D</kbd></td>
+                  <td>${this.t("player.shortcutAudioDescription")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>T</kbd></td>
+                  <td>${this.t("player.shortcutTranscript")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>F</kbd></td>
+                  <td>${this.t("player.shortcutFullscreen")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>P</kbd></td>
+                  <td>${this.t("player.shortcutPreferences")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>?</kbd></td>
+                  <td>${this.t("player.shortcutHelp")}</td>
+                </tr>
+                <tr>
+                  <td><kbd>Home</kbd> / <kbd>End</kbd></td>
+                  <td>${this.t("player.shortcutStartEnd")}</td>
+                </tr>
+              </tbody>
+            </table>
+          </dialog>
+
+          <!-- Preferences Modal Dialog (Contract C3/C4, Task 1.6 & SRS FR-P9) -->
+          <dialog
+            class="prefs-dialog captions-dialog"
+            aria-labelledby="prefs-dialog-title"
+            @close=${this.handlePrefsDialogClose}
+            @click=${this.handlePrefsDialogClick}
+          >
+            <div class="prefs-header captions-header">
+              <h2 id="prefs-dialog-title">${this.t("player.preferencesTitle")}</h2>
+              <button
+                type="button"
+                class="close-prefs-btn close-captions-btn"
+                @click=${this.closePreferencesDialog}
+                aria-label="${this.t("player.closePreferences")} (Esc)"
+              >
+                ${this.t("player.closePreferences")} (Esc)
+              </button>
+            </div>
+
+            <!-- Tab list -->
+            <div class="prefs-tab-bar" role="tablist" aria-label=${this.t("player.preferences")}>
+              <button
+                type="button"
+                role="tab"
+                id="tab-general"
+                aria-controls="panel-general"
+                aria-selected=${this.activePrefsTab==="general"?"true":"false"}
+                class="prefs-tab-btn ${this.activePrefsTab==="general"?"is-active-tab":""}"
+                @click=${()=>{this.activePrefsTab="general"}}
+              >
+                ${this.t("player.prefSectionGeneral")}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="tab-captions"
+                aria-controls="panel-captions"
+                aria-selected=${this.activePrefsTab==="captions"?"true":"false"}
+                class="prefs-tab-btn ${this.activePrefsTab==="captions"?"is-active-tab":""}"
+                @click=${()=>{this.activePrefsTab="captions"}}
+              >
+                ${this.t("player.prefSectionCaptions")}
+              </button>
+            </div>
+
+            <!-- General Preferences Panel -->
+            <div
+              id="panel-general"
+              role="tabpanel"
+              aria-labelledby="tab-general"
+              class="prefs-settings-body"
+              ?hidden=${this.activePrefsTab!=="general"}
+            >
+              <!-- Language Selection (Contract C4) -->
+              <div class="setting-row">
+                <label for="pref-lang-select">${this.t("player.prefLanguage")}:</label>
+                <select
+                  id="pref-lang-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefLangChange}
+                >
+                  <option value="en" ?selected=${this.activeLang==="en"}>
+                    ${this.t("player.prefLanguageEn")}
+                  </option>
+                  <option value="am" ?selected=${this.activeLang==="am"}>
+                    ${this.t("player.prefLanguageAm")}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Playback Speed -->
+              <div class="setting-row">
+                <label for="pref-speed-select">${this.t("player.prefSpeed")}:</label>
+                <select
+                  id="pref-speed-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefSpeedChange}
+                >
+                  <option value="0.5" ?selected=${this.playbackRate===.5}>0.5x</option>
+                  <option value="0.75" ?selected=${this.playbackRate===.75}>0.75x</option>
+                  <option value="1" ?selected=${this.playbackRate===1}>
+                    1.0x (${this.t("player.speedNormal")})
+                  </option>
+                  <option value="1.25" ?selected=${this.playbackRate===1.25}>1.25x</option>
+                  <option value="1.5" ?selected=${this.playbackRate===1.5}>1.5x</option>
+                  <option value="2" ?selected=${this.playbackRate===2}>2.0x</option>
+                </select>
+              </div>
+
+              <!-- Display Theme (Contract C3/C5) -->
+              <div class="setting-row">
+                <label for="pref-theme-select">${this.t("player.prefTheme")}:</label>
+                <select
+                  id="pref-theme-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefThemeChange}
+                >
+                  <option value="dark" ?selected=${this.playerTheme==="dark"}>
+                    ${this.t("player.prefThemeDark")}
+                  </option>
+                  <option value="light" ?selected=${this.playerTheme==="light"}>
+                    ${this.t("player.prefThemeLight")}
+                  </option>
+                  <option value="high-contrast" ?selected=${this.playerTheme==="high-contrast"}>
+                    ${this.t("player.prefThemeHighContrast")}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Keyboard Shortcuts Toggle -->
+              <div class="setting-row">
+                <label for="pref-shortcuts-select">${this.t("player.prefShortcuts")}:</label>
+                <select
+                  id="pref-shortcuts-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefShortcutsChange}
+                >
+                  <option value="true" ?selected=${!this.disableShortcuts}>
+                    ${this.t("player.prefShortcutsOn")}
+                  </option>
+                  <option value="false" ?selected=${this.disableShortcuts}>
+                    ${this.t("player.prefShortcutsOff")}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Sign Language Window (SRS FR-P9) -->
+              <div class="setting-row">
+                <label for="pref-sign-select">${this.t("player.prefSignWindow")}:</label>
+                <select
+                  id="pref-sign-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefSignChange}
+                  ?disabled=${!this.hasSignTrack}
+                >
+                  <option value="true" ?selected=${this.hasSignTrack&&this.showSignWindow}>
+                    ${this.t("player.prefEnabled")}
+                  </option>
+                  <option value="false" ?selected=${!this.hasSignTrack||!this.showSignWindow}>
+                    ${this.t("player.prefDisabled")}
+                    ${this.hasSignTrack?"":`(${this.t("player.notAvailableSuffix")})`}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Audio Description (SRS FR-P9) -->
+              <div class="setting-row">
+                <label for="pref-ad-select">${this.t("player.prefAudioDescription")}:</label>
+                <select
+                  id="pref-ad-select"
+                  class="ctrl-select"
+                  @change=${this.handlePrefAdChange}
+                  ?disabled=${!this.hasAdTrack}
+                >
+                  <option value="true" ?selected=${this.hasAdTrack&&this.audioDescriptionEnabled}>
+                    ${this.t("player.prefEnabled")}
+                  </option>
+                  <option
+                    value="false"
+                    ?selected=${!this.hasAdTrack||!this.audioDescriptionEnabled}
+                  >
+                    ${this.t("player.prefDisabled")}
+                    ${this.hasAdTrack?"":`(${this.t("player.notAvailableSuffix")})`}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Reset, Download, Delete Buttons (FR-A4) -->
+              <div
+                class="setting-row"
+                style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem;"
+              >
                 <button
                   type="button"
-                  class="btn-retry"
-                  @click=${() => this.fetchLessonManifest()}
-                  aria-label=${this.t("player.retry")}
+                  class="btn-reset-prefs"
+                  @click=${this.resetPreferences}
+                  aria-label=${this.t("player.prefReset")}
                 >
-                  🔄 ${this.t("player.retry")}
+                  🔄 ${this.t("player.prefReset")}
+                </button>
+                <button
+                  type="button"
+                  class="btn-reset-prefs"
+                  @click=${this.downloadMySettings}
+                  aria-label=${this.t("player.prefDownload")}
+                >
+                  💾 ${this.t("player.prefDownload")}
+                </button>
+                <button
+                  type="button"
+                  class="btn-reset-prefs"
+                  @click=${this.deleteMySettings}
+                  aria-label=${this.t("player.prefDelete")}
+                >
+                  🗑️ ${this.t("player.prefDelete")}
                 </button>
               </div>
-            ` : ""}
-        <video
-          src=${this.src || A}
-          @play=${this.handlePlay}
-          @pause=${this.handlePause}
-          @seeking=${this.handleSeek}
-          @timeupdate=${this.handleTimeUpdate}
-          @error=${this.handleError}
-        >
-          ${this.manifestCaptions.map(
-      (c5) => b2`
-              <track
-                kind="subtitles"
-                srclang=${c5.lang}
-                src=${this.captionBlobUrls.get(c5.lang) || c5.url}
-                label=${c5.lang === "am" ? "Amharic" : "English"}
-                ?default=${c5.lang === this.lang}
-              />
-            `
-    )}
-        </video>
+            </div>
 
-        <div class="overlay">
-          <slot name="overlay"></slot>
-        </div>
-
-        <!-- Custom Accessible Captions Overlay (SRS FR-P3) -->
-        <div
-          class="caption-overlay pos-${this.captionPosition}"
-          ?hidden=${!this.captionsShowing || !this.currentCueText}
-          aria-hidden="true"
-        >
-          <div
-            class="caption-cue"
-            style=${this.computeCaptionStyle()}
-          >
-            ${this.currentCueText}
-          </div>
-        </div>
-
-        <!-- Custom Native Accessible Controls Bar (SRS FR-P2) -->
-        <div
-          class="player-controls"
-          aria-label=${this.t("player.controlsLabel")}
-          lang=${this.activeLang}
-          @focusin=${this.handleControlFocus}
-        >
-          <!-- Play / Pause (Toggle) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-play"
-            @click=${this.togglePlay}
-            aria-label=${this.isPlaying ? this.t("player.pause") : this.t("player.play")}
-            aria-pressed=${this.isPlaying ? "true" : "false"}
-            title="${this.isPlaying ? this.t("player.pause") : this.t("player.play")} (K)"
-          >
-            ${this.isPlaying ? b2`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16" rx="1"></rect>
-                  <rect x="14" y="4" width="4" height="16" rx="1"></rect>
-                </svg>` : b2`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>`}
-          </button>
-
-          <!-- Rewind 10s (Action) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-back10"
-            @click=${() => this.seekBy(-10)}
-            aria-label="${this.t("player.back10")} 10s"
-            title="${this.t("player.back10")} (J)"
-          >
-            <svg
-              aria-hidden="true"
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              style="margin-right: 2px;"
+            <!-- Captions Preferences Panel -->
+            <div
+              id="panel-captions"
+              role="tabpanel"
+              aria-labelledby="tab-captions"
+              class="captions-settings-body"
+              ?hidden=${this.activePrefsTab!=="captions"}
             >
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-              <polyline points="3 3 3 8 8 8"></polyline>
-            </svg>
-            <span style="font-size: 0.8rem; font-weight: 700;">10s</span>
-          </button>
-
-          <!-- Position Slider -->
-          <input
-            type="range"
-            class="ctrl-slider slider-seek"
-            min="0"
-            max=${Number.isFinite(this.duration) && this.duration > 0 ? this.duration : 100}
-            step="0.1"
-            .value=${String(this.currentTime)}
-            @input=${this.handleSeekInput}
-            aria-label=${this.t("player.seekSlider")}
-            aria-valuetext=${this.positionValueText}
-          />
-
-          <!-- Elapsed / Total time display -->
-          <span class="time-display" aria-hidden="true">
-            ${this.formatTime(this.currentTime)} / ${this.formatTime(this.duration)}
-          </span>
-
-          <!-- Mute Toggle -->
-          <button
-            type="button"
-            class="ctrl-btn btn-mute"
-            @click=${this.toggleMute}
-            aria-label=${this.t("player.mute")}
-            aria-pressed=${this.isMuted || (this.media ? this.media.muted : false) ? "true" : "false"}
-            title="${this.t("player.mute")} (M)"
-          >
-            ${this.isMuted || this.volume === 0 ? b2`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
-                  <line x1="23" y1="9" x2="17" y2="15"></line>
-                  <line x1="17" y1="9" x2="23" y2="15"></line>
-                </svg>` : b2`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
-                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                </svg>`}
-          </button>
-
-          <!-- Volume Slider -->
-          <input
-            type="range"
-            class="ctrl-slider slider-volume"
-            min="0"
-            max="100"
-            step="1"
-            .value=${String(this.isMuted ? 0 : Math.round(this.volume * 100))}
-            @input=${this.handleVolumeInput}
-            aria-label=${this.t("player.volumeSlider")}
-            aria-valuetext=${this.volumeValueText}
-          />
-
-          <!-- Playback Speed Menu (SRS FR-P9 & Stable Popover Buttons) -->
-          <div class="speed-menu-container">
-            <button
-              type="button"
-              class="ctrl-btn btn-speed ${this.isSpeedMenuOpen ? "active" : ""}"
-              @click=${this.toggleSpeedMenu}
-              aria-haspopup="menu"
-              aria-expanded=${this.isSpeedMenuOpen ? "true" : "false"}
-              aria-label="${this.t("player.speed")}: ${this.playbackRate === 1 ? "1.0x" : this.playbackRate + "x"}"
-              title="${this.t("player.speed")}"
-            >
-              ${this.playbackRate === 1 ? "1.0x" : this.playbackRate + "x"}
-            </button>
-            ${this.isSpeedMenuOpen ? b2`
-                  <div
-                    class="speed-popover"
-                    role="menu"
-                    aria-label=${this.t("player.speed")}
+              <!-- Language Track Selection -->
+              <div class="setting-row">
+                <label for="cap-track-select">${this.t("player.captionsTrack")}:</label>
+                <select
+                  id="cap-track-select"
+                  class="ctrl-select"
+                  @change=${this.handleCaptionTrackSelect}
+                >
+                  <option
+                    value="off"
+                    ?selected=${!this.captionsShowing||this.selectedCaptionLang==="off"}
                   >
-                    ${[0.5, 0.75, 1, 1.25, 1.5, 2].map(
-      (rate) => b2`
-                        <button
-                          type="button"
-                          role="menuitemradio"
-                          class="speed-opt-btn ${this.playbackRate === rate ? "is-selected" : ""}"
-                          aria-checked=${this.playbackRate === rate ? "true" : "false"}
-                          @click=${() => this.setPlaybackRate(rate)}
-                        >
-                          ${rate === 1 ? `1.0x (${this.t("player.speedNormal")})` : `${rate}x`}
-                        </button>
-                      `
-    )}
+                    ${this.t("player.captionsTrackOff")}
+                  </option>
+                  <option
+                    value="en"
+                    ?selected=${this.captionsShowing&&this.selectedCaptionLang==="en"}
+                  >
+                    ${this.t("player.captionsTrackEn")}
+                  </option>
+                  <option
+                    value="am"
+                    ?selected=${this.captionsShowing&&this.selectedCaptionLang==="am"}
+                  >
+                    ${this.t("player.captionsTrackAm")}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Font Size (100% to 300%) -->
+              <div class="setting-row">
+                <label for="cap-size-select">${this.t("player.captionsSize")}:</label>
+                <select
+                  id="cap-size-select"
+                  class="ctrl-select"
+                  @change=${this.handleCaptionSizeSelect}
+                >
+                  <option value="100" ?selected=${this.captionFontSize===100}>
+                    100% (Standard)
+                  </option>
+                  <option value="150" ?selected=${this.captionFontSize===150}>
+                    150% (Medium)
+                  </option>
+                  <option value="200" ?selected=${this.captionFontSize===200}>
+                    200% (Large)
+                  </option>
+                  <option value="300" ?selected=${this.captionFontSize===300}>
+                    300% (Extra Large)
+                  </option>
+                </select>
+              </div>
+
+              <!-- Color Presets (>= 7:1 Contrast) -->
+              <div class="setting-row">
+                <label for="cap-preset-select">${this.t("player.captionsColor")}:</label>
+                <select
+                  id="cap-preset-select"
+                  class="ctrl-select"
+                  @change=${this.handleCaptionPresetSelect}
+                >
+                  <option value="white-black" ?selected=${this.captionPreset==="white-black"}>
+                    ${this.t("player.captionsPresetWhiteBlack")} (21:1)
+                  </option>
+                  <option value="yellow-black" ?selected=${this.captionPreset==="yellow-black"}>
+                    ${this.t("player.captionsPresetYellowBlack")} (19.5:1)
+                  </option>
+                  <option value="black-white" ?selected=${this.captionPreset==="black-white"}>
+                    ${this.t("player.captionsPresetBlackWhite")} (21:1)
+                  </option>
+                  <option value="custom" ?selected=${this.captionPreset==="custom"}>
+                    ${this.t("player.captionsPresetCustom")}
+                  </option>
+                </select>
+              </div>
+
+              ${this.captionPreset==="custom"?p`
+                      <div class="setting-row custom-colors-row">
+                        <label for="cap-custom-text">${this.t("player.captionsTextColor")}:</label>
+                        <input
+                          id="cap-custom-text"
+                          type="color"
+                          class="color-picker-input"
+                          .value=${this.captionTextColor}
+                          @input=${this.handleCaptionTextColorChange}
+                          aria-label=${this.t("player.captionsTextColor")}
+                        />
+                        <label for="cap-custom-bg">${this.t("player.captionsBgColor")}:</label>
+                        <input
+                          id="cap-custom-bg"
+                          type="color"
+                          class="color-picker-input"
+                          .value=${this.captionBgColor}
+                          @input=${this.handleCaptionBgColorChange}
+                          aria-label=${this.t("player.captionsBgColor")}
+                        />
+                      </div>
+                    `:""}
+
+              <!-- Background Opacity -->
+              <div class="setting-row">
+                <label for="cap-opacity-select">${this.t("player.captionsOpacity")}:</label>
+                <select
+                  id="cap-opacity-select"
+                  class="ctrl-select"
+                  @change=${this.handleCaptionOpacitySelect}
+                >
+                  <option value="100" ?selected=${this.captionBgOpacity===100}>100%</option>
+                  <option value="75" ?selected=${this.captionBgOpacity===75}>75%</option>
+                  <option value="50" ?selected=${this.captionBgOpacity===50}>50%</option>
+                  <option value="0" ?selected=${this.captionBgOpacity===0}>
+                    0% (Transparent)
+                  </option>
+                </select>
+              </div>
+
+              <!-- Position (Bottom / Top) -->
+              <div class="setting-row">
+                <label for="cap-pos-select">${this.t("player.captionsPosition")}:</label>
+                <select
+                  id="cap-pos-select"
+                  class="ctrl-select"
+                  @change=${this.handleCaptionPositionSelect}
+                >
+                  <option value="bottom" ?selected=${this.captionPosition==="bottom"}>
+                    ${this.t("player.captionsPositionBottom")}
+                  </option>
+                  <option value="top" ?selected=${this.captionPosition==="top"}>
+                    ${this.t("player.captionsPositionTop")}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Live Preview -->
+              <div class="preview-container">
+                <span class="preview-label">${this.t("player.captionsPreview")}:</span>
+                <div class="preview-stage">
+                  <div class="caption-cue" style=${this.computeCaptionStyle()}>
+                    ${this.selectedCaptionLang==="am"?"\u12C8\u12F0 \u1275\u121D\u1205\u122D\u1271 \u12A5\u1295\u12B3\u1295 \u1260\u12F0\u1205\u1293 \u1218\u1321\u1362":"Welcome to the lesson."}
                   </div>
-                ` : ""}
-          </div>
-
-          <!-- Captions Toggle -->
-          <button
-            type="button"
-            class="ctrl-btn btn-captions ${this.captionsShowing ? "active" : ""}"
-            @click=${this.toggleCaptions}
-            aria-label="${this.t("player.captions")} CC"
-            aria-pressed=${this.captionsShowing ? "true" : "false"}
-            aria-expanded=${this.captionsShowing ? "true" : "false"}
-            title="${this.t("player.captions")} (C)"
-            style="position: relative;"
-          >
-            <span style="font-weight: 800; font-size: 0.85rem; border: 1.5px solid currentColor; border-radius: 3px; padding: 1px 4px; line-height: 1;">CC</span>
-            ${this.captionsShowing ? b2`<span style="position: absolute; bottom: 4px; left: 10px; right: 10px; height: 2px; background: #e11d48; border-radius: 1px;"></span>` : ""}
-          </button>
-
-          <!-- Preferences / Caption Settings Dialog Trigger (SRS FR-P3, FR-P3a, Contract C3/C4) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-preferences btn-captions-settings ${this.showPreferencesDialog ? "active" : ""}"
-            @click=${() => this.togglePreferences("general")}
-            aria-label=${this.t("player.captionsSettings")}
-            aria-haspopup="dialog"
-            aria-expanded=${this.showPreferencesDialog ? "true" : "false"}
-            title="${this.t("player.captionsSettings")} (P)"
-          >
-            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-          </button>
-
-          <!-- Interactive Transcript Toggle Button (SRS FR-P8) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-transcript ${this.isTranscriptOpen ? "active" : ""}"
-            @click=${this.toggleTranscript}
-            aria-label="${this.t("player.transcript")} 📝"
-            aria-expanded=${this.isTranscriptOpen ? "true" : "false"}
-            aria-controls="transcript-panel"
-            aria-pressed=${this.isTranscriptOpen ? "true" : "false"}
-            title="${this.t("player.transcript")} (T)"
-          >
-            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-            </svg>
-          </button>
-
-          <!-- Sign Language Window Toggle (Step 6 Null-Safe) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-sign ${!this.hasSignTrack ? "is-disabled" : ""} ${this.hasSignTrack && this.showSignWindow ? "active" : ""}"
-            @click=${this.toggleSignWindow}
-            aria-label=${this.hasSignTrack ? `${this.t("player.sign")} ESL` : `${this.t("player.sign")} ESL ${this.t("player.notAvailableSuffix")}`.trim()}
-            aria-disabled=${!this.hasSignTrack ? "true" : "false"}
-            aria-expanded=${this.hasSignTrack && this.showSignWindow ? "true" : "false"}
-            aria-pressed=${this.hasSignTrack && this.showSignWindow ? "true" : "false"}
-            title="${this.t("player.sign")} (S)${!this.hasSignTrack ? " " + this.t("player.notAvailableSuffix") : ""}"
-          >
-            <span style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;">ESL</span>
-          </button>
-
-          <!-- Audio Description Toggle (Step 6 Null-Safe) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-ad ${!this.hasAdTrack ? "is-disabled" : ""} ${this.hasAdTrack && this.audioDescriptionEnabled ? "active" : ""}"
-            @click=${this.toggleAudioDescription}
-            aria-label=${this.hasAdTrack ? `${this.t("player.audioDescription")} AD` : `${this.t("player.audioDescription")} AD ${this.t("player.notAvailableSuffix")}`.trim()}
-            aria-disabled=${!this.hasAdTrack ? "true" : "false"}
-            aria-expanded=${this.hasAdTrack && this.audioDescriptionEnabled ? "true" : "false"}
-            aria-pressed=${this.hasAdTrack && this.audioDescriptionEnabled ? "true" : "false"}
-            title="${this.t("player.audioDescription")} (D)${!this.hasAdTrack ? " " + this.t("player.notAvailableSuffix") : ""}"
-          >
-            <span style="font-weight: 800; font-size: 0.8rem; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 4px; line-height: 1;">AD</span>
-          </button>
-
-          <!-- Fullscreen Toggle -->
-          <button
-            type="button"
-            class="ctrl-btn btn-fullscreen"
-            @click=${this.toggleFullscreen}
-            aria-label=${this.t("player.fullscreen")}
-            aria-pressed=${this.isFullscreen ? "true" : "false"}
-            title="${this.t("player.fullscreen")} (F)"
-          >
-            ${this.isFullscreen ? b2`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-                </svg>` : b2`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                </svg>`}
-          </button>
-
-          <!-- Keyboard Shortcuts Help (Step 7) -->
-          <button
-            type="button"
-            class="ctrl-btn btn-help ${this.showHelpDialog ? "active" : ""}"
-            @click=${this.toggleShortcutsHelp}
-            aria-label=${this.t("player.help")}
-            aria-haspopup="dialog"
-            aria-expanded=${this.showHelpDialog ? "true" : "false"}
-            title="${this.t("player.help")} (?)"
-          >
-            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-          </button>
-        </div>
-
-        <section class="accessibility-modules" aria-label="Additional accessibility controls">
-          <slot></slot>
-        </section>
-
-        <!-- Step 5: Persistent Polite Live Region (Screen Reader Only) -->
-        <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
-          ${this.liveRegionMessage}
-        </div>
-
-        <!-- Step 5: Visual On-Screen HUD Notification (aria-hidden) -->
-        ${this.statusToast ? b2`<div class="status-toast" aria-hidden="true">${this.statusToast}</div>` : ""}
-
-        <!-- Step 7: Native Accessible Keyboard Shortcuts Dialog Modal -->
-        <dialog
-          class="shortcuts-dialog"
-          aria-labelledby="shortcuts-dialog-title"
-          @close=${this.handleDialogClose}
-          @click=${this.handleDialogClick}
-        >
-          <div class="shortcuts-header">
-            <h2 id="shortcuts-dialog-title">${this.t("player.helpTitle")}</h2>
-            <button
-              type="button"
-              class="close-help-btn"
-              @click=${this.closeShortcutsDialog}
-              aria-label=${this.t("player.closeHelp")}
-            >
-              ${this.t("player.closeHelp")} (Esc)
-            </button>
-          </div>
-          <table class="shortcuts-table">
-            <thead>
-              <tr>
-                <th scope="col">${this.t("player.helpHeaderKey")}</th>
-                <th scope="col">${this.t("player.helpHeaderAction")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><kbd>Space</kbd> / <kbd>K</kbd></td>
-                <td>${this.t("player.shortcutPlayPause")}</td>
-              </tr>
-              <tr>
-                <td><kbd>←</kbd> / <kbd>→</kbd></td>
-                <td>${this.t("player.shortcutSeek5")}</td>
-              </tr>
-              <tr>
-                <td><kbd>J</kbd> / <kbd>L</kbd></td>
-                <td>${this.t("player.shortcutSeek10")}</td>
-              </tr>
-              <tr>
-                <td><kbd>↑</kbd> / <kbd>↓</kbd></td>
-                <td>${this.t("player.shortcutVolume")}</td>
-              </tr>
-              <tr>
-                <td><kbd>M</kbd></td>
-                <td>${this.t("player.shortcutMute")}</td>
-              </tr>
-              <tr>
-                <td><kbd>C</kbd></td>
-                <td>${this.t("player.shortcutCaptions")}</td>
-              </tr>
-              <tr>
-                <td><kbd>S</kbd></td>
-                <td>${this.t("player.shortcutSign")}</td>
-              </tr>
-              <tr>
-                <td><kbd>D</kbd></td>
-                <td>${this.t("player.shortcutAudioDescription")}</td>
-              </tr>
-              <tr>
-                <td><kbd>T</kbd></td>
-                <td>${this.t("player.shortcutTranscript")}</td>
-              </tr>
-              <tr>
-                <td><kbd>F</kbd></td>
-                <td>${this.t("player.shortcutFullscreen")}</td>
-              </tr>
-              <tr>
-                <td><kbd>P</kbd></td>
-                <td>${this.t("player.shortcutPreferences")}</td>
-              </tr>
-              <tr>
-                <td><kbd>?</kbd></td>
-                <td>${this.t("player.shortcutHelp")}</td>
-              </tr>
-              <tr>
-                <td><kbd>Home</kbd> / <kbd>End</kbd></td>
-                <td>${this.t("player.shortcutStartEnd")}</td>
-              </tr>
-            </tbody>
-          </table>
-        </dialog>
-
-        <!-- Preferences Modal Dialog (Contract C3/C4, Task 1.6 & SRS FR-P9) -->
-        <dialog
-          class="prefs-dialog captions-dialog"
-          aria-labelledby="prefs-dialog-title"
-          @close=${this.handlePrefsDialogClose}
-          @click=${this.handlePrefsDialogClick}
-        >
-          <div class="prefs-header captions-header">
-            <h2 id="prefs-dialog-title">${this.t("player.preferencesTitle")}</h2>
-            <button
-              type="button"
-              class="close-prefs-btn close-captions-btn"
-              @click=${this.closePreferencesDialog}
-              aria-label="${this.t("player.closePreferences")} (Esc)"
-            >
-              ${this.t("player.closePreferences")} (Esc)
-            </button>
-          </div>
-
-          <!-- Tab list -->
-          <div class="prefs-tab-bar" role="tablist" aria-label=${this.t("player.preferences")}>
-            <button
-              type="button"
-              role="tab"
-              id="tab-general"
-              aria-controls="panel-general"
-              aria-selected=${this.activePrefsTab === "general" ? "true" : "false"}
-              class="prefs-tab-btn ${this.activePrefsTab === "general" ? "is-active-tab" : ""}"
-              @click=${() => {
-      this.activePrefsTab = "general";
-    }}
-            >
-              ${this.t("player.prefSectionGeneral")}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              id="tab-captions"
-              aria-controls="panel-captions"
-              aria-selected=${this.activePrefsTab === "captions" ? "true" : "false"}
-              class="prefs-tab-btn ${this.activePrefsTab === "captions" ? "is-active-tab" : ""}"
-              @click=${() => {
-      this.activePrefsTab = "captions";
-    }}
-            >
-              ${this.t("player.prefSectionCaptions")}
-            </button>
-          </div>
-
-          <!-- General Preferences Panel -->
-          <div
-            id="panel-general"
-            role="tabpanel"
-            aria-labelledby="tab-general"
-            class="prefs-settings-body"
-            ?hidden=${this.activePrefsTab !== "general"}
-          >
-            <!-- Language Selection (Contract C4) -->
-            <div class="setting-row">
-              <label for="pref-lang-select">${this.t("player.prefLanguage")}:</label>
-              <select
-                id="pref-lang-select"
-                class="ctrl-select"
-                @change=${this.handlePrefLangChange}
-              >
-                <option value="en" ?selected=${this.activeLang === "en"}>
-                  ${this.t("player.prefLanguageEn")}
-                </option>
-                <option value="am" ?selected=${this.activeLang === "am"}>
-                  ${this.t("player.prefLanguageAm")}
-                </option>
-              </select>
-            </div>
-
-            <!-- Playback Speed -->
-            <div class="setting-row">
-              <label for="pref-speed-select">${this.t("player.prefSpeed")}:</label>
-              <select
-                id="pref-speed-select"
-                class="ctrl-select"
-                @change=${this.handlePrefSpeedChange}
-              >
-                <option value="0.5" ?selected=${this.playbackRate === 0.5}>0.5x</option>
-                <option value="0.75" ?selected=${this.playbackRate === 0.75}>0.75x</option>
-                <option value="1" ?selected=${this.playbackRate === 1}>1.0x (${this.t("player.speedNormal")})</option>
-                <option value="1.25" ?selected=${this.playbackRate === 1.25}>1.25x</option>
-                <option value="1.5" ?selected=${this.playbackRate === 1.5}>1.5x</option>
-                <option value="2" ?selected=${this.playbackRate === 2}>2.0x</option>
-              </select>
-            </div>
-
-            <!-- Display Theme (Contract C3/C5) -->
-            <div class="setting-row">
-              <label for="pref-theme-select">${this.t("player.prefTheme")}:</label>
-              <select
-                id="pref-theme-select"
-                class="ctrl-select"
-                @change=${this.handlePrefThemeChange}
-              >
-                <option value="dark" ?selected=${this.playerTheme === "dark"}>
-                  ${this.t("player.prefThemeDark")}
-                </option>
-                <option value="light" ?selected=${this.playerTheme === "light"}>
-                  ${this.t("player.prefThemeLight")}
-                </option>
-                <option value="high-contrast" ?selected=${this.playerTheme === "high-contrast"}>
-                  ${this.t("player.prefThemeHighContrast")}
-                </option>
-              </select>
-            </div>
-
-            <!-- Keyboard Shortcuts Toggle -->
-            <div class="setting-row">
-              <label for="pref-shortcuts-select">${this.t("player.prefShortcuts")}:</label>
-              <select
-                id="pref-shortcuts-select"
-                class="ctrl-select"
-                @change=${this.handlePrefShortcutsChange}
-              >
-                <option value="true" ?selected=${!this.disableShortcuts}>
-                  ${this.t("player.prefShortcutsOn")}
-                </option>
-                <option value="false" ?selected=${this.disableShortcuts}>
-                  ${this.t("player.prefShortcutsOff")}
-                </option>
-              </select>
-            </div>
-
-            <!-- Sign Language Window (SRS FR-P9) -->
-            <div class="setting-row">
-              <label for="pref-sign-select">${this.t("player.prefSignWindow")}:</label>
-              <select
-                id="pref-sign-select"
-                class="ctrl-select"
-                @change=${this.handlePrefSignChange}
-                ?disabled=${!this.hasSignTrack}
-              >
-                <option value="true" ?selected=${this.hasSignTrack && this.showSignWindow}>
-                  ${this.t("player.prefEnabled")}
-                </option>
-                <option value="false" ?selected=${!this.hasSignTrack || !this.showSignWindow}>
-                  ${this.t("player.prefDisabled")} ${!this.hasSignTrack ? `(${this.t("player.notAvailableSuffix")})` : ""}
-                </option>
-              </select>
-            </div>
-
-            <!-- Audio Description (SRS FR-P9) -->
-            <div class="setting-row">
-              <label for="pref-ad-select">${this.t("player.prefAudioDescription")}:</label>
-              <select
-                id="pref-ad-select"
-                class="ctrl-select"
-                @change=${this.handlePrefAdChange}
-                ?disabled=${!this.hasAdTrack}
-              >
-                <option value="true" ?selected=${this.hasAdTrack && this.audioDescriptionEnabled}>
-                  ${this.t("player.prefEnabled")}
-                </option>
-                <option value="false" ?selected=${!this.hasAdTrack || !this.audioDescriptionEnabled}>
-                  ${this.t("player.prefDisabled")} ${!this.hasAdTrack ? `(${this.t("player.notAvailableSuffix")})` : ""}
-                </option>
-              </select>
-            </div>
-
-            <!-- Reset, Download, Delete Buttons (FR-A4) -->
-            <div class="setting-row" style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
-              <button
-                type="button"
-                class="btn-reset-prefs"
-                @click=${this.resetPreferences}
-                aria-label=${this.t("player.prefReset")}
-              >
-                🔄 ${this.t("player.prefReset")}
-              </button>
-              <button
-                type="button"
-                class="btn-reset-prefs"
-                @click=${this.downloadMySettings}
-                aria-label=${this.t("player.prefDownload")}
-              >
-                💾 ${this.t("player.prefDownload")}
-              </button>
-              <button
-                type="button"
-                class="btn-reset-prefs"
-                @click=${this.deleteMySettings}
-                aria-label=${this.t("player.prefDelete")}
-              >
-                🗑️ ${this.t("player.prefDelete")}
-              </button>
-            </div>
-          </div>
-
-          <!-- Captions Preferences Panel -->
-          <div
-            id="panel-captions"
-            role="tabpanel"
-            aria-labelledby="tab-captions"
-            class="captions-settings-body"
-            ?hidden=${this.activePrefsTab !== "captions"}
-          >
-            <!-- Language Track Selection -->
-            <div class="setting-row">
-              <label for="cap-track-select">${this.t("player.captionsTrack")}:</label>
-              <select
-                id="cap-track-select"
-                class="ctrl-select"
-                @change=${this.handleCaptionTrackSelect}
-              >
-                <option value="off" ?selected=${!this.captionsShowing || this.selectedCaptionLang === "off"}>
-                  ${this.t("player.captionsTrackOff")}
-                </option>
-                <option value="en" ?selected=${this.captionsShowing && this.selectedCaptionLang === "en"}>
-                  ${this.t("player.captionsTrackEn")}
-                </option>
-                <option value="am" ?selected=${this.captionsShowing && this.selectedCaptionLang === "am"}>
-                  ${this.t("player.captionsTrackAm")}
-                </option>
-              </select>
-            </div>
-
-            <!-- Font Size (100% to 300%) -->
-            <div class="setting-row">
-              <label for="cap-size-select">${this.t("player.captionsSize")}:</label>
-              <select
-                id="cap-size-select"
-                class="ctrl-select"
-                @change=${this.handleCaptionSizeSelect}
-              >
-                <option value="100" ?selected=${this.captionFontSize === 100}>100% (Standard)</option>
-                <option value="150" ?selected=${this.captionFontSize === 150}>150% (Medium)</option>
-                <option value="200" ?selected=${this.captionFontSize === 200}>200% (Large)</option>
-                <option value="300" ?selected=${this.captionFontSize === 300}>300% (Extra Large)</option>
-              </select>
-            </div>
-
-            <!-- Color Presets (>= 7:1 Contrast) -->
-            <div class="setting-row">
-              <label for="cap-preset-select">${this.t("player.captionsColor")}:</label>
-              <select
-                id="cap-preset-select"
-                class="ctrl-select"
-                @change=${this.handleCaptionPresetSelect}
-              >
-                <option value="white-black" ?selected=${this.captionPreset === "white-black"}>
-                  ${this.t("player.captionsPresetWhiteBlack")} (21:1)
-                </option>
-                <option value="yellow-black" ?selected=${this.captionPreset === "yellow-black"}>
-                  ${this.t("player.captionsPresetYellowBlack")} (19.5:1)
-                </option>
-                <option value="black-white" ?selected=${this.captionPreset === "black-white"}>
-                  ${this.t("player.captionsPresetBlackWhite")} (21:1)
-                </option>
-                <option value="custom" ?selected=${this.captionPreset === "custom"}>
-                  ${this.t("player.captionsPresetCustom")}
-                </option>
-              </select>
-            </div>
-
-            ${this.captionPreset === "custom" ? b2`
-                  <div class="setting-row custom-colors-row">
-                    <label for="cap-custom-text">${this.t("player.captionsTextColor")}:</label>
-                    <input
-                      id="cap-custom-text"
-                      type="color"
-                      class="color-picker-input"
-                      .value=${this.captionTextColor}
-                      @input=${this.handleCaptionTextColorChange}
-                      aria-label=${this.t("player.captionsTextColor")}
-                    />
-                    <label for="cap-custom-bg">${this.t("player.captionsBgColor")}:</label>
-                    <input
-                      id="cap-custom-bg"
-                      type="color"
-                      class="color-picker-input"
-                      .value=${this.captionBgColor}
-                      @input=${this.handleCaptionBgColorChange}
-                      aria-label=${this.t("player.captionsBgColor")}
-                    />
-                  </div>
-                ` : ""}
-
-            <!-- Background Opacity -->
-            <div class="setting-row">
-              <label for="cap-opacity-select">${this.t("player.captionsOpacity")}:</label>
-              <select
-                id="cap-opacity-select"
-                class="ctrl-select"
-                @change=${this.handleCaptionOpacitySelect}
-              >
-                <option value="100" ?selected=${this.captionBgOpacity === 100}>100%</option>
-                <option value="75" ?selected=${this.captionBgOpacity === 75}>75%</option>
-                <option value="50" ?selected=${this.captionBgOpacity === 50}>50%</option>
-                <option value="0" ?selected=${this.captionBgOpacity === 0}>0% (Transparent)</option>
-              </select>
-            </div>
-
-            <!-- Position (Bottom / Top) -->
-            <div class="setting-row">
-              <label for="cap-pos-select">${this.t("player.captionsPosition")}:</label>
-              <select
-                id="cap-pos-select"
-                class="ctrl-select"
-                @change=${this.handleCaptionPositionSelect}
-              >
-                <option value="bottom" ?selected=${this.captionPosition === "bottom"}>
-                  ${this.t("player.captionsPositionBottom")}
-                </option>
-                <option value="top" ?selected=${this.captionPosition === "top"}>
-                  ${this.t("player.captionsPositionTop")}
-                </option>
-              </select>
-            </div>
-
-            <!-- Live Preview -->
-            <div class="preview-container">
-              <span class="preview-label">${this.t("player.captionsPreview")}:</span>
-              <div class="preview-stage">
-                <div class="caption-cue" style=${this.computeCaptionStyle()}>
-                  ${this.selectedCaptionLang === "am" ? "\u12C8\u12F0 \u1275\u121D\u1205\u122D\u1271 \u12A5\u1295\u12B3\u1295 \u1260\u12F0\u1205\u1293 \u1218\u1321\u1362" : "Welcome to the lesson."}
                 </div>
               </div>
             </div>
-          </div>
-        </dialog>
-      </div>
+          </dialog>
+        </div>
 
-      ${this.renderTranscriptPanel()}
-    </div>
-    `;
-  }
-};
-SavannaPlayer.styles = i`
+        ${this.renderTranscriptPanel()} ${this.renderLessonQuestionPanel()}
+        <slot></slot>
+      </div>
+    `}};s.styles=$`
     :host {
       --savanna-accent: #0f4c81;
       --savanna-focus: #005fcc;
@@ -4519,7 +1127,7 @@ SavannaPlayer.styles = i`
       cursor: pointer;
     }
 
-    :host([data-theme='light']) {
+    :host([data-theme="light"]) {
       --savanna-accent: #0284c7;
       --savanna-ctrl-bg: #f8fafc;
       --savanna-ctrl-text: #0f172a;
@@ -4530,7 +1138,7 @@ SavannaPlayer.styles = i`
       --savanna-header-bg: #e2e8f0;
     }
 
-    :host([data-theme='high-contrast']) {
+    :host([data-theme="high-contrast"]) {
       --savanna-accent: #f59e0b;
       --savanna-focus: #f59e0b;
       --savanna-ctrl-bg: #000000;
@@ -4566,10 +1174,116 @@ SavannaPlayer.styles = i`
       overflow: hidden;
     }
 
+    .player video {
+      aspect-ratio: 16 / 9;
+      object-fit: contain;
+    }
+
+    .media-pending {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-content: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      color: #ffffff;
+      text-align: center;
+      background: #101827;
+      pointer-events: none;
+    }
+
+    .media-pending strong {
+      font-size: 1.1rem;
+    }
+    .media-pending span {
+      max-width: 32rem;
+    }
+
+    .media-error {
+      pointer-events: auto;
+    }
+
+    .media-retry {
+      justify-self: center;
+      min-height: 44px;
+      padding: 0.55rem 1rem;
+      border: 2px solid #ffffff;
+      border-radius: 6px;
+      background: #155e75;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .media-retry:focus-visible {
+      outline: 3px solid #fbbf24;
+      outline-offset: 3px;
+    }
+
+    .lesson-qa {
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 10px;
+      background: #0f172a;
+      color: #f8fafc;
+    }
+
+    .lesson-qa h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.1rem;
+    }
+    .lesson-qa p {
+      margin: 0.35rem 0 0.8rem;
+    }
+    .lesson-qa form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .lesson-qa input {
+      flex: 1 1 16rem;
+      min-width: 0;
+      min-height: 44px;
+      padding: 0.5rem 0.7rem;
+      border: 1px solid #64748b;
+      border-radius: 6px;
+      font: inherit;
+    }
+    .lesson-qa button {
+      min-height: 44px;
+      padding: 0.5rem 0.9rem;
+      border: 1px solid #fff;
+      border-radius: 6px;
+      background: #315b83;
+      color: #fff;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    .lesson-qa :focus-visible {
+      outline: 3px solid #ffbf47;
+      outline-offset: 3px;
+    }
+    .lesson-qa-answer {
+      margin-top: 0.8rem !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
     video {
       display: block;
       width: 100%;
-      aspect-ratio: 16 / 9;
       height: auto;
     }
 
@@ -4598,11 +1312,11 @@ SavannaPlayer.styles = i`
 
     /* Noto Sans Ethiopic font family stack for native Amharic glyph support */
     @font-face {
-      font-family: 'Noto Sans Ethiopic';
+      font-family: "Noto Sans Ethiopic";
       font-style: normal;
       font-weight: 400 700;
       font-display: swap;
-      src: local('Noto Sans Ethiopic'), local('Nyala'), local('Abyssinica SIL'), local('Kefa');
+      src: local("Noto Sans Ethiopic"), local("Nyala"), local("Abyssinica SIL"), local("Kefa");
       unicode-range: U+1200-137F, U+1380-139F, U+2D80-2DDF, U+AB00-AB2F;
     }
 
@@ -4616,7 +1330,9 @@ SavannaPlayer.styles = i`
       align-items: center;
       pointer-events: none;
       z-index: 20;
-      transition: top 0.15s ease, bottom 0.15s ease;
+      transition:
+        top 0.15s ease,
+        bottom 0.15s ease;
     }
 
     .caption-overlay.pos-bottom {
@@ -4628,7 +1344,14 @@ SavannaPlayer.styles = i`
     }
 
     .caption-cue {
-      font-family: 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', 'Kefa', system-ui, -apple-system, sans-serif;
+      font-family:
+        "Noto Sans Ethiopic",
+        "Nyala",
+        "Abyssinica SIL",
+        "Kefa",
+        system-ui,
+        -apple-system,
+        sans-serif;
       line-height: 1.4;
       white-space: pre-wrap;
       display: inline-block;
@@ -4638,7 +1361,10 @@ SavannaPlayer.styles = i`
       box-sizing: border-box;
       max-width: 90%;
       word-break: break-word;
-      transition: font-size 0.1s ease, color 0.1s ease, background-color 0.1s ease;
+      transition:
+        font-size 0.1s ease,
+        color 0.1s ease,
+        background-color 0.1s ease;
     }
 
     /* Modal Dialogs (Shortcuts Help & Captions Settings) */
@@ -4851,12 +1577,6 @@ SavannaPlayer.styles = i`
       box-sizing: border-box;
     }
 
-    .accessibility-modules {
-      padding: 0.5rem 0.75rem;
-      background: var(--savanna-panel-bg, #0b192c);
-      border-top: 1px solid rgba(255, 255, 255, 0.15);
-    }
-
     .ctrl-btn {
       min-width: 44px;
       min-height: 44px;
@@ -4872,7 +1592,9 @@ SavannaPlayer.styles = i`
       font-weight: 600;
       padding: 0 0.5rem;
       box-sizing: border-box;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
     }
 
     .ctrl-btn:hover {
@@ -4903,7 +1625,10 @@ SavannaPlayer.styles = i`
       align-items: center;
       justify-content: center;
       gap: 0.4rem;
-      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        border-color 0.15s ease;
     }
 
     .prefs-tab-btn:hover {
@@ -4912,14 +1637,14 @@ SavannaPlayer.styles = i`
     }
 
     .prefs-tab-btn.is-active-tab,
-    .prefs-tab-btn[aria-selected='true'] {
+    .prefs-tab-btn[aria-selected="true"] {
       background: var(--savanna-accent, #0f4c81);
       color: #ffffff;
       border-color: #ffffff;
     }
 
-    :host([data-theme='high-contrast']) .prefs-tab-btn.is-active-tab,
-    :host([data-theme='high-contrast']) .prefs-tab-btn[aria-selected='true'] {
+    :host([data-theme="high-contrast"]) .prefs-tab-btn.is-active-tab,
+    :host([data-theme="high-contrast"]) .prefs-tab-btn[aria-selected="true"] {
       background: #f59e0b;
       color: #000000;
       border-color: #ffffff;
@@ -4944,15 +1669,15 @@ SavannaPlayer.styles = i`
     }
 
     .ctrl-btn.active,
-    .ctrl-btn[aria-pressed='true'] {
+    .ctrl-btn[aria-pressed="true"] {
       background: var(--savanna-accent, #0f4c81);
       border-color: #38bdf8;
       color: #ffffff;
       box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
     }
 
-    :host([data-theme='high-contrast']) .ctrl-btn.active,
-    :host([data-theme='high-contrast']) .ctrl-btn[aria-pressed='true'] {
+    :host([data-theme="high-contrast"]) .ctrl-btn.active,
+    :host([data-theme="high-contrast"]) .ctrl-btn[aria-pressed="true"] {
       background: #f59e0b;
       color: #000000;
       border-color: #ffffff;
@@ -4960,7 +1685,7 @@ SavannaPlayer.styles = i`
     }
 
     .ctrl-btn.is-disabled,
-    .ctrl-btn[aria-disabled='true'] {
+    .ctrl-btn[aria-disabled="true"] {
       opacity: 0.45;
       cursor: not-allowed;
     }
@@ -5015,8 +1740,8 @@ SavannaPlayer.styles = i`
     .speed-popover {
       position: absolute;
       bottom: calc(100% + 8px);
-      left: 50%;
-      transform: translateX(-50%);
+      right: 0;
+      left: auto;
       background: #0b192c;
       border: 1px solid rgba(255, 255, 255, 0.25);
       border-radius: var(--savanna-radius, 4px);
@@ -5027,15 +1752,16 @@ SavannaPlayer.styles = i`
       z-index: 40;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       min-width: 140px;
+      max-width: calc(100vw - 1rem);
     }
 
-    :host([data-theme='light']) .speed-popover {
+    :host([data-theme="light"]) .speed-popover {
       background: #ffffff;
       border-color: #cbd5e1;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
 
-    :host([data-theme='high-contrast']) .speed-popover {
+    :host([data-theme="high-contrast"]) .speed-popover {
       background: #000000;
       border: 2px solid #ffffff;
     }
@@ -5053,12 +1779,14 @@ SavannaPlayer.styles = i`
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
       min-height: 36px;
       box-sizing: border-box;
     }
 
-    :host([data-theme='light']) .speed-opt-btn {
+    :host([data-theme="light"]) .speed-opt-btn {
       background: #f1f5f9;
       color: #0f172a;
     }
@@ -5071,8 +1799,8 @@ SavannaPlayer.styles = i`
       outline-offset: 1px;
     }
 
-    :host([data-theme='light']) .speed-opt-btn:hover,
-    :host([data-theme='light']) .speed-opt-btn:focus-visible {
+    :host([data-theme="light"]) .speed-opt-btn:hover,
+    :host([data-theme="light"]) .speed-opt-btn:focus-visible {
       background: #e2e8f0;
       border-color: #94a3b8;
     }
@@ -5084,7 +1812,7 @@ SavannaPlayer.styles = i`
       font-weight: 700;
     }
 
-    :host([data-theme='high-contrast']) .speed-opt-btn.is-selected {
+    :host([data-theme="high-contrast"]) .speed-opt-btn.is-selected {
       background: #f59e0b;
       color: #000000;
       border-color: #ffffff;
@@ -5188,7 +1916,7 @@ SavannaPlayer.styles = i`
     }
 
     .transcript-action-btn.is-active-btn,
-    .transcript-action-btn[aria-pressed='true'] {
+    .transcript-action-btn[aria-pressed="true"] {
       background: var(--savanna-accent, #0f4c81);
       border-color: #38bdf8;
       box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
@@ -5309,7 +2037,14 @@ SavannaPlayer.styles = i`
     .summary-text {
       margin: 0;
       color: #e2e8f0;
-      font-family: 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', 'Kefa', system-ui, -apple-system, sans-serif;
+      font-family:
+        "Noto Sans Ethiopic",
+        "Nyala",
+        "Abyssinica SIL",
+        "Kefa",
+        system-ui,
+        -apple-system,
+        sans-serif;
     }
 
     /* Search Controls */
@@ -5395,7 +2130,10 @@ SavannaPlayer.styles = i`
       font-family: inherit;
       font-size: 0.85rem;
       line-height: 1.45;
-      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        border-color 0.15s ease;
       min-height: 44px;
       box-sizing: border-box;
       width: 100%;
@@ -5413,7 +2151,7 @@ SavannaPlayer.styles = i`
     }
 
     .transcript-line.is-active,
-    .transcript-line[aria-current='true'] {
+    .transcript-line[aria-current="true"] {
       background: rgba(15, 76, 129, 0.4);
       border-color: rgba(255, 255, 255, 0.2);
       border-left: 3px solid var(--savanna-accent, #0f4c81);
@@ -5435,7 +2173,7 @@ SavannaPlayer.styles = i`
     }
 
     .transcript-line.is-active .cue-timestamp,
-    .transcript-line[aria-current='true'] .cue-timestamp {
+    .transcript-line[aria-current="true"] .cue-timestamp {
       background: var(--savanna-accent, #0f4c81);
       color: #ffffff;
     }
@@ -5443,7 +2181,14 @@ SavannaPlayer.styles = i`
     .cue-text {
       flex: 1;
       word-break: break-word;
-      font-family: 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', 'Kefa', system-ui, -apple-system, sans-serif;
+      font-family:
+        "Noto Sans Ethiopic",
+        "Nyala",
+        "Abyssinica SIL",
+        "Kefa",
+        system-ui,
+        -apple-system,
+        sans-serif;
     }
 
     .transcript-mark {
@@ -5460,2944 +2205,5 @@ SavannaPlayer.styles = i`
       color: #94a3b8;
       font-size: 0.85rem;
     }
-  `;
-__decorateClass([
-  n4({ type: String })
-], SavannaPlayer.prototype, "src", 2);
-__decorateClass([
-  n4({ type: String })
-], SavannaPlayer.prototype, "lesson", 2);
-__decorateClass([
-  n4({ type: String })
-], SavannaPlayer.prototype, "api", 2);
-__decorateClass([
-  n4({ type: String, attribute: "api-key" })
-], SavannaPlayer.prototype, "apiKey", 2);
-__decorateClass([
-  n4({ type: String })
-], SavannaPlayer.prototype, "lang", 2);
-__decorateClass([
-  n4({ type: Boolean, attribute: "disable-shortcuts", reflect: true })
-], SavannaPlayer.prototype, "disableShortcuts", 2);
-__decorateClass([
-  n4({ type: Boolean, attribute: "show-sign-window", reflect: true })
-], SavannaPlayer.prototype, "showSignWindow", 2);
-__decorateClass([
-  n4({ type: Boolean, attribute: "audio-description", reflect: true })
-], SavannaPlayer.prototype, "audioDescriptionEnabled", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "showHelpDialog", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "showCaptionsDialog", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "showPreferencesDialog", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "playerTheme", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "activePrefsTab", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "manifestCaptions", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "selectedCaptionLang", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "currentCueText", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "captionFontSize", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "captionPreset", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "captionTextColor", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "captionBgColor", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "captionBgOpacity", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "captionPosition", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "isPlaying", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "currentTime", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "duration", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "volume", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "isMuted", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "playbackRate", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "captionsShowing", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "isFullscreen", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "statusToast", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "liveRegionMessage", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "hasSignTrack", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "hasAdTrack", 2);
-__decorateClass([
-  e5("video")
-], SavannaPlayer.prototype, "videoElement", 2);
-__decorateClass([
-  e5(".shortcuts-dialog")
-], SavannaPlayer.prototype, "helpDialogElement", 2);
-__decorateClass([
-  e5(".captions-dialog")
-], SavannaPlayer.prototype, "captionsDialogElement", 2);
-__decorateClass([
-  e5(".btn-help")
-], SavannaPlayer.prototype, "helpButtonElement", 2);
-__decorateClass([
-  e5(".btn-captions-settings")
-], SavannaPlayer.prototype, "captionsSettingsBtnElement", 2);
-__decorateClass([
-  e5(".btn-fullscreen")
-], SavannaPlayer.prototype, "fullscreenButtonElement", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "soundDescriptionsEnabled", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "isTranscriptOpen", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "transcriptLines", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "transcriptSummary", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "transcriptSearchQuery", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "transcriptAutoScroll", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "activeTranscriptIndex", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "isSpeedMenuOpen", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "manifestLoadError", 2);
-__decorateClass([
-  r5()
-], SavannaPlayer.prototype, "lessonTitle", 2);
-__decorateClass([
-  e5(".btn-transcript")
-], SavannaPlayer.prototype, "transcriptBtnElement", 2);
-__decorateClass([
-  e5("#transcript-search-input")
-], SavannaPlayer.prototype, "transcriptSearchInput", 2);
-__decorateClass([
-  e5(".transcript-lines-container")
-], SavannaPlayer.prototype, "transcriptScrollContainer", 2);
-__decorateClass([
-  e5(".prefs-dialog")
-], SavannaPlayer.prototype, "prefsDialogElement", 2);
-__decorateClass([
-  e5(".btn-preferences")
-], SavannaPlayer.prototype, "prefsBtnElement", 2);
-SavannaPlayer = __decorateClass([
-  t3("savanna-player")
-], SavannaPlayer);
-
-// module/src/sign-window/sync.ts
-var DRIFT_THRESHOLD_SECONDS = 0.3;
-function signTargetTime(mainTime, offsetMs) {
-  return Math.max(0, mainTime - offsetMs / 1e3);
-}
-function needsDriftCorrection(signTime, mainTime, offsetMs) {
-  return Math.abs(signTime - signTargetTime(mainTime, offsetMs)) > DRIFT_THRESHOLD_SECONDS + 1e-9;
-}
-
-// module/src/sign-window/sign-window.ts
-var KEY = "savanna.prefs.v1";
-var RATIO = 16 / 9;
-var HEADER = 50;
-var MIN_WIDTH = 180;
-var GUTTER = 8;
-var CONTROL_CLEARANCE = 56;
-var DEFAULT = { x: 8, y: 8, width: 320, height: 320 / RATIO + HEADER };
-function number(value, fallback) {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-function storedPosition() {
-  try {
-    const sign = JSON.parse(localStorage.getItem(KEY) || "{}")?.sign;
-    if (!sign || typeof sign !== "object" || Array.isArray(sign)) return void 0;
-    const corner = ["nw", "ne", "se", "sw"].includes(sign.corner || "") ? sign.corner : void 0;
-    return {
-      x: number(sign.x, DEFAULT.x),
-      y: number(sign.y, DEFAULT.y),
-      width: number(sign.width, DEFAULT.width),
-      height: number(sign.height, DEFAULT.height),
-      corner
-    };
-  } catch {
-    return void 0;
-  }
-}
-function read() {
-  return { ...DEFAULT, ...storedPosition() };
-}
-function storedEnabled() {
-  try {
-    const enabled = JSON.parse(localStorage.getItem(KEY) || "{}")?.sign?.enabled;
-    return typeof enabled === "boolean" ? enabled : void 0;
-  } catch {
-    return void 0;
-  }
-}
-function save(position, enabled) {
-  try {
-    const raw = JSON.parse(localStorage.getItem(KEY) || "{}"), prefs = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {}, previous = prefs.sign && typeof prefs.sign === "object" ? prefs.sign : {};
-    prefs.sign = {
-      ...position,
-      ...typeof enabled === "boolean" ? { enabled } : typeof previous.enabled === "boolean" ? { enabled: previous.enabled } : {}
-    };
-    localStorage.setItem(KEY, JSON.stringify(prefs));
-  } catch {
-  }
-}
-var SavannaSignWindow = class extends i4 {
-  constructor() {
-    super(...arguments);
-    this.src = "";
-    this.offsetMs = 0;
-    this.lang = "";
-    this.enabled = storedEnabled() ?? true;
-    this.position = read();
-    this.hasTrack = true;
-    this.signUnavailable = false;
-    this.loading = false;
-    this.announcement = "";
-    this.hasStoredPosition = !!storedPosition();
-    this.resizeFrame = 0;
-    this.buffering = false;
-    this.playerReady = () => {
-      this.bindPlayer();
-      this.clamp();
-    };
-    this.handleResize = () => {
-      this.bindPlayer();
-      cancelAnimationFrame(this.resizeFrame);
-      this.resizeFrame = requestAnimationFrame(this.clamp);
-    };
-    this.clamp = () => this.apply(this.position);
-    this.language = (event) => {
-      const lang = event.detail?.lang;
-      if (lang) this.lang = lang;
-    };
-    this.sync = (event) => {
-      const detail = event.detail;
-      if (typeof detail?.time === "number")
-        this.syncTo(detail.time, !!detail.paused, detail.rate || 1);
-    };
-    this.syncFromMain = () => {
-      if (this.main)
-        this.syncTo(this.main.currentTime, this.main.paused, this.main.playbackRate || 1);
-    };
-    this.mainWaiting = () => {
-      this.buffering = true;
-      this.video?.pause();
-    };
-    this.mainReady = () => {
-      this.buffering = false;
-      this.syncFromMain();
-    };
-    this.signReady = () => {
-      this.loading = false;
-      this.syncFromMain();
-    };
-    this.signError = () => {
-      this.loading = false;
-      this.signUnavailable = true;
-      this.announcement = "Sign language interpretation could not be loaded for this lesson.";
-    };
-  }
-  connectedCallback() {
-    super.connectedCallback();
-    if (!this.slot) this.slot = "overlay";
-    this.bindPlayer();
-    this.hasTrack = !!this.src;
-    window.addEventListener("resize", this.handleResize);
-    document.addEventListener("fullscreenchange", this.clamp);
-    window.addEventListener("savanna:lang-change", this.language);
-  }
-  disconnectedCallback() {
-    window.removeEventListener("resize", this.handleResize);
-    cancelAnimationFrame(this.resizeFrame);
-    document.removeEventListener("fullscreenchange", this.clamp);
-    window.removeEventListener("savanna:lang-change", this.language);
-    this.unbindPlayer();
-    super.disconnectedCallback();
-  }
-  firstUpdated() {
-    this.video = this.renderRoot.querySelector("video") || void 0;
-    this.bindPlayer();
-    if (!this.hasStoredPosition) {
-      const bounds = this.bounds();
-      this.position = { ...this.position, x: bounds.right - this.position.width, y: bounds.top };
-    }
-    this.clamp();
-  }
-  updated(changed) {
-    if (changed.has("src")) {
-      this.hasTrack = !!this.src;
-      this.signUnavailable = false;
-      this.loading = !!this.src;
-      this.video = this.renderRoot.querySelector("video") || void 0;
-    }
-    this.bindPlayer();
-    if (changed.has("enabled")) {
-      this.video = this.renderRoot.querySelector("video") || void 0;
-      if (this.enabled) this.syncFromMain();
-    }
-  }
-  bindPlayer() {
-    const nextPlayer = this.closest("savanna-player");
-    if (this.player !== nextPlayer) {
-      this.player?.removeEventListener("savanna:ready", this.playerReady);
-      this.player?.removeEventListener("savanna:timeupdate", this.sync);
-      this.player = nextPlayer || void 0;
-      this.player?.addEventListener("savanna:ready", this.playerReady);
-      this.player?.addEventListener("savanna:timeupdate", this.sync);
-    }
-    const nextMain = this.player?.media;
-    if (this.main === nextMain) return;
-    this.main?.removeEventListener("waiting", this.mainWaiting);
-    this.main?.removeEventListener("seeking", this.mainWaiting);
-    this.main?.removeEventListener("canplay", this.mainReady);
-    this.main?.removeEventListener("seeked", this.mainReady);
-    this.main?.removeEventListener("playing", this.mainReady);
-    this.main?.removeEventListener("ended", this.syncFromMain);
-    this.main?.removeEventListener("pause", this.syncFromMain);
-    this.main?.removeEventListener("ratechange", this.syncFromMain);
-    this.mediaResizeObserver?.disconnect();
-    this.mediaResizeObserver = void 0;
-    this.main = nextMain;
-    if (this.main && typeof ResizeObserver !== "undefined") {
-      this.mediaResizeObserver = new ResizeObserver(this.clamp);
-      this.mediaResizeObserver.observe(this.main);
-    }
-    this.main?.addEventListener("waiting", this.mainWaiting);
-    this.main?.addEventListener("seeking", this.mainWaiting);
-    this.main?.addEventListener("canplay", this.mainReady);
-    this.main?.addEventListener("seeked", this.mainReady);
-    this.main?.addEventListener("playing", this.mainReady);
-    this.main?.addEventListener("ended", this.syncFromMain);
-    this.main?.addEventListener("pause", this.syncFromMain);
-    this.main?.addEventListener("ratechange", this.syncFromMain);
-  }
-  unbindPlayer() {
-    this.player?.removeEventListener("savanna:ready", this.playerReady);
-    this.player?.removeEventListener("savanna:timeupdate", this.sync);
-    this.player = void 0;
-    this.main?.removeEventListener("waiting", this.mainWaiting);
-    this.main?.removeEventListener("seeking", this.mainWaiting);
-    this.main?.removeEventListener("canplay", this.mainReady);
-    this.main?.removeEventListener("seeked", this.mainReady);
-    this.main?.removeEventListener("playing", this.mainReady);
-    this.main?.removeEventListener("ended", this.syncFromMain);
-    this.main?.removeEventListener("pause", this.syncFromMain);
-    this.main?.removeEventListener("ratechange", this.syncFromMain);
-    this.mediaResizeObserver?.disconnect();
-    this.mediaResizeObserver = void 0;
-    this.main = void 0;
-  }
-  bounds() {
-    this.bindPlayer();
-    const parent = this.offsetParent;
-    if (!parent)
-      return {
-        left: GUTTER,
-        top: GUTTER,
-        right: innerWidth - GUTTER,
-        bottom: innerHeight - CONTROL_CLEARANCE
-      };
-    const rect = this.main?.getBoundingClientRect();
-    const width = rect?.width || this.main?.clientWidth || parent.clientWidth;
-    const height = rect?.height || this.main?.clientHeight || parent.clientHeight;
-    return {
-      left: GUTTER,
-      top: GUTTER,
-      right: Math.max(GUTTER, width - GUTTER),
-      bottom: Math.max(GUTTER, height - CONTROL_CLEARANCE)
-    };
-  }
-  fit(position) {
-    const bounds = this.bounds(), availableWidth = Math.max(1, bounds.right - bounds.left), availableHeight = Math.max(1, bounds.bottom - bounds.top);
-    const maximum = Math.max(1, Math.min(availableWidth, (availableHeight - HEADER) * RATIO));
-    const minimum = Math.min(MIN_WIDTH, maximum);
-    const width = Math.max(minimum, Math.min(position.width, maximum));
-    const height = width / RATIO + HEADER;
-    return {
-      width,
-      height,
-      x: Math.max(bounds.left, Math.min(position.x, bounds.right - width)),
-      y: Math.max(bounds.top, Math.min(position.y, bounds.bottom - height)),
-      corner: position.corner
-    };
-  }
-  apply(position, persist = true) {
-    this.position = this.fit(position);
-    if (persist) save(this.position);
-    this.style.setProperty("--panel-width", this.position.width + "px");
-    const parent = this.offsetParent;
-    const parentRect = parent?.getBoundingClientRect();
-    const mainRect = this.main?.getBoundingClientRect();
-    const leftOffset = parent && parentRect && mainRect ? mainRect.left - parentRect.left - parent.clientLeft : 0;
-    const topOffset = parent && parentRect && mainRect ? mainRect.top - parentRect.top - parent.clientTop : 0;
-    this.style.left = `${leftOffset + this.position.x}px`;
-    this.style.top = `${topOffset + this.position.y}px`;
-  }
-  syncTo(time, paused, rate) {
-    if (!this.enabled || !this.video || !this.hasTrack || this.signUnavailable) return;
-    const target = signTargetTime(time, this.offsetMs);
-    if (needsDriftCorrection(this.video.currentTime, time, this.offsetMs))
-      try {
-        this.video.currentTime = target;
-      } catch {
-      }
-    if (this.video.playbackRate !== rate) this.video.playbackRate = rate;
-    if (paused || this.buffering) this.video.pause();
-    else if (this.video.paused) void this.video.play().catch(() => {
-    });
-  }
-  announce(action) {
-    this.announcement = `${action}. Position ${Math.round(this.position.x)}, ${Math.round(this.position.y)}. Size ${Math.round(this.position.width)} by ${Math.round(this.position.height)} pixels.`;
-  }
-  move(dx, dy, announce = true) {
-    this.apply({
-      ...this.position,
-      x: this.position.x + dx,
-      y: this.position.y + dy,
-      corner: void 0
-    });
-    this.dispatchEvent(
-      new CustomEvent("savanna:sign-position", {
-        bubbles: true,
-        composed: true,
-        detail: this.position
-      })
-    );
-    if (announce) this.announce("Sign window moved");
-  }
-  resizeBy(dx, dy, announce = true) {
-    const delta = Math.abs(dx) >= Math.abs(dy * RATIO) ? dx : dy * RATIO;
-    this.apply({ ...this.position, width: this.position.width + delta, corner: void 0 });
-    if (announce) this.announce("Sign window resized");
-  }
-  startDrag(event) {
-    if (event.target.closest("button")) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    this.drag = { x: event.clientX, y: event.clientY, position: this.position };
-  }
-  dragMove(event) {
-    if (this.drag) {
-      this.apply({
-        ...this.drag.position,
-        x: this.drag.position.x + event.clientX - this.drag.x,
-        y: this.drag.position.y + event.clientY - this.drag.y,
-        corner: void 0
-      });
-      this.dispatchEvent(
-        new CustomEvent("savanna:sign-position", {
-          bubbles: true,
-          composed: true,
-          detail: this.position
-        })
-      );
-    }
-  }
-  endDrag() {
-    if (this.drag) this.announce("Sign window moved");
-    this.drag = void 0;
-  }
-  startResize(event, corner) {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    this.resize = { x: event.clientX, y: event.clientY, position: this.position, corner };
-  }
-  resizeMove(event) {
-    if (!this.resize) return;
-    const { corner, position, x: x2, y: y3 } = this.resize, dx = event.clientX - x2, dy = event.clientY - y3;
-    const horizontal = corner.includes("w") ? -dx : dx, vertical = (corner.includes("n") ? -dy : dy) * RATIO;
-    const width = position.width + (Math.abs(horizontal) >= Math.abs(vertical) ? horizontal : vertical);
-    const height = width / RATIO + HEADER;
-    this.apply({
-      width,
-      height,
-      x: corner.includes("w") ? position.x + position.width - width : position.x,
-      y: corner.includes("n") ? position.y + position.height - height : position.y
-    });
-  }
-  endResize() {
-    if (this.resize) this.announce("Sign window resized");
-    this.resize = void 0;
-  }
-  snap(corner) {
-    const bounds = this.bounds(), width = this.position.width, height = this.position.height;
-    this.apply({
-      ...this.position,
-      corner,
-      x: corner.includes("e") ? bounds.right - width : bounds.left,
-      y: corner.includes("s") ? bounds.bottom - height : bounds.top
-    });
-    this.announce(
-      `Sign window snapped to the ${corner === "nw" ? "top left" : corner === "ne" ? "top right" : corner === "se" ? "bottom right" : "bottom left"} corner`
-    );
-  }
-  toggle() {
-    this.enabled = !this.enabled;
-    if (!this.enabled) this.video?.pause();
-    save(this.position, this.enabled);
-    this.announcement = `Sign language ${this.enabled ? "enabled" : "disabled"}.`;
-    this.dispatchEvent(
-      new CustomEvent("savanna:sign-toggle", {
-        bubbles: true,
-        composed: true,
-        detail: { enabled: this.enabled }
-      })
-    );
-  }
-  render() {
-    const label = this.lang === "am" ? "\u12E8\u121D\u120D\u12AD\u1275 \u124B\u1295\u124B" : "Sign language";
-    const fallback = this.lang === "am" ? "\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u121D\u120D\u12AD\u1275 \u126A\u12F2\u12EE \u12E8\u1208\u121D" : "Sign language interpretation is not available for this lesson.";
-    const handles = ["nw", "ne", "se", "sw"].map(
-      (corner) => b2`<button
-          class="handle ${corner}"
-          aria-label="Resize sign window from ${corner} corner"
-          @pointerdown=${(event) => this.startResize(event, corner)}
-          @pointermove=${this.resizeMove}
-          @pointerup=${this.endResize}
-          @pointercancel=${this.endResize}
-        ></button>`
-    );
-    const snaps = ["nw", "ne", "sw", "se"].map(
-      (corner) => b2`<button
-          @click=${() => this.snap(corner)}
-          aria-label="Snap sign window to ${corner === "nw" ? "top left" : corner === "ne" ? "top right" : corner === "sw" ? "bottom left" : "bottom right"}"
-        >
-          ${corner === "nw" ? "\u2196" : corner === "ne" ? "\u2197" : corner === "sw" ? "\u2199" : "\u2198"}
-        </button>`
-    );
-    const keyboard = (e8) => {
-      if (!e8.key.startsWith("Arrow")) return;
-      e8.preventDefault();
-      const step = e8.shiftKey ? 100 : 20;
-      const horizontal = e8.key === "ArrowRight" ? step : e8.key === "ArrowLeft" ? -step : 0;
-      const right = horizontal;
-      const down = e8.key === "ArrowDown" ? step : e8.key === "ArrowUp" ? -step : 0;
-      if (e8.altKey)
-        this.resizeBy(right, down);
-      else this.move(right, down);
-    };
-    const toggle = b2`<button
-      class="toggle"
-      type="button"
-      aria-label="${label}: ${this.enabled ? "on" : "off"}"
-      aria-pressed=${String(this.enabled)}
-      @click=${this.toggle}
-    >
-      ${this.enabled ? "On" : "Off"}
-    </button>`;
-    return b2`<p class="sr-only" role="status" aria-live="polite">${this.announcement}</p>
-      ${this.enabled ? b2`<section aria-label="${label} window">
-              <header
-                tabindex="0"
-                role="group"
-                aria-label="${label} window. Use arrow keys to move, Shift plus arrow keys for larger moves, and Alt plus arrow keys to resize."
-                @keydown=${keyboard}
-                aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Shift+ArrowUp Shift+ArrowDown Alt+ArrowUp Alt+ArrowDown"
-                @pointerdown=${this.startDrag}
-                @pointermove=${this.dragMove}
-                @pointerup=${this.endDrag}
-                @pointercancel=${this.endDrag}
-              >
-                <strong>${label}</strong><span class="actions">${snaps}${toggle}</span>
-              </header>
-              ${this.hasTrack && !this.signUnavailable ? b2`<video .src=${this.src} playsinline muted preload="metadata" aria-label="${label} interpreter video" @loadedmetadata=${this.signReady} @error=${this.signError}></video>${this.loading ? b2`<div class="fallback loading" role="status">Loading sign-language interpretation…</div>` : ""}` : b2`<div class="fallback" role="status">${fallback}</div>`}${handles}
-            </section>` : toggle}`;
-  }
-};
-SavannaSignWindow.styles = i`
-    :host {
-      position: absolute;
-      z-index: 20;
-      display: block;
-      width: var(--panel-width, 320px);
-      max-width: calc(100% - 16px);
-      container-type: inline-size;
-      color: #fff;
-      font: 16px/1.4 var(--savanna-font, system-ui, sans-serif);
-    }
-    :host(:not([enabled])) {
-      width: auto;
-      max-width: none;
-    }
-    section {
-      position: relative;
-      overflow: hidden;
-      background: #16131a;
-      border: 1px solid #ffffff73;
-      border-radius: var(--savanna-radius, 8px);
-      box-shadow: 0 8px 24px #0009;
-      transition:
-        border-color 0.2s,
-        box-shadow 0.2s;
-    }
-    section:has(header:focus-visible) {
-      border-color: var(--savanna-focus, #ffbf47);
-      box-shadow:
-        0 0 0 3px var(--savanna-focus, #ffbf47),
-        0 8px 24px #0009;
-    }
-    section:has(header:active) {
-      border-color: #fff;
-      box-shadow:
-        0 0 0 2px #fff,
-        0 8px 24px #0009;
-    }
-    header {
-      display: flex;
-      min-height: 48px;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 0 6px 0 12px;
-      background: #27202d;
-      touch-action: none;
-      cursor: grab;
-      user-select: none;
-    }
-    header:active {
-      cursor: grabbing;
-      background: #372841;
-    }
-    header:focus-visible {
-      outline: none;
-    }
-    strong {
-      font-size: 14px;
-    }
-    .actions {
-      display: flex;
-      gap: 4px;
-    }
-    @container (max-width: 260px) {
-      header {
-        gap: 4px;
-        padding-inline: 4px;
-      }
-      header > strong {
-        font-size: 12px;
-      }
-      .actions {
-        gap: 2px;
-      }
-      .actions button[aria-label^="Snap sign window"] {
-        display: none;
-      }
-      .handle.nw,
-      .handle.ne {
-        display: none;
-      }
-      .actions .toggle {
-        min-width: 48px;
-        padding-inline: 4px;
-      }
-    }
-    @container (max-width: 180px) {
-      header {
-        justify-content: center;
-      }
-      header > strong {
-        display: none;
-      }
-      .actions {
-        margin-inline: auto;
-      }
-    }
-    button {
-      display: grid;
-      min-width: 36px;
-      min-height: 36px;
-      place-items: center;
-      border: 1px solid #ffffff66;
-      border-radius: 5px;
-      background: #3d3049;
-      color: #fff;
-      font: inherit;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #594267;
-    }
-    button:focus-visible {
-      outline: 3px solid var(--savanna-focus, #ffbf47);
-      outline-offset: 2px;
-    }
-    .toggle {
-      min-width: 68px;
-      padding: 0 10px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-    .toggle[aria-pressed="true"] {
-      background: var(--savanna-accent, #6e4a8e);
-    }
-    video {
-      display: block;
-      width: 100%;
-      aspect-ratio: 16/9;
-      object-fit: contain;
-      background: #08070a;
-    }
-    .fallback {
-      display: grid;
-      min-height: 180px;
-      place-items: center;
-      padding: 16px;
-      text-align: center;
-      color: #f4eef8;
-      background: #18151c;
-    }
-    .loading {
-      position: absolute;
-      inset: 48px 0 0;
-      min-height: 0;
-      background: #18151ccc;
-    }
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-    }
-    .handle {
-      position: absolute;
-      z-index: 1;
-      width: 20px;
-      min-width: 20px;
-      height: 20px;
-      min-height: 20px;
-      padding: 0;
-      border: 2px solid #fff;
-      border-radius: 4px;
-      background: var(--savanna-accent, #6e4a8e);
-      touch-action: none;
-    }
-    .nw {
-      top: 4px;
-      left: 4px;
-      cursor: nwse-resize;
-    }
-    .ne {
-      top: 4px;
-      right: 4px;
-      cursor: nesw-resize;
-    }
-    .se {
-      right: 4px;
-      bottom: 4px;
-      cursor: nwse-resize;
-    }
-    .sw {
-      bottom: 4px;
-      left: 4px;
-      cursor: nesw-resize;
-    }
-    @media (max-width: 600px) {
-      :host {
-        max-width: calc(100% - 12px);
-      }
-      header {
-        min-height: 44px;
-        padding-left: 10px;
-      }
-      button {
-        min-width: 40px;
-        min-height: 40px;
-      }
-      .toggle {
-        min-width: 72px;
-      }
-      .handle {
-        width: 24px;
-        min-width: 24px;
-        height: 24px;
-        min-height: 24px;
-      }
-      .fallback {
-        min-height: 120px;
-      }
-    }
-  `;
-__decorateClass([
-  n4()
-], SavannaSignWindow.prototype, "src", 2);
-__decorateClass([
-  n4({ type: Number, attribute: "offset-ms" })
-], SavannaSignWindow.prototype, "offsetMs", 2);
-__decorateClass([
-  n4()
-], SavannaSignWindow.prototype, "lang", 2);
-__decorateClass([
-  n4({ type: Boolean, reflect: true })
-], SavannaSignWindow.prototype, "enabled", 2);
-__decorateClass([
-  r5()
-], SavannaSignWindow.prototype, "position", 2);
-__decorateClass([
-  r5()
-], SavannaSignWindow.prototype, "hasTrack", 2);
-__decorateClass([
-  r5()
-], SavannaSignWindow.prototype, "signUnavailable", 2);
-__decorateClass([
-  r5()
-], SavannaSignWindow.prototype, "loading", 2);
-__decorateClass([
-  r5()
-], SavannaSignWindow.prototype, "announcement", 2);
-SavannaSignWindow = __decorateClass([
-  t3("savanna-sign-window")
-], SavannaSignWindow);
-
-// module/src/audio-description/audio-description.ts
-var PREFERENCES_KEY = "savanna.prefs.v1";
-var COPY = {
-  en: {
-    on: "Audio description is on.",
-    off: "Audio description is off.",
-    unavailable: "Recorded audio description is not available for this lesson.",
-    textUnavailable: "Text descriptions are not available for this lesson.",
-    loading: "Loading text descriptions.",
-    loadError: "Text description could not be loaded. Check your connection and retry.",
-    playing: "Audio description playing.",
-    playBlocked: "Audio description is ready. Press Play description to start it.",
-    paused: "Audio description paused with the lesson.",
-    stopped: "Audio description stopped.",
-    finished: "Description finished.",
-    failed: "Recorded description failed to load.",
-    mode: "Mode",
-    recorded: "Recorded audio",
-    text: "Text descriptions",
-    play: "Play description",
-    stop: "Stop",
-    extended: "Extended description (pause lesson)"
-  },
-  am: {
-    on: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B \u1260\u122D\u1277\u120D\u1362",
-    off: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B \u1320\u134D\u1277\u120D\u1362",
-    unavailable: "\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u1270\u1240\u12F3 \u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B \u12E8\u1208\u121D\u1362",
-    textUnavailable: "\u1208\u12DA\u1205 \u1275\u121D\u1205\u122D\u1275 \u12E8\u133D\u1211\u134D \u1218\u130D\u1208\u132B \u12E8\u1208\u121D\u1362",
-    loading: "\u12E8\u133D\u1211\u134D \u1218\u130D\u1208\u132B\u12CE\u127D \u1260\u1218\u132B\u1295 \u120B\u12ED \u1293\u1278\u12CD\u1362",
-    loadError: "\u12E8\u133D\u1211\u134D \u1218\u130D\u1208\u132B\u12CD \u1218\u132B\u1295 \u12A0\u120D\u127B\u1208\u121D\u1362 \u130D\u1295\u1299\u1290\u1271\u1295 \u12EB\u1228\u130B\u130D\u1321\u1293 \u12A5\u1295\u12F0\u1308\u1293 \u12ED\u121E\u12AD\u1229\u1362",
-    playing: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B \u1260\u1218\u132B\u12C8\u1275 \u120B\u12ED \u1290\u12CD\u1362",
-    playBlocked: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B\u12CD \u12DD\u130D\u1301 \u1290\u12CD\u1362 \u1208\u1218\u1300\u1218\u122D \u12E8\u1218\u130D\u1208\u132B \u12A0\u132B\u12CD\u1275\u1295 \u12ED\u132B\u1291\u1362",
-    paused: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B\u12CD \u12A8\u1275\u121D\u1205\u122D\u1271 \u130B\u122D \u1246\u121F\u120D\u1362",
-    stopped: "\u12E8\u12F5\u121D\u1345 \u1218\u130D\u1208\u132B\u12CD \u1246\u121F\u120D\u1362",
-    finished: "\u1218\u130D\u1208\u132B\u12CD \u1270\u1320\u1293\u124B\u120D\u1362",
-    failed: "\u12E8\u1270\u1240\u12F3\u12CD \u1218\u130D\u1208\u132B \u1218\u132B\u12C8\u1275 \u12A0\u120D\u127B\u1208\u121D\u1362",
-    mode: "\u12E8\u1218\u130D\u1208\u132B \u1201\u1294\u1273",
-    recorded: "\u12E8\u1270\u1240\u12F3 \u12F5\u121D\u1345",
-    text: "\u12E8\u133D\u1211\u134D \u1218\u130D\u1208\u132B\u12CE\u127D",
-    play: "\u1218\u130D\u1208\u132B\u12CD\u1295 \u12A0\u132B\u12CD\u1275",
-    stop: "\u12A0\u1241\u121D",
-    extended: "\u12E8\u1270\u122B\u12D8\u1218 \u1218\u130D\u1208\u132B (\u1275\u121D\u1205\u122D\u1271\u1295 \u12A0\u1241\u121D)"
-  }
-};
-function storedPreferences() {
-  const fallback = { enabled: false, extended: false, mode: "audio" };
-  try {
-    const root = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || "{}");
-    const stored = root?.ad;
-    if (!stored || typeof stored !== "object" || Array.isArray(stored)) {
-      return { value: fallback, hasExtended: false };
-    }
-    return {
-      value: {
-        enabled: typeof stored.enabled === "boolean" ? stored.enabled : false,
-        extended: typeof stored.extended === "boolean" ? stored.extended : false,
-        mode: stored.mode === "text" ? "text" : "audio"
-      },
-      hasExtended: typeof stored.extended === "boolean"
-    };
-  } catch {
-    return { value: fallback, hasExtended: false };
-  }
-}
-var SavannaAudioDescription = class extends i4 {
-  constructor() {
-    super(...arguments);
-    this.src = "";
-    this.textVtt = "";
-    this.offsetMs = 0;
-    this.api = "";
-    this.apiKey = "";
-    this.lang = "";
-    this.defaultExtended = false;
-    this.preferences = storedPreferences().value;
-    this.status = COPY.en.off;
-    this.cues = [];
-    this.activeText = "";
-    this.hasStoredExtended = storedPreferences().hasExtended;
-    this.wasPlaying = false;
-    this.pausingForExtended = false;
-    this.bindPlayer = () => {
-      this.player = this.closest("savanna-player") ?? void 0;
-      this.media = this.player?.media;
-    };
-    this.handleTimeUpdate = (event) => {
-      const detail = event.detail;
-      if (!detail || !Number.isFinite(detail.time)) return;
-      if (!this.preferences.enabled) return;
-      if (this.preferences.mode === "text") {
-        const cue = this.cues.find((item) => detail.time >= item.start && detail.time < item.end);
-        if (cue && cue.text !== this.activeText) {
-          this.activeText = cue.text;
-          this.status = cue.text;
-        } else if (!cue && this.activeText) {
-          this.activeText = "";
-        }
-        return;
-      }
-      const audio = this.audio;
-      if (!audio || !this.src) return;
-      if (this.extended && this.wasPlaying && detail.paused) return;
-      const targetTime = Math.max(0, detail.time - this.offsetMs / 1e3);
-      if (Math.abs(audio.currentTime - targetTime) > 0.45) {
-        try {
-          audio.currentTime = targetTime;
-        } catch {
-        }
-      }
-      audio.playbackRate = detail.rate || 1;
-      if (detail.paused) {
-        audio.pause();
-      } else if (audio.paused) {
-        void audio.play().catch(() => {
-          this.status = this.copy.playBlocked;
-        });
-      }
-    };
-    this.handleSeek = (event) => {
-      const detail = event.detail;
-      if (typeof detail?.time !== "number" || !this.audio || this.preferences.mode !== "audio") return;
-      try {
-        this.audio.currentTime = Math.max(0, detail.time - this.offsetMs / 1e3);
-      } catch {
-      }
-    };
-    this.handlePlayerPause = () => {
-      if (this.pausingForExtended) {
-        this.pausingForExtended = false;
-        return;
-      }
-      if (this.preferences.enabled && this.preferences.mode === "audio") {
-        this.audio?.pause();
-        this.wasPlaying = false;
-        this.status = this.copy.paused;
-      }
-    };
-    this.handlePlayerPlay = () => {
-      if (!this.preferences.enabled || this.preferences.mode !== "audio" || this.extended) return;
-      this.bindPlayer();
-      if (this.media) this.syncAudioToPlayer(this.media.currentTime);
-      void this.audio?.play().catch(() => {
-        this.status = this.copy.playBlocked;
-      });
-    };
-    this.handleDescriptionEnded = () => {
-      const shouldResume = this.extended && this.wasPlaying;
-      this.wasPlaying = false;
-      this.preferences = { ...this.preferences, enabled: false };
-      this.persist();
-      this.emitState();
-      if (shouldResume && this.media?.paused) void this.media.play().catch(() => void 0);
-      this.status = this.copy.finished;
-    };
-    this.handleAudioError = () => {
-      this.status = this.copy.failed;
-      this.dispatchEvent(new CustomEvent("savanna:error", {
-        bubbles: true,
-        composed: true,
-        detail: { feature: "audio-description-audio", message: this.status }
-      }));
-    };
-  }
-  get audio() {
-    return this.renderRoot.querySelector("audio");
-  }
-  get copy() {
-    return this.lang.toLowerCase().startsWith("am") ? COPY.am : COPY.en;
-  }
-  get extended() {
-    return this.hasStoredExtended ? this.preferences.extended : this.defaultExtended;
-  }
-  get isEnabled() {
-    return this.preferences.enabled;
-  }
-  connectedCallback() {
-    super.connectedCallback();
-    this.bindPlayer();
-    this.player?.addEventListener("savanna:ready", this.bindPlayer);
-    this.player?.addEventListener("savanna:timeupdate", this.handleTimeUpdate);
-    this.player?.addEventListener("savanna:seek", this.handleSeek);
-    this.player?.addEventListener("savanna:pause", this.handlePlayerPause);
-    this.player?.addEventListener("savanna:play", this.handlePlayerPlay);
-  }
-  disconnectedCallback() {
-    this.textLoadController?.abort();
-    this.player?.removeEventListener("savanna:ready", this.bindPlayer);
-    this.player?.removeEventListener("savanna:timeupdate", this.handleTimeUpdate);
-    this.player?.removeEventListener("savanna:seek", this.handleSeek);
-    this.player?.removeEventListener("savanna:pause", this.handlePlayerPause);
-    this.player?.removeEventListener("savanna:play", this.handlePlayerPlay);
-    this.stop(false, false);
-    super.disconnectedCallback();
-  }
-  firstUpdated() {
-    this.bindPlayer();
-    if (this.textVtt) void this.loadTextDescriptions();
-  }
-  updated(changed) {
-    if (changed.has("textVtt") && this.textVtt) void this.loadTextDescriptions();
-    if (changed.has("src")) this.audio?.load();
-  }
-  persist() {
-    try {
-      const raw = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || "{}");
-      const root = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
-      root.ad = this.preferences;
-      localStorage.setItem(PREFERENCES_KEY, JSON.stringify(root));
-    } catch {
-    }
-  }
-  emitState() {
-    this.dispatchEvent(new CustomEvent("savanna:ad-change", {
-      bubbles: true,
-      composed: true,
-      detail: { enabled: this.preferences.enabled, mode: this.preferences.mode }
-    }));
-  }
-  async loadTextDescriptions() {
-    this.textLoadController?.abort();
-    if (!this.textVtt) {
-      this.cues = [];
-      return;
-    }
-    const controller = new AbortController();
-    this.textLoadController = controller;
-    try {
-      const url = resolveCaptionUrl({ urlPath: this.textVtt, apiBase: this.api });
-      const result = await fetchCaptionTrack({
-        url,
-        apiKey: this.apiKey,
-        apiBase: this.api,
-        signal: controller.signal
-      });
-      if (controller.signal.aborted) return;
-      this.cues = parseWebVtt(result.text);
-      if (this.cues.length === 0) throw new Error("No timed descriptions were found.");
-    } catch {
-      if (controller.signal.aborted) return;
-      this.cues = [];
-      this.status = this.copy.loadError;
-      this.dispatchEvent(new CustomEvent("savanna:error", {
-        bubbles: true,
-        composed: true,
-        detail: { feature: "audio-description-text", message: this.status }
-      }));
-    }
-  }
-  /** Called by the owning player for its D shortcut; the component installs no global key listener. */
-  toggle() {
-    void this.setEnabled(!this.preferences.enabled);
-  }
-  async setEnabled(enabled) {
-    if (!enabled) {
-      this.stop();
-      return;
-    }
-    if (this.preferences.mode === "text") {
-      if (!this.cues.length) {
-        this.status = this.copy.loading;
-        await this.loadTextDescriptions();
-      }
-      if (!this.cues.length) {
-        this.status = this.copy.textUnavailable;
-        return;
-      }
-      this.preferences = { ...this.preferences, enabled: true };
-      this.persist();
-      this.emitState();
-      this.status = this.activeText || this.copy.on;
-      return;
-    }
-    if (!this.src || !this.audio) {
-      this.status = this.copy.unavailable;
-      return;
-    }
-    this.bindPlayer();
-    this.wasPlaying = Boolean(this.media && !this.media.paused);
-    this.preferences = { ...this.preferences, enabled: true };
-    this.persist();
-    this.emitState();
-    const targetTime = Math.max(0, (this.media?.currentTime ?? 0) - this.offsetMs / 1e3);
-    this.audio.currentTime = targetTime;
-    this.audio.playbackRate = this.media?.playbackRate || 1;
-    if (this.extended && this.wasPlaying && this.media && !this.media.paused) {
-      this.pausingForExtended = true;
-      this.media.pause();
-    }
-    try {
-      await this.audio.play();
-      this.status = this.copy.playing;
-    } catch {
-      this.status = this.copy.playBlocked;
-    }
-  }
-  syncAudioToPlayer(time) {
-    if (!this.audio) return;
-    try {
-      this.audio.currentTime = Math.max(0, time - this.offsetMs / 1e3);
-    } catch {
-    }
-    this.audio.playbackRate = this.media?.playbackRate || 1;
-  }
-  stop(persist = true, updateStatus = true) {
-    this.audio?.pause();
-    const shouldResume = this.extended && this.wasPlaying;
-    this.wasPlaying = false;
-    if (persist) {
-      this.preferences = { ...this.preferences, enabled: false };
-      this.persist();
-      this.emitState();
-    }
-    if (shouldResume && this.media?.paused) void this.media.play().catch(() => void 0);
-    if (updateStatus) this.status = this.copy.stopped;
-  }
-  changeMode(mode) {
-    if (this.preferences.mode === mode) return;
-    const wasEnabled = this.preferences.enabled;
-    this.audio?.pause();
-    this.preferences = { ...this.preferences, mode, enabled: false };
-    this.persist();
-    this.emitState();
-    this.status = mode === "text" ? this.copy.loading : this.copy.off;
-    if (mode === "text") void this.loadTextDescriptions();
-    else if (wasEnabled) void this.setEnabled(true);
-  }
-  changeExtended(value) {
-    this.hasStoredExtended = true;
-    this.preferences = { ...this.preferences, extended: value };
-    this.persist();
-    if (value && this.preferences.enabled && this.audio && !this.audio.paused && this.media && !this.media.paused) {
-      this.wasPlaying = true;
-      this.pausingForExtended = true;
-      this.media.pause();
-    }
-  }
-  render() {
-    const t6 = this.copy;
-    const badge = this.preferences.enabled ? b2`<span class="ad-badge" role="status"><span aria-hidden="true">🔊</span> AD ON</span>` : b2`<span class="ad-badge ad-badge-off" aria-label=${t6.off}>AD OFF</span>`;
-    return b2`
-      <div class="controls" lang=${this.lang || "en"}>
-        ${badge}
-        <button
-          type="button"
-          aria-pressed=${String(this.preferences.enabled)}
-          aria-label=${this.preferences.enabled ? t6.on : t6.off}
-          @click=${() => this.toggle()}
-        >
-          ${this.preferences.enabled ? t6.on : t6.off}
-        </button>
-        <label>
-          ${t6.mode}
-          <select .value=${this.preferences.mode} @change=${(event) => this.changeMode(event.target.value)}>
-            <option value="audio">${t6.recorded}</option>
-            <option value="text">${t6.text}</option>
-          </select>
-        </label>
-        <button type="button" @click=${() => void this.setEnabled(true)}>${t6.play}</button>
-        <button type="button" @click=${() => this.stop()}>${t6.stop}</button>
-        <label>
-          <input
-            type="checkbox"
-            .checked=${this.extended}
-            @change=${(event) => this.changeExtended(event.target.checked)}
-          />
-          ${t6.extended}
-        </label>
-      </div>
-      ${this.src ? b2`<audio preload="metadata" src=${this.src} @ended=${this.handleDescriptionEnded} @error=${this.handleAudioError}></audio>` : A}
-      <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">${this.status}</p>
-      ${this.activeText ? b2`<p lang=${this.lang || "en"}>${this.activeText}</p>` : A}
-    `;
-  }
-};
-SavannaAudioDescription.styles = i`
-    :host {
-      display: block;
-      color: inherit;
-      font: 16px/1.5 system-ui, sans-serif;
-    }
-
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
-
-    button,
-    select {
-      min-height: 44px;
-      padding: 8px 12px;
-      border: 1px solid #72548a;
-      border-radius: 8px;
-      background: #fff;
-      color: #241b2b;
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    button:focus-visible,
-    select:focus-visible,
-    input:focus-visible {
-      outline: 3px solid #9a5b00;
-      outline-offset: 2px;
-    }
-
-    .ad-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      min-height: 28px;
-      padding: 3px 10px;
-      border-radius: 16px;
-      background: #176b2c;
-      color: #fff;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .ad-badge-off {
-      background: #4b5563;
-    }
-
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
-  `;
-__decorateClass([
-  n4()
-], SavannaAudioDescription.prototype, "src", 2);
-__decorateClass([
-  n4({ type: String, attribute: "text-vtt" })
-], SavannaAudioDescription.prototype, "textVtt", 2);
-__decorateClass([
-  n4({ type: Number, attribute: "offset-ms" })
-], SavannaAudioDescription.prototype, "offsetMs", 2);
-__decorateClass([
-  n4()
-], SavannaAudioDescription.prototype, "api", 2);
-__decorateClass([
-  n4({ attribute: "api-key" })
-], SavannaAudioDescription.prototype, "apiKey", 2);
-__decorateClass([
-  n4()
-], SavannaAudioDescription.prototype, "lang", 2);
-__decorateClass([
-  n4({ type: Boolean, attribute: "default-extended" })
-], SavannaAudioDescription.prototype, "defaultExtended", 2);
-__decorateClass([
-  r5()
-], SavannaAudioDescription.prototype, "preferences", 2);
-__decorateClass([
-  r5()
-], SavannaAudioDescription.prototype, "status", 2);
-__decorateClass([
-  r5()
-], SavannaAudioDescription.prototype, "cues", 2);
-__decorateClass([
-  r5()
-], SavannaAudioDescription.prototype, "activeText", 2);
-SavannaAudioDescription = __decorateClass([
-  t3("savanna-audio-description")
-], SavannaAudioDescription);
-
-// module/src/offline/offline-pack.ts
-function isRecord2(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function parsePackManifest(value, expectedId) {
-  if (!isRecord2(value) || value.id !== expectedId) throw new Error("The offline pack belongs to a different lesson.");
-  if (!Number.isSafeInteger(value.version) || value.version < 1) throw new Error("The offline pack version is invalid.");
-  if (!Number.isSafeInteger(value.sizeBytes) || value.sizeBytes < 0) throw new Error("The offline pack size is invalid.");
-  if (!Array.isArray(value.files)) throw new Error("The offline pack file list is missing.");
-  const paths = /* @__PURE__ */ new Set();
-  const files = value.files.map((file) => {
-    if (!isRecord2(file) || typeof file.path !== "string" || !file.path || file.path.includes("..") || file.path.startsWith("/") || file.path.includes("\\")) {
-      throw new Error("The offline pack contains an unsafe file path.");
-    }
-    const bytes = file.sizeBytes ?? file.bytes;
-    if (!Number.isSafeInteger(bytes) || bytes < 0) throw new Error(`The offline pack size for ${file.path} is invalid.`);
-    if (typeof file.sha256 !== "string" || !/^[a-f0-9]{64}$/i.test(file.sha256)) throw new Error(`The offline pack checksum for ${file.path} is invalid.`);
-    if (paths.has(file.path)) throw new Error(`The offline pack contains ${file.path} more than once.`);
-    paths.add(file.path);
-    return { path: file.path, sizeBytes: bytes, sha256: file.sha256.toLowerCase() };
-  });
-  if (files.reduce((sum, file) => sum + file.sizeBytes, 0) !== value.sizeBytes) {
-    throw new Error("The offline pack size does not match the sum of its files.");
-  }
-  return { id: expectedId, version: value.version, sizeBytes: value.sizeBytes, files };
-}
-function buildPackResources(manifest, pack, api, apiKey) {
-  const resources = [];
-  const apiBase = new URL(api, globalThis.location?.href ?? "http://localhost/");
-  const mediaUrl = (filePath) => {
-    const encodedPath = filePath.split("/").map((part) => encodeURIComponent(part)).join("/");
-    return new URL(`/media/${encodedPath}`, apiBase).href;
-  };
-  for (const file of pack.files) {
-    const name = file.path.split("/").pop().toLowerCase();
-    let url;
-    if (/^(lesson|lesson-audio)\.opus$/.test(name)) url = manifest.media.audio || mediaUrl(file.path);
-    else if (/^(en|captions-en)\.vtt$/.test(name)) url = manifest.captions.find((track) => track.lang === "en")?.url ?? mediaUrl(file.path);
-    else if (/^(am|captions-am)\.vtt$/.test(name)) url = manifest.captions.find((track) => track.lang === "am")?.url ?? mediaUrl(file.path);
-    else if (name === "ad.opus") url = manifest.audioDescription?.audioUrl ?? mediaUrl(file.path);
-    else if (name === "ad.vtt") url = manifest.audioDescription?.vttUrl ?? mediaUrl(file.path);
-    else if (/^sign\.(mp4|webm)$/.test(name)) url = manifest.sign?.url ?? mediaUrl(file.path);
-    else if (/^lesson-240p\.(mp4|webm)$/.test(name)) url = mediaUrl(file.path);
-    else if (name === "transcript.html") {
-      continue;
-    }
-    if (!url && manifest.sign && new URL(manifest.sign.url).pathname.split("/").pop()?.toLowerCase() === name) url = manifest.sign.url;
-    if (!url) throw new Error(`The offline pack file \u201C${file.path}\u201D is not declared in the lesson manifest.`);
-    resources.push({ url, expectedBytes: file.sizeBytes, expectedSha256: file.sha256 });
-  }
-  if (resources.length === 0) throw new Error("This lesson pack does not contain any downloadable resources.");
-  return resources;
-}
-
-// module/src/offline/register-service-worker.ts
-async function registerSavannaMediaWorker(url = "/media-sw.js") {
-  if (!("serviceWorker" in navigator) || !window.isSecureContext) return null;
-  try {
-    const existing = await navigator.serviceWorker.getRegistration(url);
-    if (!navigator.onLine && existing?.active) {
-      await navigator.serviceWorker.ready;
-      await cacheApplicationShell();
-      return existing;
-    }
-    const script = await fetch(url, { method: "HEAD", cache: "no-store" });
-    if (!script.ok || !script.headers.get("content-type")?.toLowerCase().includes("javascript"))
-      return null;
-    const registration = await navigator.serviceWorker.register(url, { scope: "/" });
-    await navigator.serviceWorker.ready;
-    await cacheApplicationShell();
-    if (navigator.storage?.persist) await navigator.storage.persist().catch(() => false);
-    return registration;
-  } catch {
-    return null;
-  }
-}
-async function cacheApplicationShell() {
-  const cache = await caches.open("savanna-media-v2-static");
-  const urls = /* @__PURE__ */ new Set([window.location.href]);
-  for (const element of document.querySelectorAll(
-    'script[src], link[rel="stylesheet"][href], link[rel="modulepreload"][href]'
-  )) {
-    const source = element instanceof HTMLScriptElement ? element.src : element.href;
-    if (source && new URL(source).origin === window.location.origin) urls.add(source);
-  }
-  for (const source of urls) {
-    const parsed = new URL(source);
-    if (parsed.pathname.startsWith("/v1/") || parsed.pathname.startsWith("/api/v1/")) continue;
-    try {
-      const response = await fetch(source, { credentials: "same-origin", cache: "no-store" });
-      if (response.ok) await cache.put(source, response);
-    } catch {
-    }
-  }
-}
-
-// module/src/offline/offline.ts
-var PREFERENCES_KEY2 = "savanna.prefs.v1";
-var CACHE_PREFIX2 = "savanna-pack-";
-var CHUNK_BYTES = 256 * 1024;
-var PACK_PATH = /^([A-Za-z0-9_-]{1,80})$/;
-function readOfflinePreferences() {
-  try {
-    const root = JSON.parse(localStorage.getItem(PREFERENCES_KEY2) || "{}");
-    const offline = root?.offline;
-    return {
-      savedLessons: Array.isArray(offline?.savedLessons) ? offline.savedLessons.filter((id) => typeof id === "string") : [],
-      partials: offline?.partials && typeof offline.partials === "object" && !Array.isArray(offline.partials) ? offline.partials : {}
-    };
-  } catch {
-    return { savedLessons: [], partials: {} };
-  }
-}
-function writeOfflinePreferences(value) {
-  try {
-    const root = JSON.parse(localStorage.getItem(PREFERENCES_KEY2) || "{}");
-    const preferences = root && typeof root === "object" && !Array.isArray(root) ? root : {};
-    preferences.offline = value;
-    localStorage.setItem(PREFERENCES_KEY2, JSON.stringify(preferences));
-  } catch {
-  }
-}
-function cacheName(lessonId, version) {
-  return `${CACHE_PREFIX2}${lessonId}-v${version}`;
-}
-function chunkRequest(lessonId, index, offset) {
-  const url = new URL(
-    `/__savanna_offline__/${encodeURIComponent(lessonId)}/${index}/${offset}`,
-    location.origin
-  );
-  return new Request(url.href);
-}
-function contentRange(value) {
-  const match = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(value || "");
-  if (!match) return null;
-  const start = Number(match[1]);
-  const end = Number(match[2]);
-  const total = Number(match[3]);
-  return Number.isSafeInteger(start) && Number.isSafeInteger(end) && Number.isSafeInteger(total) && start <= end && end < total ? { start, end, total } : null;
-}
-var SavannaOffline = class extends i4 {
-  constructor() {
-    super(...arguments);
-    this.api = "";
-    this.apiKey = "";
-    this.lessonId = "";
-    this.lang = "en";
-    this.manifest = null;
-    this.status = "Load a lesson pack to begin.";
-    this.busy = false;
-    this.progress = 0;
-    this.saved = false;
-    this.canResume = false;
-    this.lessonManifest = null;
-    this.generation = 0;
-    this.connectionGeneration = 0;
-    this.serviceWorkerReady = false;
-    this.refreshClick = () => {
-      void this.refresh();
-    };
-    this.saveClick = () => {
-      void this.save();
-    };
-    this.removeClick = () => {
-      void this.removeSavedCopy();
-    };
-  }
-  connectedCallback() {
-    super.connectedCallback();
-    this.refreshSavedState();
-    const connectionGeneration = ++this.connectionGeneration;
-    void registerSavannaMediaWorker().finally(() => {
-      if (!this.isConnected || connectionGeneration !== this.connectionGeneration) return;
-      this.serviceWorkerReady = true;
-      void this.refresh();
-    });
-  }
-  disconnectedCallback() {
-    this.connectionGeneration++;
-    this.serviceWorkerReady = false;
-    this.controller?.abort();
-    this.refreshController?.abort();
-    super.disconnectedCallback();
-  }
-  updated(changed) {
-    if (changed.has("api") || changed.has("apiKey") || changed.has("lessonId")) {
-      this.generation++;
-      this.refreshController?.abort();
-      this.manifest = null;
-      this.lessonManifest = null;
-      this.progress = 0;
-      this.refreshSavedState();
-      if (this.serviceWorkerReady && this.api && this.lessonId) void this.refresh();
-    }
-  }
-  refreshSavedState() {
-    const preferences = readOfflinePreferences();
-    this.saved = preferences.savedLessons.includes(this.lessonId);
-    this.canResume = Boolean(preferences.partials[this.lessonId]);
-  }
-  apiUrl(path) {
-    const base = new URL(this.api, document.baseURI);
-    if (base.protocol !== "https:" && base.protocol !== "http:")
-      throw new Error("The API URL must use HTTP or HTTPS.");
-    return new URL(path, base).href;
-  }
-  apiHeaders(url) {
-    return shouldSendApiKey(url, this.apiKey, this.api) ? { "X-Savanna-Key": this.apiKey } : {};
-  }
-  parsePackForLesson(lesson, value) {
-    const pack = parsePackManifest(value, lesson.id);
-    if (!lesson.pack || pack.sizeBytes !== lesson.pack.sizeBytes) {
-      throw new Error(
-        "The lesson and offline pack report different download sizes. Refresh the lesson data and try again."
-      );
-    }
-    return pack;
-  }
-  async refresh() {
-    if (!this.api || !this.lessonId || !PACK_PATH.test(this.lessonId)) {
-      this.status = "Enter a valid lesson id and API address to load offline options.";
-      return;
-    }
-    const generation = ++this.generation;
-    this.refreshController?.abort();
-    const controller = new AbortController();
-    this.refreshController = controller;
-    this.status = "Checking lesson and offline pack\u2026";
-    try {
-      const lessonUrl = this.apiUrl(`/v1/lessons/${encodeURIComponent(this.lessonId)}`);
-      let lesson;
-      let usedCachedManifest = false;
-      try {
-        const lessonResponse = await fetch(lessonUrl, {
-          headers: this.apiHeaders(lessonUrl),
-          signal: controller.signal
-        });
-        if (!lessonResponse.ok)
-          throw new Error(
-            lessonResponse.status === 404 ? "This lesson is not available." : `Lesson request failed (${lessonResponse.status}).`
-          );
-        lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
-      } catch (error) {
-        if (controller.signal.aborted) throw error;
-        const cached = localStorage.getItem(`savanna.cached_manifest.${this.lessonId}`);
-        if (!cached) throw error;
-        try {
-          lesson = parseLessonManifest(JSON.parse(cached), this.lessonId);
-          usedCachedManifest = true;
-        } catch {
-          throw error;
-        }
-      }
-      if (!lesson.pack) throw new Error("This lesson does not have an offline pack.");
-      const packUrl = new URL(lesson.pack.manifestUrl, this.apiUrl("/")).href;
-      const packResponse = await fetch(packUrl, {
-        headers: this.apiHeaders(packUrl),
-        signal: controller.signal
-      });
-      if (!packResponse.ok)
-        throw new Error(
-          packResponse.status === 404 ? "An offline pack has not been published for this lesson." : `Pack request failed (${packResponse.status}).`
-        );
-      const pack = this.parsePackForLesson(lesson, await packResponse.json());
-      if (generation !== this.generation) return;
-      this.lessonManifest = lesson;
-      this.manifest = pack;
-      this.refreshSavedState();
-      if (this.saved && typeof caches !== "undefined") {
-        const cache = await caches.open(cacheName(this.lessonId, pack.version));
-        const resources = buildPackResources(lesson, pack, this.api, this.apiKey);
-        const complete = await Promise.all(
-          resources.map(async (resource) => {
-            const response = await cache.match(resource.url);
-            if (!response) return false;
-            try {
-              await this.verifyResource(resource, await response.arrayBuffer());
-              return true;
-            } catch {
-              await cache.delete(resource.url);
-              return false;
-            }
-          })
-        );
-        if (!complete.every(Boolean)) {
-          const preferences = readOfflinePreferences();
-          preferences.savedLessons = preferences.savedLessons.filter((id) => id !== this.lessonId);
-          writeOfflinePreferences(preferences);
-          this.saved = false;
-        }
-      }
-      this.status = `${usedCachedManifest ? "Offline pack ready" : "Pack ready"} \xB7 ${this.formatSize(pack.sizeBytes)}${this.saved ? " \xB7 Saved offline" : this.canResume ? " \xB7 Download can resume" : ""}`;
-    } catch (error) {
-      if (controller.signal.aborted || generation !== this.generation) return;
-      this.manifest = null;
-      this.status = error instanceof Error ? error.message : "The offline pack could not be loaded.";
-    } finally {
-      if (this.refreshController === controller) this.refreshController = void 0;
-    }
-  }
-  formatSize(bytes) {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  }
-  async ensureStorage(requiredBytes) {
-    if (!navigator.storage?.estimate) return;
-    const estimate = await navigator.storage.estimate();
-    const remaining = (estimate.quota ?? Number.POSITIVE_INFINITY) - (estimate.usage ?? 0);
-    if (remaining < requiredBytes)
-      throw new Error(
-        "There is not enough device storage for this download. Free space and try again."
-      );
-  }
-  async verifyResource(resource, bytes) {
-    if (resource.expectedBytes !== void 0 && bytes.byteLength !== resource.expectedBytes) {
-      throw new Error(
-        `The downloaded file size does not match the offline pack for ${new URL(resource.url).pathname.split("/").pop()}.`
-      );
-    }
-    if (!globalThis.crypto?.subtle)
-      throw new Error(
-        "This browser cannot verify offline file checksums. Use a current browser over HTTPS or localhost."
-      );
-    const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
-    const actual = Array.from(
-      new Uint8Array(digest),
-      (value) => value.toString(16).padStart(2, "0")
-    ).join("");
-    if (actual !== resource.expectedSha256) {
-      throw new Error(
-        `The checksum for ${new URL(resource.url).pathname.split("/").pop()} does not match the offline pack. Its partial download was removed; try again.`
-      );
-    }
-  }
-  async discardPartial(cache, index, total) {
-    for (let offset = 0; offset < total; offset += CHUNK_BYTES) {
-      await cache.delete(chunkRequest(this.lessonId, index, offset));
-    }
-    const preferences = readOfflinePreferences();
-    delete preferences.partials[this.lessonId];
-    writeOfflinePreferences(preferences);
-    this.canResume = false;
-  }
-  async save() {
-    if (this.busy || !this.manifest) return;
-    if (typeof caches === "undefined") {
-      this.status = "Offline saving is unavailable in this browser. Open the lesson over HTTPS or localhost and enable site storage.";
-      return;
-    }
-    const lessonUrl = this.apiUrl(`/v1/lessons/${encodeURIComponent(this.lessonId)}`);
-    this.busy = true;
-    this.progress = 0;
-    this.controller = new AbortController();
-    const controller = this.controller;
-    const generation = this.generation;
-    try {
-      let lesson = this.lessonManifest;
-      if (!lesson) {
-        const lessonResponse = await fetch(lessonUrl, {
-          headers: this.apiHeaders(lessonUrl),
-          signal: controller.signal
-        });
-        if (!lessonResponse.ok)
-          throw new Error(`Lesson request failed (${lessonResponse.status}).`);
-        lesson = parseLessonManifest(await lessonResponse.json(), this.lessonId);
-      }
-      if (!lesson.pack) throw new Error("This lesson does not have an offline pack.");
-      const packUrl = new URL(lesson.pack.manifestUrl, this.apiUrl("/")).href;
-      const packResponse = await fetch(packUrl, {
-        headers: this.apiHeaders(packUrl),
-        signal: controller.signal
-      });
-      if (!packResponse.ok) throw new Error(`Pack request failed (${packResponse.status}).`);
-      const pack = this.parsePackForLesson(lesson, await packResponse.json());
-      if (generation !== this.generation) return;
-      const resources = buildPackResources(lesson, pack, this.api, this.apiKey);
-      const cache = await caches.open(cacheName(this.lessonId, pack.version));
-      const preferences = readOfflinePreferences();
-      const resourceEstimate = resources.reduce(
-        (sum, resource) => sum + (resource.expectedBytes ?? 0),
-        0
-      );
-      const totalExpected = Math.max(pack.sizeBytes, resourceEstimate);
-      let savedBefore = 0;
-      for (const resource of resources) {
-        let existing = await cache.match(resource.url);
-        if (existing) {
-          const bytes = await existing.arrayBuffer();
-          try {
-            await this.verifyResource(resource, bytes);
-          } catch {
-            await cache.delete(resource.url);
-            existing = void 0;
-          }
-          if (existing) savedBefore += bytes.byteLength;
-        }
-      }
-      for (let index = 0; index < resources.length; index++) {
-        const resource = resources[index];
-        if (await cache.match(resource.url)) {
-          this.progress = Math.round(Math.min(1, savedBefore / Math.max(1, totalExpected)) * 100);
-          continue;
-        }
-        const knownPartial = preferences.partials[this.lessonId]?.version === pack.version ? await this.readPartial(cache, index) : { offset: 0, total: 0, chunks: [] };
-        let offset = knownPartial.offset;
-        let total = knownPartial.total;
-        const chunks = knownPartial.chunks;
-        let savedWholeResponse = false;
-        while (!total || offset < total) {
-          const end = total ? Math.min(offset + CHUNK_BYTES - 1, total - 1) : offset + CHUNK_BYTES - 1;
-          const response = await fetch(resource.url, {
-            headers: { ...resource.headers, Range: `bytes=${offset}-${end}` },
-            signal: controller.signal
-          });
-          if (response.status !== 206) {
-            if (response.status === 200 && offset === 0) {
-              const responseSize = Number(response.headers.get("Content-Length")) || resource.expectedBytes || 0;
-              if (responseSize > CHUNK_BYTES) {
-                throw new Error(
-                  `The server does not support resumable byte ranges for ${new URL(resource.url).pathname.split("/").pop()}.`
-                );
-              }
-              const body = await response.arrayBuffer();
-              await this.verifyResource(resource, body);
-              await this.ensureStorage(body.byteLength);
-              await cache.put(
-                resource.url,
-                new Response(body, {
-                  headers: {
-                    "Content-Type": response.headers.get("Content-Type") || responseContentType(resource.url),
-                    "Content-Length": String(body.byteLength)
-                  }
-                })
-              );
-              savedBefore += body.byteLength;
-              this.progress = Math.round(
-                Math.min(99, savedBefore / Math.max(1, totalExpected) * 100)
-              );
-              savedWholeResponse = true;
-              break;
-            }
-            throw new Error(
-              `Download failed (${response.status}) for ${new URL(resource.url).pathname.split("/").pop()}.`
-            );
-          }
-          const range = contentRange(response.headers.get("Content-Range"));
-          if (!range || range.start !== offset || range.end > end || total && range.total !== total || resource.expectedBytes !== void 0 && range.total !== resource.expectedBytes) {
-            throw new Error(
-              "The server returned an invalid byte range. The download was paused safely."
-            );
-          }
-          await this.ensureStorage(range.end - range.start + 1);
-          total = range.total;
-          const bytes = await response.arrayBuffer();
-          if (bytes.byteLength !== range.end - range.start + 1)
-            throw new Error(
-              "The downloaded chunk was incomplete. Resume the download to continue."
-            );
-          await cache.put(
-            chunkRequest(this.lessonId, index, offset),
-            new Response(bytes, {
-              headers: {
-                "Content-Length": String(bytes.byteLength),
-                "X-Savanna-Total": String(total)
-              }
-            })
-          );
-          chunks.push(new Response(bytes));
-          offset = range.end + 1;
-          preferences.partials[this.lessonId] = {
-            version: pack.version,
-            bytes: savedBefore + offset
-          };
-          writeOfflinePreferences(preferences);
-          this.canResume = true;
-          this.progress = Math.round(
-            Math.min(99, (savedBefore + offset) / Math.max(1, totalExpected) * 100)
-          );
-          this.status = `Saving lesson resources \xB7 ${this.progress}%`;
-        }
-        if (savedWholeResponse) continue;
-        const blob = new Blob(await Promise.all(chunks.map((chunk) => chunk.blob())), {
-          type: responseContentType(resource.url)
-        });
-        try {
-          await this.verifyResource(resource, await blob.arrayBuffer());
-        } catch (error) {
-          await this.discardPartial(cache, index, total);
-          throw error;
-        }
-        await this.ensureStorage(blob.size);
-        await cache.put(
-          resource.url,
-          new Response(blob, {
-            headers: { "Content-Type": blob.type, "Content-Length": String(blob.size) }
-          })
-        );
-        for (let offset2 = 0; offset2 < total; offset2 += CHUNK_BYTES)
-          await cache.delete(chunkRequest(this.lessonId, index, offset2));
-        savedBefore += blob.size;
-        this.progress = Math.round(Math.min(99, savedBefore / Math.max(1, totalExpected) * 100));
-      }
-      preferences.savedLessons = [.../* @__PURE__ */ new Set([...preferences.savedLessons, this.lessonId])];
-      delete preferences.partials[this.lessonId];
-      writeOfflinePreferences(preferences);
-      this.saved = true;
-      this.canResume = false;
-      this.progress = 100;
-      this.status = `Saved offline \xB7 ${this.formatSize(savedBefore)}`;
-    } catch (error) {
-      if (controller.signal.aborted) {
-        this.status = "Download paused. Your completed chunks are saved; choose Resume to continue.";
-        this.canResume = true;
-      } else {
-        this.status = error instanceof Error ? error.message : "The offline download failed. Try again.";
-        this.canResume = Boolean(readOfflinePreferences().partials[this.lessonId]);
-      }
-    } finally {
-      if (this.controller === controller) this.controller = void 0;
-      this.busy = false;
-    }
-  }
-  async readPartial(cache, index) {
-    const chunks = [];
-    let offset = 0;
-    let total = 0;
-    while (true) {
-      const response = await cache.match(chunkRequest(this.lessonId, index, offset));
-      if (!response) break;
-      const bytes = await response.arrayBuffer();
-      if (bytes.byteLength === 0) break;
-      chunks.push(new Response(bytes));
-      offset += bytes.byteLength;
-      if (!total) total = Number(response.headers.get("X-Savanna-Total")) || 0;
-      if (total && offset >= total) break;
-    }
-    return { offset, total, chunks };
-  }
-  pause() {
-    this.controller?.abort();
-  }
-  async removeSavedCopy() {
-    if (this.busy) return;
-    const preferences = readOfflinePreferences();
-    const prefix = `${CACHE_PREFIX2}${this.lessonId}-`;
-    for (const key of await caches.keys()) if (key.startsWith(prefix)) await caches.delete(key);
-    preferences.savedLessons = preferences.savedLessons.filter((id) => id !== this.lessonId);
-    delete preferences.partials[this.lessonId];
-    writeOfflinePreferences(preferences);
-    this.saved = false;
-    this.canResume = false;
-    this.progress = 0;
-    this.status = "Offline copy deleted from this device.";
-  }
-  render() {
-    const size = this.manifest ? this.formatSize(this.manifest.sizeBytes) : "";
-    return b2`
-      <div class="row">
-        ${this.saved ? b2`<button type="button" @click=${this.removeClick} ?disabled=${this.busy}>
-                Delete offline copy
-              </button>` : b2`<button
-                type="button"
-                @click=${this.saveClick}
-                ?disabled=${this.busy || !this.manifest}
-              >
-                ${this.busy ? "Saving\u2026" : this.canResume ? "Resume download" : "Save for offline"}${size ? b2` <span class="size">(${size})</span>` : ""}
-              </button>`}
-        ${this.busy ? b2`<button type="button" @click=${this.pause} aria-label="Pause offline download">
-                Pause
-              </button>` : b2`<button
-                type="button"
-                @click=${this.refreshClick}
-                ?disabled=${!this.api || !this.lessonId}
-              >
-                Refresh
-              </button>`}
-      </div>
-      ${this.busy || this.progress > 0 ? b2`<div class="progress-container">
-              <progress
-                max="100"
-                .value=${this.progress}
-                aria-label=${`Offline download progress ${this.progress}%`}
-              ></progress>
-              <p class="progress-text">${this.progress}%</p>
-            </div>` : ""}
-      <p class="status" role="status" aria-live="polite" aria-atomic="true">${this.status}</p>
-    `;
-  }
-};
-SavannaOffline.styles = i`
-    :host {
-      display: block;
-      color: inherit;
-      font:
-        16px/1.5 system-ui,
-        sans-serif;
-    }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-    button {
-      min-height: 44px;
-      padding: 8px 14px;
-      border: 1px solid #594267;
-      border-radius: 8px;
-      background: #5b3477;
-      color: #fff;
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    button:hover:not(:disabled) {
-      background: #4a2a62;
-    }
-    button:focus-visible {
-      outline: 3px solid #e09b00;
-      outline-offset: 3px;
-    }
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-    progress {
-      width: min(100%, 360px);
-      height: 20px;
-    }
-    .progress-container {
-      margin: 12px 0;
-    }
-    .progress-text {
-      margin: 6px 0 0;
-    }
-    .size {
-      font-size: 0.875em;
-      opacity: 0.9;
-    }
-    .status {
-      margin: 0.75rem 0;
-      padding: 8px 10px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      background: #f8fafc;
-      color: #0f172a;
-      overflow-wrap: anywhere;
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        scroll-behavior: auto !important;
-        transition: none !important;
-      }
-    }
-  `;
-__decorateClass([
-  n4()
-], SavannaOffline.prototype, "api", 2);
-__decorateClass([
-  n4({ attribute: "api-key" })
-], SavannaOffline.prototype, "apiKey", 2);
-__decorateClass([
-  n4({ attribute: "lesson-id" })
-], SavannaOffline.prototype, "lessonId", 2);
-__decorateClass([
-  n4()
-], SavannaOffline.prototype, "lang", 2);
-__decorateClass([
-  r5()
-], SavannaOffline.prototype, "manifest", 2);
-__decorateClass([
-  r5()
-], SavannaOffline.prototype, "status", 2);
-__decorateClass([
-  r5()
-], SavannaOffline.prototype, "busy", 2);
-__decorateClass([
-  r5()
-], SavannaOffline.prototype, "progress", 2);
-__decorateClass([
-  r5()
-], SavannaOffline.prototype, "saved", 2);
-__decorateClass([
-  r5()
-], SavannaOffline.prototype, "canResume", 2);
-SavannaOffline = __decorateClass([
-  t3("savanna-offline")
-], SavannaOffline);
-function responseContentType(url) {
-  const path = new URL(url).pathname.toLowerCase();
-  if (path.endsWith(".vtt")) return "text/vtt";
-  if (path.endsWith(".opus")) return "audio/ogg";
-  if (path.endsWith(".webm")) return "video/webm";
-  if (path.endsWith(".mp4")) return "video/mp4";
-  if (path.includes("/transcript")) return "application/json";
-  return "application/octet-stream";
-}
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive-helpers.js
-var { I: t4 } = j;
-var r6 = (o8) => void 0 === o8.strings;
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive.js
-var t5 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
-var e6 = (t6) => (...e8) => ({ _$litDirective$: t6, values: e8 });
-var i5 = class {
-  constructor(t6) {
-  }
-  get _$AU() {
-    return this._$AM._$AU;
-  }
-  _$AT(t6, e8, i6) {
-    this._$Ct = t6, this._$AM = e8, this._$Ci = i6;
-  }
-  _$AS(t6, e8) {
-    return this.update(t6, e8);
-  }
-  update(t6, e8) {
-    return this.render(...e8);
-  }
-};
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/async-directive.js
-var s4 = (i6, t6) => {
-  const e8 = i6._$AN;
-  if (void 0 === e8) return false;
-  for (const i7 of e8) i7._$AO?.(t6, false), s4(i7, t6);
-  return true;
-};
-var o6 = (i6) => {
-  let t6, e8;
-  do {
-    if (void 0 === (t6 = i6._$AM)) break;
-    e8 = t6._$AN, e8.delete(i6), i6 = t6;
-  } while (0 === e8?.size);
-};
-var r7 = (i6) => {
-  for (let t6; t6 = i6._$AM; i6 = t6) {
-    let e8 = t6._$AN;
-    if (void 0 === e8) t6._$AN = e8 = /* @__PURE__ */ new Set();
-    else if (e8.has(i6)) break;
-    e8.add(i6), c4(t6);
-  }
-};
-function h3(i6) {
-  void 0 !== this._$AN ? (o6(this), this._$AM = i6, r7(this)) : this._$AM = i6;
-}
-function n5(i6, t6 = false, e8 = 0) {
-  const r8 = this._$AH, h5 = this._$AN;
-  if (void 0 !== h5 && 0 !== h5.size) if (t6) if (Array.isArray(r8)) for (let i7 = e8; i7 < r8.length; i7++) s4(r8[i7], false), o6(r8[i7]);
-  else null != r8 && (s4(r8, false), o6(r8));
-  else s4(this, i6);
-}
-var c4 = (i6) => {
-  i6.type == t5.CHILD && (i6._$AP ??= n5, i6._$AQ ??= h3);
-};
-var f3 = class extends i5 {
-  constructor() {
-    super(...arguments), this._$AN = void 0;
-  }
-  _$AT(i6, t6, e8) {
-    super._$AT(i6, t6, e8), r7(this), this.isConnected = i6._$AU;
-  }
-  _$AO(i6, t6 = true) {
-    i6 !== this.isConnected && (this.isConnected = i6, i6 ? this.reconnected?.() : this.disconnected?.()), t6 && (s4(this, i6), o6(this));
-  }
-  setValue(t6) {
-    if (r6(this._$Ct)) this._$Ct._$AI(t6, this);
-    else {
-      const i6 = [...this._$Ct._$AH];
-      i6[this._$Ci] = t6, this._$Ct._$AI(i6, this, 0);
-    }
-  }
-  disconnected() {
-  }
-  reconnected() {
-  }
-};
-
-// ../../../../../../../Downloads/savanna-access-kit/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/ref.js
-var e7 = () => new h4();
-var h4 = class {
-};
-var o7 = /* @__PURE__ */ new WeakMap();
-var n6 = e6(class extends f3 {
-  render(i6) {
-    return A;
-  }
-  update(i6, [s5]) {
-    const e8 = s5 !== this.G;
-    return e8 && this.rt(void 0), (e8 || this.lt !== this.ct) && (this.G = s5, this.ht = i6.options?.host, this.rt(this.ct = i6.element)), A;
-  }
-  rt(t6) {
-    if (void 0 !== this.G) if (this.isConnected || (t6 = void 0), "function" == typeof this.G) {
-      const i6 = this.ht ?? globalThis;
-      let s5 = o7.get(i6);
-      void 0 === s5 && (s5 = /* @__PURE__ */ new WeakMap(), o7.set(i6, s5)), void 0 !== s5.get(this.G) && this.G.call(this.ht, void 0), s5.set(this.G, t6), void 0 !== t6 && this.G.call(this.ht, t6);
-    } else this.G.value = t6;
-  }
-  get lt() {
-    return "function" == typeof this.G ? o7.get(this.ht ?? globalThis)?.get(this.G) : this.G?.value;
-  }
-  disconnected() {
-    this.lt === this.ct && this.rt(void 0);
-  }
-  reconnected() {
-    this.rt(this.ct);
-  }
-});
-
-// module/src/job-card/i18n/am.json
-var am_default2 = {
-  "job.loading": "\u1235\u122B\u12CD \u12A5\u12E8\u1270\u132B\u1290 \u1290\u12CD",
-  "job.error": "\u12ED\u1205\u1295 \u1235\u122B \u1218\u132B\u1295 \u12A0\u120D\u1270\u127B\u1208\u121D\u1362",
-  "job.retry": "\u12A5\u1295\u12F0\u1308\u1293 \u121E\u12AD\u122D",
-  "job.employer": "\u12A0\u1230\u122A",
-  "job.location": "\u1266\u1273",
-  "job.employment": "\u12E8\u1225\u122B \u12D3\u12ED\u1290\u1275",
-  "job.pay": "\u12AD\u134D\u12EB",
-  "job.deadline": "\u12E8\u1218\u1328\u1228\u123B \u1240\u1295",
-  "job.remote": "\u12A8\u122D\u1240\u1275 \u1270\u1235\u121B\u121A",
-  "job.requirements": "\u12CB\u1293 \u1218\u1235\u1348\u122D\u1276\u127D",
-  "job.apply": "\u1208\u12DA\u1205 \u1235\u122B \u12EB\u1218\u120D\u12AD\u1271",
-  "job.playAudio": "\u12E8\u12F5\u121D\u133D \u121B\u1320\u1243\u1208\u12EB \u12A0\u132B\u12CD\u1275",
-  "job.stopAudio": "\u12E8\u12F5\u121D\u133D \u121B\u1320\u1243\u1208\u12EB \u12A0\u1241\u121D",
-  "job.transcript": "\u12E8\u12F5\u121D\u133D \u121B\u1320\u1243\u1208\u12EB \u133D\u1211\u134D",
-  "job.audioPlaying": "\u12E8\u12F5\u121D\u133D \u121B\u1320\u1243\u1208\u12EB \u12A5\u12E8\u1270\u132B\u12C8\u1270 \u1290\u12CD",
-  "job.audioStopped": "\u12E8\u12F5\u121D\u133D \u121B\u1320\u1243\u1208\u12EB \u1246\u121F\u120D"
-};
-
-// module/src/job-card/i18n/en.json
-var en_default2 = {
-  "job.loading": "Loading job",
-  "job.error": "We could not load this job.",
-  "job.retry": "Try again",
-  "job.employer": "Employer",
-  "job.location": "Location",
-  "job.employment": "Employment type",
-  "job.pay": "Pay",
-  "job.deadline": "Apply by",
-  "job.remote": "Remote-friendly",
-  "job.requirements": "Key requirements",
-  "job.apply": "Apply for this job",
-  "job.playAudio": "Play audio summary",
-  "job.stopAudio": "Stop audio summary",
-  "job.transcript": "Audio summary transcript",
-  "job.audioPlaying": "Playing audio summary",
-  "job.audioStopped": "Audio summary stopped"
-};
-
-// module/src/job-card/prefs.ts
-var KEY2 = "savanna.prefs.v1";
-function readJobsPrefs() {
-  try {
-    const raw = localStorage.getItem(KEY2);
-    if (!raw) return {};
-    const all = JSON.parse(raw);
-    return all.jobs ?? {};
-  } catch {
-    return {};
-  }
-}
-function writeJobsPrefs(patch) {
-  try {
-    const raw = localStorage.getItem(KEY2);
-    const all = raw ? JSON.parse(raw) : {};
-    const jobs = { ...all.jobs ?? {}, ...patch };
-    localStorage.setItem(KEY2, JSON.stringify({ ...all, jobs }));
-  } catch {
-  }
-}
-function resolveLang(el, attr) {
-  const value = (attr || el.lang || document.documentElement.lang || "am").slice(0, 2);
-  return value === "am" ? "am" : "en";
-}
-
-// module/src/job-card/job-card.ts
-var SavannaJobCard = class extends i4 {
-  constructor() {
-    super(...arguments);
-    this.job = "";
-    this.api = "";
-    this.apiKey = "";
-    this.lang = "";
-    this.data = null;
-    this.error = false;
-    this.playing = false;
-    this.live = "";
-    this.audioRef = e7();
-    this.hasLoaded = false;
-    this.onLang = (ev) => {
-      const lang = ev.detail?.lang;
-      if (lang) this.lang = lang;
-    };
-    this.onEnded = () => {
-      this.playing = false;
-      this.live = this.t("job.audioStopped");
-    };
-  }
-  connectedCallback() {
-    super.connectedCallback();
-    window.addEventListener("savanna:lang-change", this.onLang);
-    if (this.hasLoaded) void this.load();
-  }
-  disconnectedCallback() {
-    window.removeEventListener("savanna:lang-change", this.onLang);
-    this.request?.abort();
-    this.audioRef.value?.pause();
-    super.disconnectedCallback();
-  }
-  updated(changed) {
-    if (changed.has("lang")) this.injectJsonLd();
-    if (!this.hasLoaded || changed.has("job") || changed.has("api") || changed.has("apiKey")) {
-      this.hasLoaded = true;
-      void this.load();
-    }
-  }
-  t(key) {
-    const pack = this.activeLang() === "am" ? am_default2 : en_default2;
-    return pack[key];
-  }
-  activeLang() {
-    return resolveLang(this, this.lang);
-  }
-  /** Prefer the bilingual `i18n` value; fall back to the flat (server) field. */
-  localized(key) {
-    return this.data?.i18n?.[key]?.[this.activeLang()] ?? null;
-  }
-  employmentType() {
-    const type = this.data?.employmentType ?? "FULL_TIME";
-    const labels = {
-      FULL_TIME: { en: "Full-time", am: "\u1219\u1209 \u130A\u12DC" },
-      PART_TIME: { en: "Part-time", am: "\u12E8\u1275\u122D\u134D \u130A\u12DC" },
-      CONTRACT: { en: "Contract", am: "\u12CD\u120D" },
-      TEMPORARY: { en: "Temporary", am: "\u130A\u12DC\u12EB\u12CA" },
-      INTERN: { en: "Internship", am: "\u120D\u121D\u121D\u12F5" }
-    };
-    return labels[type]?.[this.activeLang()] ?? type.replaceAll("_", " ");
-  }
-  apiRoot() {
-    return (this.api || "").replace(/\/$/, "");
-  }
-  async load() {
-    this.request?.abort();
-    const request = new AbortController();
-    this.request = request;
-    this.error = false;
-    this.data = null;
-    if (!this.job) return;
-    try {
-      const url = `${this.apiRoot()}/v1/jobs/${encodeURIComponent(this.job)}`;
-      const res = await fetch(url, {
-        headers: { "X-Savanna-Key": this.apiKey },
-        signal: request.signal
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      this.data = await res.json();
-      writeJobsPrefs({ lastJobId: this.job });
-      this.injectJsonLd();
-      this.dispatchEvent(
-        new CustomEvent("savanna:ready", {
-          bubbles: true,
-          composed: true,
-          detail: { job: this.job }
-        })
-      );
-    } catch (error) {
-      if (request.signal.aborted) return;
-      this.error = true;
-      this.dispatchEvent(
-        new CustomEvent("savanna:error", {
-          bubbles: true,
-          composed: true,
-          detail: {
-            job: this.job,
-            message: error instanceof Error ? error.message : "Unable to load job"
-          }
-        })
-      );
-    }
-  }
-  injectJsonLd() {
-    const existing = this.querySelector('script[data-savanna="jobposting"]');
-    existing?.remove();
-    if (!this.data) return;
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.dataset.savanna = "jobposting";
-    const job = this.data;
-    script.textContent = JSON.stringify({
-      "@context": "https://schema.org/",
-      "@type": "JobPosting",
-      identifier: job.id,
-      title: this.localized("title") ?? job.title,
-      description: job.description[this.activeLang()],
-      validThrough: job.validThrough,
-      employmentType: "FULL_TIME",
-      hiringOrganization: { "@type": "Organization", name: this.localized("employer") ?? job.employer },
-      jobLocationType: job.remote ? "TELECOMMUTE" : "ON_SITE",
-      jobLocation: { "@type": "Place", name: this.localized("location") ?? job.location }
-    });
-    this.appendChild(script);
-  }
-  audio() {
-    const lang = this.activeLang();
-    const block = this.data?.audioSummary[lang];
-    const root = this.apiRoot();
-    const url = block?.url?.startsWith("http") ? block.url : `${root}${block?.url ?? ""}`;
-    return { url, transcript: block?.transcript ?? "" };
-  }
-  toggleAudio() {
-    const audioEl = this.audioRef.value;
-    if (!audioEl) return;
-    if (this.playing) {
-      audioEl.pause();
-      audioEl.currentTime = 0;
-      this.playing = false;
-      this.live = this.t("job.audioStopped");
-      return;
-    }
-    void audioEl.play();
-    this.playing = true;
-    this.live = this.t("job.audioPlaying");
-  }
-  applyHref() {
-    if (!this.data) return "#";
-    const apply = this.data.applyUrl;
-    if (apply.startsWith("http")) return apply;
-    const href = `${this.apiRoot()}${apply.startsWith("/") ? "" : "/"}${apply}`;
-    if (!apply.startsWith("/apply/")) return href;
-    return `${href}${apply.includes("?") ? "&" : "?"}lang=${this.activeLang()}`;
-  }
-  formatDate(iso) {
-    if (!iso) return "\u2014";
-    const locale = this.activeLang() === "am" ? "am-ET-u-ca-ethiopic" : "en-GB";
-    return new Intl.DateTimeFormat(locale, {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      timeZone: "UTC"
-    }).format(new Date(iso));
-  }
-  render() {
-    if (this.error) {
-      return b2`<div class="wrap">
-        <p>${this.t("job.error")}</p>
-        <button type="button" @click=${() => this.load()}>${this.t("job.retry")}</button>
-      </div>`;
-    }
-    if (!this.data) {
-      return b2`<p>${this.t("job.loading")}</p>`;
-    }
-    const lang = this.activeLang();
-    const desc = this.data.description[lang];
-    const title = this.localized("title") ?? this.data.title;
-    const employer = this.localized("employer") ?? this.data.employer;
-    const location2 = this.localized("location") ?? this.data.location;
-    const payText = this.localized("payText") ?? this.data.payText;
-    const employment = this.employmentType();
-    const reqs = this.data.description.requirements?.[lang] ?? [];
-    const audio = this.audio();
-    const prefs = readJobsPrefs();
-    return b2`
-      <div class="wrap">
-        <article lang=${lang}>
-          <h2>${title}</h2>
-          <p>${desc}</p>
-          <dl>
-            <dt>${this.t("job.employer")}</dt>
-            <dd>${employer}</dd>
-            <dt>${this.t("job.location")}</dt>
-            <dd>
-              ${location2}${this.data.remote ? ` (${this.t("job.remote")})` : A}
-            </dd>
-            <dt>${this.t("job.employment")}</dt>
-            <dd>${employment}</dd>
-            ${payText ? b2`<dt>${this.t("job.pay")}</dt>
-                    <dd>${payText}</dd>` : A}
-            <dt>${this.t("job.deadline")}</dt>
-            <dd>${this.formatDate(this.data.validThrough)}</dd>
-          </dl>
-          ${reqs.length ? b2`<h3>${this.t("job.requirements")}</h3>
-                  <ul>
-                    ${reqs.map((item) => b2`<li>${item}</li>`)}
-                  </ul>` : A}
-          <div class="row">
-            <button
-              type="button"
-              @click=${() => this.toggleAudio()}
-              aria-pressed=${this.playing ? "true" : "false"}
-            >
-              ${this.playing ? this.t("job.stopAudio") : this.t("job.playAudio")}
-            </button>
-            <a class="action" href=${this.applyHref()}>${this.t("job.apply")}</a>
-          </div>
-          <audio
-            ${n6(this.audioRef)}
-            src=${audio.url}
-            preload="none"
-            @ended=${this.onEnded}
-          ></audio>
-          <details
-            ?open=${prefs.transcriptOpen !== false}
-            @toggle=${(ev) => writeJobsPrefs({ transcriptOpen: ev.target.open })}
-          >
-            <summary>${this.t("job.transcript")}</summary>
-            <p class="transcript">${audio.transcript}</p>
-          </details>
-        </article>
-        <div role="status" aria-live="polite">${this.live}</div>
-      </div>
-    `;
-  }
-};
-SavannaJobCard.styles = i`
-    :host {
-      display: block;
-      color: #111;
-      font-family: var(--savanna-font, "Noto Sans Ethiopic", Nyala, "Segoe UI", system-ui, sans-serif);
-      --_accent: var(--savanna-accent, #0b5cab);
-      --_radius: var(--savanna-radius, 0.5rem);
-      --_focus: var(--savanna-focus, #0b5cab);
-      max-width: 100%;
-    }
-    article {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      padding: 1rem;
-      border: 2px solid #222;
-      border-radius: var(--_radius);
-      background: #fff;
-    }
-    h2 {
-      margin: 0;
-      font-size: 1.25rem;
-      line-height: 1.3;
-      overflow-wrap: anywhere;
-    }
-    dl {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0.35rem;
-      margin: 0;
-    }
-    dt {
-      font-weight: 700;
-    }
-    dd {
-      margin: 0 0 0.5rem;
-      overflow-wrap: anywhere;
-    }
-    ul {
-      margin: 0;
-      padding-inline-start: 1.2rem;
-    }
-    button,
-    a.action {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 44px;
-      min-width: 44px;
-      padding: 0.5rem 1rem;
-      margin: 0 0.5rem 0.5rem 0;
-      font: inherit;
-      color: #fff;
-      background: var(--_accent);
-      border: 0;
-      border-radius: var(--_radius);
-      text-decoration: none;
-      cursor: pointer;
-    }
-    button[aria-pressed="true"] {
-      background: #111;
-    }
-    button:focus-visible,
-    a:focus-visible {
-      outline: 3px solid var(--_focus);
-      outline-offset: 3px;
-    }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: stretch;
-    }
-    audio {
-      display: none;
-    }
-    summary {
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-    }
-    .transcript {
-      margin: 0;
-      padding: 0.75rem;
-      background: #f4f4f4;
-      border-left: 4px solid var(--_accent);
-      overflow-wrap: anywhere;
-    }
-    [role="status"] {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
-    }
-    .wrap {
-      position: relative;
-    }
-    @media (forced-colors: active) {
-      article {
-        border: 2px solid ButtonText;
-      }
-      button,
-      a.action {
-        border: 2px solid ButtonText;
-      }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        transition: none !important;
-      }
-    }
-  `;
-__decorateClass([
-  n4({ type: String })
-], SavannaJobCard.prototype, "job", 2);
-__decorateClass([
-  n4({ type: String })
-], SavannaJobCard.prototype, "api", 2);
-__decorateClass([
-  n4({ attribute: "api-key" })
-], SavannaJobCard.prototype, "apiKey", 2);
-__decorateClass([
-  n4({ type: String })
-], SavannaJobCard.prototype, "lang", 2);
-__decorateClass([
-  r5()
-], SavannaJobCard.prototype, "data", 2);
-__decorateClass([
-  r5()
-], SavannaJobCard.prototype, "error", 2);
-__decorateClass([
-  r5()
-], SavannaJobCard.prototype, "playing", 2);
-__decorateClass([
-  r5()
-], SavannaJobCard.prototype, "live", 2);
-SavannaJobCard = __decorateClass([
-  t3("savanna-job-card")
-], SavannaJobCard);
-
-// module/src/credential/i18n/am.json
-var am_default3 = {
-  "cred.loading": "\u12E8\u121D\u1235\u12AD\u122D \u12C8\u1228\u1240\u1271 \u12A5\u12E8\u1270\u132B\u1290 \u1290\u12CD",
-  "cred.error": "\u12ED\u1205\u1295 \u12E8\u121D\u1235\u12AD\u122D \u12C8\u1228\u1240\u1275 \u1218\u132B\u1295 \u12A0\u120D\u1270\u127B\u1208\u121D\u1362",
-  "cred.retry": "\u12A5\u1295\u12F0\u1308\u1293 \u121E\u12AD\u122D",
-  "cred.heading": "\u12E8\u121D\u1235\u12AD\u122D \u12C8\u1228\u1240\u1275",
-  "cred.recipient": "\u1270\u1240\u1263\u12ED",
-  "cred.privateRecipient": "\u1235\u1219 \u1260\u130D\u120D \u1270\u1320\u1265\u124B\u120D",
-  "cred.issuer": "\u1230\u132A",
-  "cred.status": "\u1201\u1294\u1273",
-  "cred.valid": "\u1275\u12AD\u12AD\u120D",
-  "cred.revoked": "\u1270\u1230\u122D\u12DF\u120D",
-  "cred.expired": "\u130A\u12DC\u12CD \u12A0\u120D\u134F\u120D",
-  "cred.issued": "\u12E8\u1270\u1230\u1320\u1260\u1275 \u1240\u1295",
-  "cred.copy": "\u12E8\u121B\u1228\u130B\u1308\u132B \u12A0\u1308\u1293\u129D \u1245\u12F3",
-  "cred.copied": "\u12A0\u1308\u1293\u1299 \u1270\u1240\u12F5\u1277\u120D",
-  "cred.linkedin": "\u12C8\u12F0 \u120A\u1295\u12AD\u12F5\u12A2\u1295 \u1328\u121D\u122D",
-  "cred.pdf": "\u121D\u1235\u12AD\u122D \u12C8\u1228\u1240\u1271\u1295 \u12A0\u12CD\u122D\u12F5",
-  "cred.verify": "\u12E8\u1215\u12DD\u1265 \u121B\u1228\u130B\u1308\u132B \u1308\u133D \u12AD\u1348\u1275"
-};
-
-// module/src/credential/i18n/en.json
-var en_default3 = {
-  "cred.loading": "Loading credential",
-  "cred.error": "We could not load this certificate.",
-  "cred.retry": "Try again",
-  "cred.heading": "Certificate",
-  "cred.recipient": "Recipient",
-  "cred.privateRecipient": "Name withheld for privacy",
-  "cred.issuer": "Issuer",
-  "cred.status": "Status",
-  "cred.valid": "Valid",
-  "cred.revoked": "Revoked",
-  "cred.expired": "Expired",
-  "cred.issued": "Issued",
-  "cred.copy": "Copy verification link",
-  "cred.copied": "Link copied",
-  "cred.linkedin": "Add to LinkedIn",
-  "cred.pdf": "Download PDF certificate",
-  "cred.verify": "Open public verify page"
-};
-
-// module/src/credential/prefs.ts
-function resolveLang2(el, attr) {
-  const value = (attr || el.lang || document.documentElement.lang || "en").slice(0, 2);
-  return value === "am" ? "am" : "en";
-}
-
-// module/src/credential/credential.ts
-var SavannaCredential = class extends i4 {
-  constructor() {
-    super(...arguments);
-    this.api = "";
-    this.apiKey = "";
-    this.lang = "";
-    this.credentialAttribute = "";
-    this.credential = "";
-    this.data = null;
-    this.error = false;
-    this.live = "";
-    this.hasLoaded = false;
-    this.onLang = (ev) => {
-      const lang = ev.detail?.lang;
-      if (lang) this.lang = lang;
-    };
-  }
-  connectedCallback() {
-    super.connectedCallback();
-    window.addEventListener("savanna:lang-change", this.onLang);
-    if (this.hasLoaded) void this.load();
-  }
-  disconnectedCallback() {
-    window.removeEventListener("savanna:lang-change", this.onLang);
-    this.request?.abort();
-    super.disconnectedCallback();
-  }
-  updated(changed) {
-    if (!this.hasLoaded || changed.has("credentialAttribute") || changed.has("credential") || changed.has("api") || changed.has("apiKey")) {
-      this.hasLoaded = true;
-      void this.load();
-    }
-  }
-  t(key) {
-    const pack = this.activeLang() === "am" ? am_default3 : en_default3;
-    return pack[key];
-  }
-  activeLang() {
-    return resolveLang2(this, this.lang);
-  }
-  /** Prefer the bilingual `i18n` value; fall back to the badge's flat name. */
-  achievementName() {
-    return this.data?.i18n?.achievement?.[this.activeLang()] ?? this.data?.credentialSubject?.achievement?.name ?? this.data?.name ?? "";
-  }
-  recipientName() {
-    return this.data?.i18n?.recipientName?.[this.activeLang()] ?? this.data?.credentialSubject?.name ?? this.t("cred.privateRecipient");
-  }
-  issuerName() {
-    return this.data?.i18n?.issuerName?.[this.activeLang()] ?? this.data?.issuer?.name ?? "";
-  }
-  apiRoot() {
-    return (this.api || "").replace(/\/$/, "");
-  }
-  credentialId() {
-    return this.credentialAttribute || this.credential || this.id;
-  }
-  verifyUrl() {
-    return `${this.apiRoot()}/verify/${encodeURIComponent(this.credentialId())}`;
-  }
-  async load() {
-    this.request?.abort();
-    const request = new AbortController();
-    this.request = request;
-    this.error = false;
-    this.data = null;
-    const id = this.credentialId();
-    if (!id) return;
-    try {
-      const res = await fetch(`${this.apiRoot()}/v1/credentials/${encodeURIComponent(id)}`, {
-        headers: {
-          "X-Savanna-Key": this.apiKey,
-          Accept: "application/ld+json"
-        },
-        signal: request.signal
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      this.data = await res.json();
-      this.dispatchEvent(
-        new CustomEvent("savanna:ready", {
-          bubbles: true,
-          composed: true,
-          detail: { credential: id }
-        })
-      );
-    } catch (error) {
-      if (request.signal.aborted) return;
-      this.error = true;
-      this.dispatchEvent(
-        new CustomEvent("savanna:error", {
-          bubbles: true,
-          composed: true,
-          detail: {
-            credential: id,
-            message: error instanceof Error ? error.message : "Unable to load credential"
-          }
-        })
-      );
-    }
-  }
-  statusKey() {
-    const status = this.data?.credentialStatus?.status ?? "valid";
-    if (status === "revoked") return "cred.revoked";
-    if (status === "expired") return "cred.expired";
-    return "cred.valid";
-  }
-  async copy() {
-    try {
-      await navigator.clipboard.writeText(this.verifyUrl());
-      this.live = this.t("cred.copied");
-    } catch {
-      this.live = this.verifyUrl();
-    }
-  }
-  linkedInHref() {
-    const name = this.achievementName() || "Savanna credential";
-    const year = this.data?.validFrom ? new Date(this.data.validFrom).getFullYear() : (/* @__PURE__ */ new Date()).getFullYear();
-    const month = this.data?.validFrom ? new Date(this.data.validFrom).getMonth() + 1 : 1;
-    const params = new URLSearchParams({
-      startTask: "CERTIFICATION_NAME",
-      name,
-      organizationName: this.activeLang() === "am" ? "\u12E8\u1233\u126B\u1293 \u1270\u12F0\u122B\u123D\u1290\u1275 \u12AA\u1275" : "Savanna Access Kit",
-      issueYear: String(year),
-      issueMonth: String(month),
-      certUrl: this.verifyUrl()
-    });
-    return `https://www.linkedin.com/profile/add?${params.toString()}`;
-  }
-  render() {
-    if (this.error) {
-      return b2`<p>${this.t("cred.error")}</p>
-        <button type="button" @click=${() => this.load()}>${this.t("cred.retry")}</button>`;
-    }
-    if (!this.data) return b2`<p>${this.t("cred.loading")}</p>`;
-    const lang = this.activeLang();
-    const achievement = this.achievementName() || "Credential";
-    const recipient = this.recipientName();
-    const issuer = this.issuerName();
-    const issued = this.data.validFrom ? new Intl.DateTimeFormat(lang === "am" ? "am-ET-u-ca-ethiopic" : "en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      timeZone: "UTC"
-    }).format(new Date(this.data.validFrom)) : "";
-    return b2`
-      <article lang=${lang}>
-        <h2>${this.t("cred.heading")}${lang === "am" ? "\u1366" : ":"} ${achievement}</h2>
-        <p>${this.t("cred.recipient")}: ${recipient}</p>
-        <p>${this.t("cred.issuer")}: ${issuer}</p>
-        <p>${this.t("cred.status")}: ${this.t(this.statusKey())}</p>
-        <p>${this.t("cred.issued")}: ${issued}</p>
-        <div class="row">
-          <button type="button" @click=${() => this.copy()}>${this.t("cred.copy")}</button>
-          <a class="action" href=${this.linkedInHref()} rel="noopener noreferrer" target="_blank"
-            >${this.t("cred.linkedin")}</a
-          >
-          <a class="action" href=${this.verifyUrl()}>${this.t("cred.verify")}</a>
-          <a
-            class="action"
-            href=${`${this.apiRoot()}/verify/${encodeURIComponent(this.credentialId())}/pdf?lang=${lang}`}
-            >${this.t("cred.pdf")}</a
-          >
-        </div>
-        <p role="status" aria-live="polite">${this.live}</p>
-      </article>
-    `;
-  }
-};
-SavannaCredential.styles = i`
-    :host {
-      display: block;
-      font-family: var(--savanna-font, "Noto Sans Ethiopic", Nyala, "Segoe UI", system-ui, sans-serif);
-      --_accent: var(--savanna-accent, #0b5cab);
-      --_radius: var(--savanna-radius, 0.5rem);
-      --_focus: var(--savanna-focus, #0b5cab);
-      color: #111;
-      max-width: 100%;
-    }
-    article {
-      padding: 1rem;
-      border: 2px solid #222;
-      border-radius: var(--_radius);
-      background: #fff;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    h2 {
-      margin: 0;
-      font-size: 1.25rem;
-      overflow-wrap: anywhere;
-    }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-    }
-    button,
-    a.action {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 44px;
-      min-width: 44px;
-      padding: 0.5rem 1rem;
-      margin: 0 0.5rem 0.5rem 0;
-      font: inherit;
-      color: #fff;
-      background: var(--_accent);
-      border: 0;
-      border-radius: var(--_radius);
-      text-decoration: none;
-      cursor: pointer;
-    }
-    button:focus-visible,
-    a:focus-visible {
-      outline: 3px solid var(--_focus);
-      outline-offset: 3px;
-    }
-    [role="status"] {
-      min-height: 1.5rem;
-    }
-    @media (forced-colors: active) {
-      article {
-        border: 2px solid ButtonText;
-      }
-    }
-  `;
-__decorateClass([
-  n4({ type: String })
-], SavannaCredential.prototype, "api", 2);
-__decorateClass([
-  n4({ attribute: "api-key" })
-], SavannaCredential.prototype, "apiKey", 2);
-__decorateClass([
-  n4({ type: String })
-], SavannaCredential.prototype, "lang", 2);
-__decorateClass([
-  n4({ attribute: "id" })
-], SavannaCredential.prototype, "credentialAttribute", 2);
-__decorateClass([
-  n4({ attribute: "credential" })
-], SavannaCredential.prototype, "credential", 2);
-__decorateClass([
-  r5()
-], SavannaCredential.prototype, "data", 2);
-__decorateClass([
-  r5()
-], SavannaCredential.prototype, "error", 2);
-__decorateClass([
-  r5()
-], SavannaCredential.prototype, "live", 2);
-SavannaCredential = __decorateClass([
-  t3("savanna-credential")
-], SavannaCredential);
-export {
-  SavannaAudioDescription,
-  SavannaCredential,
-  SavannaJobCard,
-  SavannaOffline,
-  SavannaPlayer,
-  SavannaSignWindow
-};
-/*! Bundled license information:
-
-@lit/reactive-element/css-tag.js:
-  (**
-   * @license
-   * Copyright 2019 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-@lit/reactive-element/reactive-element.js:
-lit-html/lit-html.js:
-lit-element/lit-element.js:
-@lit/reactive-element/decorators/custom-element.js:
-@lit/reactive-element/decorators/property.js:
-@lit/reactive-element/decorators/state.js:
-@lit/reactive-element/decorators/event-options.js:
-@lit/reactive-element/decorators/base.js:
-@lit/reactive-element/decorators/query.js:
-@lit/reactive-element/decorators/query-all.js:
-@lit/reactive-element/decorators/query-async.js:
-@lit/reactive-element/decorators/query-assigned-nodes.js:
-lit-html/directive.js:
-lit-html/async-directive.js:
-  (**
-   * @license
-   * Copyright 2017 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-lit-html/is-server.js:
-  (**
-   * @license
-   * Copyright 2022 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-@lit/reactive-element/decorators/query-assigned-elements.js:
-  (**
-   * @license
-   * Copyright 2021 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-
-lit-html/directive-helpers.js:
-lit-html/directives/ref.js:
-  (**
-   * @license
-   * Copyright 2020 Google LLC
-   * SPDX-License-Identifier: BSD-3-Clause
-   *)
-*/
+  `,r([g({type:String})],s.prototype,"src",2),r([g({type:String})],s.prototype,"lesson",2),r([g({type:String})],s.prototype,"api",2),r([g({type:String,attribute:"api-key"})],s.prototype,"apiKey",2),r([g({type:String})],s.prototype,"lang",2),r([g({type:Boolean,attribute:"disable-shortcuts",reflect:!0})],s.prototype,"disableShortcuts",2),r([g({type:Boolean,attribute:"show-sign-window",reflect:!0})],s.prototype,"showSignWindow",2),r([g({type:Boolean,attribute:"audio-description",reflect:!0})],s.prototype,"audioDescriptionEnabled",2),r([l()],s.prototype,"showHelpDialog",2),r([l()],s.prototype,"showCaptionsDialog",2),r([l()],s.prototype,"showPreferencesDialog",2),r([l()],s.prototype,"playerTheme",2),r([l()],s.prototype,"activePrefsTab",2),r([l()],s.prototype,"manifestCaptions",2),r([l()],s.prototype,"selectedCaptionLang",2),r([l()],s.prototype,"lowDataMode",2),r([l()],s.prototype,"mediaRequested",2),r([l()],s.prototype,"mediaLoadError",2),r([l()],s.prototype,"mediaLoading",2),r([l()],s.prototype,"questionAnswer",2),r([l()],s.prototype,"questionText",2),r([l()],s.prototype,"questionSupported",2),r([l()],s.prototype,"questionLanguage",2),r([l()],s.prototype,"currentCueText",2),r([l()],s.prototype,"captionFontSize",2),r([l()],s.prototype,"captionPreset",2),r([l()],s.prototype,"captionTextColor",2),r([l()],s.prototype,"captionBgColor",2),r([l()],s.prototype,"captionBgOpacity",2),r([l()],s.prototype,"captionPosition",2),r([l()],s.prototype,"isPlaying",2),r([l()],s.prototype,"currentTime",2),r([l()],s.prototype,"duration",2),r([l()],s.prototype,"volume",2),r([l()],s.prototype,"isMuted",2),r([l()],s.prototype,"playbackRate",2),r([l()],s.prototype,"captionsShowing",2),r([l()],s.prototype,"isFullscreen",2),r([l()],s.prototype,"statusToast",2),r([l()],s.prototype,"liveRegionMessage",2),r([l()],s.prototype,"hasSignTrack",2),r([l()],s.prototype,"hasAdTrack",2),r([f("video")],s.prototype,"videoElement",2),r([f(".shortcuts-dialog")],s.prototype,"helpDialogElement",2),r([f(".captions-dialog")],s.prototype,"captionsDialogElement",2),r([f(".btn-help")],s.prototype,"helpButtonElement",2),r([f(".btn-captions-settings")],s.prototype,"captionsSettingsBtnElement",2),r([f(".btn-fullscreen")],s.prototype,"fullscreenButtonElement",2),r([l()],s.prototype,"soundDescriptionsEnabled",2),r([l()],s.prototype,"isTranscriptOpen",2),r([l()],s.prototype,"transcriptLines",2),r([l()],s.prototype,"transcriptSummary",2),r([l()],s.prototype,"transcriptSearchQuery",2),r([l()],s.prototype,"transcriptAutoScroll",2),r([l()],s.prototype,"activeTranscriptIndex",2),r([l()],s.prototype,"isSpeedMenuOpen",2),r([l()],s.prototype,"manifestLoadError",2),r([l()],s.prototype,"lessonTitle",2),r([f(".btn-transcript")],s.prototype,"transcriptBtnElement",2),r([f("#transcript-search-input")],s.prototype,"transcriptSearchInput",2),r([f(".transcript-lines-container")],s.prototype,"transcriptScrollContainer",2),r([f(".prefs-dialog")],s.prototype,"prefsDialogElement",2),r([f(".btn-preferences")],s.prototype,"prefsBtnElement",2),s=r([D("savanna-player")],s);var q=[{selector:"savanna-offline",load:()=>import("./chunks/offline-AC73CB7E.js")},{selector:"savanna-job-card",load:()=>import("./chunks/job-card-WCQOXOA4.js")},{selector:"savanna-credential",load:()=>import("./chunks/credential-SNGZC5XM.js")},{selector:"savanna-sign-window[src], [data-sign-window][src]",load:()=>import("./chunks/sign-window-WMIUXZYT.js")},{selector:"savanna-audio-description[src], savanna-audio-description[text-vtt]",load:()=>import("./chunks/audio-description-EQFHGOAG.js")}],C=new Map;function B(){if(!(typeof document>"u"))for(let d of q){if(!document.querySelector(d.selector))continue;let u=C.get(d.selector)??d.load();C.set(d.selector,u),u.catch(e=>{console.error(`[savanna-access] Could not load ${d.selector}:`,e),C.delete(d.selector)})}}if(typeof document<"u"&&typeof MutationObserver<"u"){let d=()=>{if(!document.documentElement)return;new MutationObserver(B).observe(document.documentElement,{childList:!0,subtree:!0}),B()};document.readyState==="loading"?document.addEventListener("DOMContentLoaded",d,{once:!0}):d()}export{s as SavannaPlayer};
 //# sourceMappingURL=savanna-access.v1.js.map

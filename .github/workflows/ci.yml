@@ -14,7 +14,25 @@ jobs:
       - run: pnpm -r --if-present lint
       - run: pnpm -r --if-present typecheck
       - run: pnpm --filter sandbox-career exec playwright install --with-deps chromium
-      - run: pnpm build
+      - run: pnpm --filter @savanna/sandbox-player exec playwright install --with-deps chromium
+      - run: pnpm openapi:check
+      - run: pnpm size
+      - run: pnpm amharic:check
+      - name: Start fixture API for smoke test
+        shell: bash
+        run: |
+          PORT=4010 STORE=memory pnpm --filter @savanna/api dev > /tmp/savanna-smoke-api.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:4010/v1/health > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/savanna-smoke-api.log
+          exit 1
+      - name: Smoke test fixture API and lesson assets
+        env:
+          SAVANNA_SMOKE_API_KEY: pk_dev_local
+          SAVANNA_SMOKE_CREDENTIAL_ID: C-7
+          SAVANNA_SMOKE_ORIGIN: http://localhost:5174
+        run: pnpm smoke --base http://localhost:4010 --media-base http://localhost:4010
       - run: pnpm test
-      - run: pnpm axe
       - run: pnpm -r --if-present test

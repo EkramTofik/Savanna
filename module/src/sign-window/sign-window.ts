@@ -76,6 +76,9 @@ export class SavannaSignWindow extends LitElement {
       color: #fff;
       font: 16px/1.4 var(--savanna-font, system-ui, sans-serif);
     }
+    :host([hidden]) {
+      display: none !important;
+    }
     :host(:not([enabled])) {
       width: auto;
       max-width: none;
@@ -254,6 +257,28 @@ export class SavannaSignWindow extends LitElement {
       bottom: 4px;
       left: 4px;
       cursor: nesw-resize;
+    }
+    @media (forced-colors: active) {
+      :host {
+        color: CanvasText;
+      }
+      section,
+      header,
+      .fallback {
+        border-color: ButtonText;
+        background: Canvas;
+        color: CanvasText;
+      }
+      button,
+      .handle {
+        border-color: ButtonText;
+        background: ButtonFace;
+        color: ButtonText;
+      }
+      header:focus-visible,
+      button:focus-visible {
+        outline: 3px solid Highlight;
+      }
     }
     @media (max-width: 600px) {
       :host {

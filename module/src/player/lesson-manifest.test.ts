@@ -10,12 +10,26 @@ async function fixture(id: string) {
 
 test('player accepts both the minimal and full contract manifests', async () => {
   const minimal = parseLessonManifest(await fixture('L-102'), 'L-102');
-  const full = parseLessonManifest(await fixture('L-103'), 'L-103');
+  const fullSource = await fixture('L-103') as Record<string, unknown>;
+  fullSource.sign = {
+    url: 'https://media.example.test/test-only-sign-window.mp4',
+    offsetMs: -250,
+    languageName: 'Test-only sign-window fixture',
+  };
+  fullSource.audioDescription = {
+    audioUrl: 'https://media.example.test/test-only-ad.opus',
+    vttUrl: 'https://media.example.test/test-only-ad.vtt',
+    extended: true,
+    offsetMs: 400,
+  };
+  const full = parseLessonManifest(fullSource, 'L-103');
 
   assert.equal(minimal.sign, null);
   assert.equal(minimal.audioDescription, null);
-  assert.equal(full.sign?.url, 'http://localhost:4010/media/esl-placeholder.mp4');
-  assert.equal(full.audioDescription?.audioUrl, 'http://localhost:4010/media/ad.opus');
+  assert.equal(full.sign?.languageName, 'Test-only sign-window fixture');
+  assert.equal(full.sign?.offsetMs, -250);
+  assert.equal(full.audioDescription?.audioUrl, 'https://media.example.test/test-only-ad.opus');
+  assert.equal(full.audioDescription?.offsetMs, 400);
 });
 
 test('player rejects mismatched, incomplete, or unsafe manifest data', async () => {

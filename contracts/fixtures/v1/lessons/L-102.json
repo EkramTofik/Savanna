@@ -1,10 +1,14 @@
 {
   "id": "L-102",
   "title": {
-    "en": "Introduction to databases",
-    "am": "የመረጃ ቋት መግቢያ"
+    "en": "Learning through short videos",
+    "am": "በአጭር ቪዲዮዎች መማር"
   },
-  "durationSec": 12,
+  "summary": {
+    "en": "The speaker reflects on learning from online videos and compares short video segments with long lectures. The 4 minute 12 second figure is presented as the speaker's premise, not as a verified current statistic.",
+    "am": "ተናጋሪው ከመስመር ላይ ቪዲዮዎች ስለመማር ያሰላስላል፤ አጭር የቪዲዮ ክፍሎችን ከረጅም ንግግሮች ጋር ያነጻጽራል። የ4 ደቂቃ ከ12 ሰከንድ ቁጥር የተናጋሪው አስተያየት ነው፤ የዛሬ የተረጋገጠ ስታቲስቲክስ አይደለም።"
+  },
+  "durationSec": 120,
   "media": {
     "video": "http://localhost:4010/media/lesson.mp4",
     "audio": "http://localhost:4010/media/lesson.opus"
@@ -26,6 +30,6 @@
   },
   "pack": {
     "manifestUrl": "/v1/lessons/L-102/pack",
-    "sizeBytes": 29657
+    "sizeBytes": 29565
   }
 }
