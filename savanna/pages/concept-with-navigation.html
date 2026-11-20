@@ -368,7 +368,7 @@
                   <li class="list-group-item p-0">
                     <a
                       class="list-group-item list-group-item-action"
-                      data-lesson-id="L-103"
+                      data-lesson-id="L-102"
                       href="?lesson=L-103#lesson-player"
                     >
                       Learning through short videos <span class="text-muted">(L-103, same recording)</span>
@@ -400,14 +400,18 @@
                       <button
                         type="button"
                         data-savanna-language-toggle
+                        aria-label="Switch player language to Amharic"
                         disabled
                       >
                         አማርኛ / Amharic
                       </button>
+                      <p id="player-status" class="mb-0" role="status" aria-live="polite">
+                        Loading accessible lesson player controls…
+                      </p>
                     </div>
                     <savanna-player
                       id="lesson-player"
-                      lesson="L-103"
+                      lesson="L-102"
                       lang="en"
                       api="/"
                       api-key="pk_demo_public"
